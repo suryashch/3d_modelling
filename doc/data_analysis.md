@@ -4,14 +4,14 @@
 The aim of this project is to create a 3D model that is compressed, and efficient to use in glb format. The raw size of models I'm looking at here is often 50+ MB, and too slow to be used in traditional web viewers. However, with a little tweaking I'm confident we can improve end performance of these models in a web based environment.
 
 ## Identified Problems
-Currently, the main issues I see with opening these models in a  web viewer is performance. I suspect this has to do with the sheer number of objects in the scene, as I have seen better performance when it comes to consolidated models.
+Currently, the main issues I see with opening these models in a web viewer is performance. I suspect this has to do with the sheer number of objects in the scene, as I have seen better performance when it comes to consolidated models.
 
 ## Potential Solutions
 
 ### Zoom Based Rendering
 My first idea is to create 4-5 different versions of the model, each with a progressively higher compression ratio. The further out you zoom from the model, the smaller the objects become on the screen, and the more compressed the object can become wihout losing too much spatial context to the user. One way I have found works is using the decimate feature in Blender. This method reduces the number of meshes and nodes in an object by a given ratio. The smaller this ratio is, the more deformed the final object looks, and I was able to get to a ratio of 0.4 before I started losing shape context of the object.
 
-One drawback to this method is time. I'm not sure if its the way the code is currently being executed, but it takes way too long to get done. Here is the code block that worked for me, albeit after nearly 24 hours.
+One drawback to this method is time. I'm not sure if its the way the code is currently being executed, but the code takes way too long to run. Here is the code block that worked for me, albeit after nearly 24 hours.
 
 ```python
 import bpy
@@ -48,6 +48,10 @@ Once I have this 0.4 decimated model, I loaded it and the 100% model to a three.
 ```
 
 I noticed some performance gains, although none that I was able to discretely measure. Further testing may be required to get a conclusive answer to this hypothesis.
+
+Another issue of note is that the models need to be perfectly aligned otherwise the zomm in and out process will not be smooth. I noticed that my 40% model had a slightly different center from the original 100% model, and this resulted in glitching when I zoomed past this point. Some tweaks may be possible in blender to achieve this continuous zoom.
+
+A big hinderance I found here is that through the current state of code, I am unable to selectively render objects based on how close or far they are from the user- either the whole model is at 40% LOD or 100% LOD. This is not ideal and defeats the purpose of our project. We need to find a way to swap the object's LOD, not the model.
 
 ### External Object Triangulation
 
