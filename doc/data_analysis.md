@@ -62,3 +62,5 @@ I have another theory that I would like to test out. What if we modeled our enti
 We save our individual objects in the scene and their metadata to a database. We now create a 4D array, with 1 dimension for the object ID and the other three dimensions for the object's bounding box coordinates. Three.js has a useful feature called raycasting that tracks where in the scene the user has currently clicked. The way it clicked for me is to literally picture a laser beam shooting out from the tip of your mouse pointer, and tracking where in the scene it intersects when the user clicks. We can now get the coordinates of eactly where the user has clicked and triangulate this position to an object in our external database, thereby retrieving that metadata and information.
 
 We could also physically overlay the 3D bounding box of this object onto the scene, giving visual confirmation of the click to the user.
+
+To start, we must first export the bounding boxes from our individual objects in the model.
