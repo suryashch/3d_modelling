@@ -1,0 +1,7 @@
+name: '3dmodel'
+channels:
+dependencies:
+  - python=3.10.*
+  - pandas
+  - numpy
+  - bpy
