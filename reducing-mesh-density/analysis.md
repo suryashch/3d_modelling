@@ -38,7 +38,7 @@ We can see that the overall general shape of the object has been maintained, but
 
 In this example, we compress a basic mesh of a human foot using the Decimate Modifier with Ratio = 0.1
 
-![Mesh model of human foot before and after compression](img/foot_comparison)
+![Mesh model of human foot before and after compression](img/foot_comparison.png)
 
 In this case, we lose a lot of the visual cues which help us identify the object. Clearly, we can see that the compressed version of the foot looks like something out of a early 2000's video game.While this compression technique is good on your computer's memory, you sacrifice on the various advancements that have been made in computer graphics over the past few decades.  
 
