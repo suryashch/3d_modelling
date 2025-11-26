@@ -10,7 +10,7 @@ When working with small models, the fine detail modelling is not likely to affec
 
 Cylinders are notoriously hard to model. The fundamental buiding blocks of computer graphics are vertices and edges. vertices can be thought of as 'corners' while edges are what connect the corners to each other. In a cube, we have 8 vertices and 12 edges, as you can see in the image below.
 
-
+![cubes edges and vertices defined](img/cubes-edges-vertices.png)
 
 However, circles don't have any corners. A circle can be thought of as infinitely made corners that all connect to each other. It is impossible to model a perfect circle, so we approximate using a large number of vertices. The more vertices, the more the object starts looking like a circle. 
 
