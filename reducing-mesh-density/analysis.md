@@ -15,7 +15,6 @@ Cylinders are notoriously hard to model. The fundamental buiding blocks of compu
 However, circles don't have any corners. A circle can be thought of as infinitely made corners that all connect to each other. It is impossible to model a perfect circle, so we approximate using a large number of vertices. The more vertices, the more the object starts looking like a circle. 
 
 
-
 Hence, when we extrapolate all these individual edges and vertices into the page, we get a cylinder (pipe), which is hilariously inefficient for how simple of a shape it is.
 
 ![Cylinder Vertices and Edges](img/cylinder.png)
