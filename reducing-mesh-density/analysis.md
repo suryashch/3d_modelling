@@ -8,7 +8,7 @@ When working with small models, the fine detail modelling is not likely to affec
 
 ## Piping
 
-Cylinders are notoriously hard to model. The fundamental buiding blocks of computer graphics are vertices and edges. vertices can be thought of as 'corners' while edges are what connect the corners to each other. In a cube, we have 8 vertices and 12 edges, as you can see in the image below.
+Cylinders are notoriously hard to model. The fundamental buiding blocks of computer graphics are vertices and edges. vertices can be thought of as 'corners' while edges are what connect the corners to each other. In a cube, we have 8 vertices and 12 edges, as you can see in the image below (in no praticular order).
 
 ![cubes edges and vertices defined](img/cubes-edges-vertices.png)
 
