@@ -85,7 +85,16 @@ Adding back all the auxillary objects to the scene, we see minimal differences b
 
 What about size results? The pre-compressed size of the model is 2.75 MB and post compression drops down to 1.41 MB, implying about 1.9x compression ratio.
 
-Performance is harder to measure, 
+Performance is harder to measure, but I was able to simulate some results. I copied both the original and decimated piperack model 64 times, to simulate what a large model might look like. I then throttled my computer's performance, limiting the temperature and battery settings, thereby reducing the performance. I then recorded the results of some simple panning and zooming within each model. Here is the original.
+
+![GIF of performance before compression](img/original.gif)
+
+And here is the compressed version.
+
+![GIF of performance after compression](img/decimated.gif)
+
+It can be clearly seen that navigating around the decimated model is a lot smoother than the original, especially at far enough zoom levels. I zoomed in to each model to prove that they are indeed, compressed and uncompressed respectively. I did my best to hold all other factors constant from my computer (ex: GPU usage, power draw), so the results we are seeing have to be from the reduction in edge and vertex count between each model.
+
 
 ## Conclusion
 
