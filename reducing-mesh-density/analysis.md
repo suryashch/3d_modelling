@@ -26,12 +26,13 @@ Each of these edges and vertices need to be kept track of by your computer's GPU
 
 The `Decimate Modifier` in Blender will progressively merge egdes and vertices in an object together, reducing the overall count and also reducing the overall detailing. The decimate modifier has certain parameters which can be tuned to affect the final output of the shape. Most notably, the Ratio parameter will increase the amount of decimation which gets done on the object. Depending on how complex the geometry is, different ratios are preferable. 
 
-Let's apply a decimate modifier onto our cyclinder with Ratio set to be 0.2.
-
+Let's apply a decimate modifier onto our cyclinder with Ratio set to be 0.25.
 
 Before
+![Cylinder Example Before Decimation](img/cylinder.png)
 
 After
+![Cylinder Example After Decimation](img/cylinder_decimated.png)
 
 We can see that the overall general shape of the object has been maintained, but finer details like the smoothness of the circle have been lost. For such basic shapes, a high decimation ratio will not necessarily affect the overall shape. However, this is object dependent and may not work as well for complex objects.
 
@@ -58,12 +59,33 @@ Can we define a perfect standardized ratio? Well, `Piping` in our model includes
 
 Here I am working with a small 3D model of a piperack (this is considered small, as piperacks tend to be several hundred meters long!)
 
-Let's create 5 versions of this model, with decimation ratios of 1, 0.8, 0.6, 0.4 and 0.2.
+![Original Piperack Model](img/piperack_orig.png)
 
+Let's focus on piping here. I will remove all the extra objects in the scene like the steel, valves, or any tanks.
 
+![Isolated Pipes Model](img/piperack_orig_isolated_pipes.png)
 
+To these pipes, I shall now apply a `decimate` modifier to compress our meshes. I experimented with different ratios and found that even a ratio as low as 0.04 seemed to preserve the general shape of our object. Here I show the results both before and after applying the `decimate` modifier.
 
+![Large-bore piping compression results](img/piperack_decimation-results_1.png)
 
+Here is the result of our decimation. We can see that the cross sectional shape of our pipes have changed- they are no longer circular. This is to be expected, as I mentioned above, and implies that our compression worked well.
+
+![90 degree bend compression results](img/piperack_decimation-results_2.png)
+
+Here is the result of a more complex piece of geometry- a 90 Degree bend. We see that the compression algorithm has greately reduced the number of edges and vertices, while still mostly preserving the general shape. 
+
+![Piperack compression edge counts before and after](img/piperack_decimation-results_4.png)
+
+This picture truly highlights the compression of our vertices. If you imagine a computer GPU trying to keep track of the postition and rotation of every single one of these points, we quickly start to see why large models are so performance ineffficient. But how do these models look from afar?
+
+![Compression results 50 ft view](img/piperack_decimation-results_high-level-view.png)
+
+Adding back all the auxillary objects to the scene, we see minimal differences between the two versions of our model at a 50 ft view. We can clearly tell what the general shape is of these pipes, and adding our auxillary objects helps provide spatial context to the user. I would go so far to say that at this zoom level, its hard to differentiate between our compressed and uncompressed object.
+
+What about size results? The pre-compressed size of the model is 2.75 MB and post compression drops down to 1.41 MB, implying about 1.9x compression ratio.
+
+Performance is harder to measure, 
 
 ## Conclusion
 
