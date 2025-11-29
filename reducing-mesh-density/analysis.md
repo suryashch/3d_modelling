@@ -12,21 +12,19 @@ Cylinders are notoriously hard to model. The fundamental buiding blocks of compu
 
 ![cubes edges and vertices defined](img/cubes-edges-vertices.png)
 
-However, circles don't have any corners. A circle can be thought of as infinitely made corners that all connect to each other. It is impossible to model a perfect circle, so we approximate using a large number of vertices. The more vertices, the more the object starts looking like a circle. 
+However, circles don't have any corners. A circle can be thought of as infinitely many corners that all connect to each other. It is impossible to model a perfect circle, so we approximate it using a large number of vertices. The more vertices, the more the object starts looking like a circle.
 
-
-Hence, when we extrapolate all these individual edges and vertices into the page, we get a cylinder (pipe), which is hilariously inefficient for how simple of a shape it is.
+Hence, when we extrude all these individual edges and vertices into the page, we get a cylinder (pipe), which is hilariously inefficient for how simple of a shape it is.
 
 ![Cylinder Vertices and Edges](img/cylinder.png)
 
-Each of these edges and vertices need to be kept track of by your computer's GPU. In large models, this is usually what causes the lag when, especially when your GPU is not powerful enough. Let's see if we can compress the total number of edges and vertices in an object.
-
+Each of these edges and vertices need to be kept track of by your computer's GPU. In large models, this is usually what causes the lag- especially when your GPU is not powerful enough. Let's see if we can compress the total number of edges and vertices in an object.
 
 ## The Decimate Modifier
 
-The `Decimate Modifier` in Blender will progressively merge egdes and vertices in an object together, reducing the overall count and also reducing the overall detailing. The decimate modifier has certain parameters which can be tuned to affect the final output of the shape. Most notably, the Ratio parameter will increase the amount of decimation which gets done on the object. Depending on how complex the geometry is, different ratios are preferable. 
+The `Decimate Modifier` in Blender will progressively merge egdes and vertices in an object together, reducing the overall count and also reducing the overall detailing. The decimate modifier has certain parameters which can be tuned to affect the final output of the shape. Most notably, the `Ratio` parameter will increase the amount of decimation which gets done on the object. Depending on how complex the geometry is, different ratios are preferable.
 
-Let's apply a decimate modifier onto our cyclinder with Ratio set to be 0.25.
+Let's apply a decimate modifier onto our cyclinder with `Ratio` set to be 0.25.
 
 Before
 ![Cylinder Example Before Decimation](img/cylinder.png)
@@ -34,9 +32,9 @@ Before
 After
 ![Cylinder Example After Decimation](img/cylinder_decimated.png)
 
-We can see that the overall general shape of the object has been maintained, but finer details like the smoothness of the circle have been lost. For such basic shapes, a high decimation ratio will not necessarily affect the overall shape. However, this is object dependent and may not work as well for complex objects.
+We can see that the overall general shape of the object has been maintained, but finer details like the smoothness of the circle have been lost. For such basic shapes, a higher decimation ratio will not necessarily affect the overall shape. However, this is object dependent and may not work as well for complex objects.
 
-In this example, we compress a basic mesh of a human foot using the Decimate Modifier with Ratio = 0.1
+In this example, we compress a basic mesh of a human foot using the `decimate` modifier with `Ratio` = 0.1
 
 ![Mesh model of human foot before and after compression](img/foot_comparison.png)
 
@@ -52,10 +50,9 @@ This implies that the Level of Detail required to successfully identify an objec
 
 What if we could dynamically change which model is loaded to our 3D scene based on how far away the camera is from it? In further research, I will delve into building this model. For now, lets see if we can standardize our findings, specifically to BIM objects.
 
+## Compression Ratios for Piping
 
-## Finding the Perfect Compression Ratio for Piping
-
-Can we define a perfect standardized ratio? Well, `Piping` in our model includes more than just cylinders, it could including things like valves, flanges, mechanical equipment, all of which tend to have non standard geometries.
+Can we define a perfect standardized ratio? Well, `Piping` in our model includes more than just cylinders, it could including things like valves, flanges, mechanical equipment, all of which tend to have non standard geometries. Let's see what kind of performance gains we can get by simply compressing the piping.
 
 Here I am working with a small 3D model of a piperack (this is considered small, as piperacks tend to be several hundred meters long!)
 
@@ -73,7 +70,7 @@ Here is the result of our decimation. We can see that the cross sectional shape 
 
 ![90 degree bend compression results](img/piperack_decimation-results_2.png)
 
-Here is the result of a more complex piece of geometry- a 90 Degree bend. We see that the compression algorithm has greately reduced the number of edges and vertices, while still mostly preserving the general shape. 
+Here is the result of a more complex piece of geometry- a 90 Degree bend. We see that the compression algorithm has greately reduced the number of edges and vertices, while still mostly preserving the general shape.
 
 ![Piperack compression edge counts before and after](img/piperack_decimation-results_4.png)
 
@@ -83,9 +80,11 @@ This picture truly highlights the compression of our vertices. If you imagine a 
 
 Adding back all the auxillary objects to the scene, we see minimal differences between the two versions of our model at a 50 ft view. We can clearly tell what the general shape is of these pipes, and adding our auxillary objects helps provide spatial context to the user. I would go so far to say that at this zoom level, its hard to differentiate between our compressed and uncompressed object.
 
-What about size results? The pre-compressed size of the model is 2.75 MB and post compression drops down to 1.41 MB, implying about 1.9x compression ratio.
+What about file size results? The pre-compressed size of the model is 2.75 MB and post compression drops down to 1.41 MB, implying about a 1.9x compression ratio.
 
-Performance is harder to measure, but I was able to simulate some results. I copied both the original and decimated piperack model 64 times, to simulate what a large model might look like. I then throttled my computer's performance, limiting the temperature and battery settings, thereby reducing the performance. I then recorded the results of some simple panning and zooming within each model. Here is the original.
+Performance is harder to measure, but I was able to simulate some results.
+
+I copied both the original and decimated piperack model 64 times, to simulate what a large model might look like. I then throttled my computer's performance, limiting the temperature and battery settings, thereby reducing the performance. I then recorded the results of some simple panning and zooming within each model. Here is the original.
 
 ![GIF of performance before compression](img/original.gif)
 
