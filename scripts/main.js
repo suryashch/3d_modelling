@@ -1,3 +1,5 @@
+// code derived from Dan Greenheck https://www.youtube.com/watch?v=aOQuuotM-Ww
+
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
