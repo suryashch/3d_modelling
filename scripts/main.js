@@ -43,19 +43,19 @@ scene.add(groundMesh);
 // scene.add(ambientLight)
 
 const light_1 = new THREE.DirectionalLight(0xffffff, 1);
-light_1.position.set(50, 50, 50);
+light_1.position.set(150, 150, 150);
 scene.add(light_1);
 
 const light_2 = new THREE.DirectionalLight(0xffffff, 1);
-light_2.position.set(0, -25, 0);
+light_2.position.set(0, -125, 0);
 scene.add(light_2);
 
 const light_3 = new THREE.DirectionalLight(0xffffff, 1);
-light_3.position.set(50, -25, 0);
+light_3.position.set(150, -125, 0);
 scene.add(light_3);
 
 const light_4 = new THREE.DirectionalLight(0xffffff, 1);
-light_4.position.set(50, -25, 0);
+light_4.position.set(150, -125, 0);
 scene.add(light_4);
 
 const loader = new GLTFLoader().setPath('models/piperack/');
