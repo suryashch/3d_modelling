@@ -1,10 +1,10 @@
 # Hosting 3D models on a Website
 
-The world of 3D modelling has eveolved a lot since the early days of AutoCAD. With improved graphics processing, compression techniques, and web engines being more powerful than ever, we can now view entire 3D models directly in the browser. With this improvement in web computation, the door is open to improving the performance of 3D modelling over the internet. This coculd help address a siggnificant drawback to the current workflow for 3D modelling, namely file compatibility.
+The world of 3D modelling has evolved a lot since the early days of AutoCAD. With improved graphics processing, compression techniques, and web engines being more powerful than ever, we can now view entire 3D models directly in the browser. With this improvement in web computation, the door is open to improving the performance of 3D modelling over the internet. This could help address a significant drawback to the current workflow for 3D modelling, namely file compatibility.
 
 ## The GLTF file type
 
-The gltf file format is an open standard for the efficient transmission and loading of 3D scenes and models by engines and applications. gltf model are lightweight and can be quickly openend and viewed over a browser. Luckily `Blender` software allows for the export of 3D models and scenes to .gltf file format, which is what I shall be using for this testing purpose. I have a model `piperacks_lod-100.glb` which I shall attempt to load to a scene in the browser as a first step for further experimentation. Quick note: The .glb file extension is just a binary version of the gltf file format, it is more condensed and contains both the scene, as well as the materials, mesh details etc. It should function exactly the same as the gltf file.
+The gltf file format is an open standard for the efficient transmission and loading of 3D scenes and models by engines and applications. gltf model are lightweight and can be quickly openend and viewed over a browser. Luckily Blender software allows for the export of 3D models and scenes to .gltf file format, which is what I shall be using for this testing purpose. I have a model `piperacks_lod-100.glb` which I shall attempt to load to a scene in the browser as a first step for further experimentation. Quick note: The .glb file extension is just a binary version of the gltf file format, it is more condensed and contains both the scene, as well as the materials, mesh details etc. It should function exactly the same as the gltf file.
 
 ## Setting up index.html
 
