@@ -39,6 +39,45 @@ We need a boilerplate index.html file to serve as our root for the website. I at
 </html>
 ```
 
-Some important things to keep in mind here, I need to make a few imports from three.js which I download to this instance for the time being. These are found in the </script> tag of the metadata. I call a javascipt file called main.js in my main document folder. This file is saved in `/scripts/main.js`.
+I need to make a few imports from three.js which I download to this instance for the time being. These are found in the </script> tag of the metadata. I call a javascipt file called main.js in my main document folder. This file is saved in `/scripts/main.js`.
 
 And the rest is just text. Opening the `index.html` file will open a localhost version of my webpage which for now, only contains a single line of text saying 'piperacks'.
+
+## main.js
+
+`main.js` is a javascript file containing the code to set up the scene. The main scene contents are created using the `three.js` library. 
+
+Here are my imports.
+
+```js
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+```
+
+The concept behind using `three.js` is to create a scene. This involves the background, the model and the lighting.
+
+Here is the code to set up the lighting.
+
+Here is the code to set up my background, which in this case is just a black screen with a basic rectange.
+
+If we see the scene now, this is what it looks like.
+
+Let's add the model and see what it looks like.
+
+We need to also enable user movement controls. This can be done using the following code.
+
+Perfect. We can now pan and zoom around the model.
+
+The last step is to add the `animate()` function which is essentially a loop which will run over the page. For now, it only responds to user zoom and movement.
+
+## Benefits
+
+GLTF provides the ability to open 3D models on a webpage, and is an open source file format. This means converting from proprietary format can be done, perhaps needing to use intermediary steps.
+
+GLTF files can be converted into plain text, whereby each object in the scene is listed in `json` format. This allows the computer to navigate through every object in the scene, potentially allowing users to control which objects to see, and dynamically change their color.
+
+
+## Conclusion
+
+We live in a world where moving data across the internet is increasingly becoming ever more powerful. 3D models by virtue, have large file sizes and not a lot of widespread adoption in web based applications. However, taking advantage of these internet data pipelines can help streamline the creation and sharing of these files, such that they become more normalized and as easy to open as a PDF.
