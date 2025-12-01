@@ -102,6 +102,6 @@ It can be clearly seen that navigating around the decimated model is a lot smoot
 This is my first publication on this topic. In further resarch, I will delve into Zoom-based Level of Detail modelling, and how to further improve our compression ratio using Machine Learning techniques.
 
 
-License
+### License
 
 1. human-foot-base-mesh credit to ferrumiron6, Creative Commons License https://creativecommons.org/licenses/by/4.0/

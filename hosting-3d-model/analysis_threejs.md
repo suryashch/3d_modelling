@@ -55,21 +55,90 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 ```
 
-The concept behind using `three.js` is to create a scene. This involves the background, the model and the lighting.
+The concept behind using `three.js` is to create a scene. This involves the camera, background, the model and the lighting.
 
-Here is the code to set up the lighting.
+Lets start by loading a camera and some lights to the scene. This is the code to load a camera.
 
-Here is the code to set up my background, which in this case is just a black screen with a basic rectange.
+```js
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+camera.position.set(40,20,50);
+```
+
+And here is the code to set up the lighting.
+
+```js
+const light_1 = new THREE.DirectionalLight(0xffffff, 1);
+light_1.position.set(150, 150, 150);
+scene.add(light_1);
+
+const light_3 = new THREE.DirectionalLight(0xffffff, 1);
+light_3.position.set(-150, -150, -150);
+scene.add(light_3);
+```
+
+There used to be a `light_2` in the scene, but I commented it out to experiment a little more with it's effects. The lighting needs some work.
+
+Here is the code to set up my background, which in this case is just a black screen with a basic rectangle.
+
+```js
+const groundGeometry = new THREE.PlaneGeometry(60, 60, 2, 2);
+groundGeometry.rotateX(-Math.PI /2);
+const groundMaterial = new THREE.MeshStandardMaterial({
+    color:  0x555555,
+    side: THREE.DoubleSide
+});
+
+const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+scene.add(groundMesh);
+```
 
 If we see the scene now, this is what it looks like.
 
+![Main background of the scene](img/background.png)
+
 Let's add the model and see what it looks like.
 
+![Background with model](img/background_with-model.png)
+
+This is the code for the `loader()` object which loads the model to the scene.
+
+```js
+const loader = new GLTFLoader().setPath('models/piperack/');
+loader.load('piperacks_lod-100.glb', (gltf) => {
+    const mesh = gltf.scene;
+    mesh.position.set(0,0,0);
+    scene.add(mesh);
+})
+```
+
 We need to also enable user movement controls. This can be done using the following code.
+
+```js
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enablePan = true;
+controls.minDistance=5;
+controls.maxDistance=100;
+controls.minPolarAngle=0.5;
+controls.maxPolarAngle=1.5;
+controls.autoRotate=false;
+controls.target = new THREE.Vector3(0,1,0);
+controls.update()
+```
 
 Perfect. We can now pan and zoom around the model.
 
 The last step is to add the `animate()` function which is essentially a loop which will run over the page. For now, it only responds to user zoom and movement.
+
+```js
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+};
+
+animate();
+```
 
 ## Benefits
 
@@ -81,3 +150,9 @@ GLTF files can be converted into plain text, whereby each object in the scene is
 ## Conclusion
 
 We live in a world where moving data across the internet is increasingly becoming ever more powerful. 3D models by virtue, have large file sizes and not a lot of widespread adoption in web based applications. However, taking advantage of these internet data pipelines can help streamline the creation and sharing of these files, such that they become more normalized and as easy to open as a PDF.
+
+You can navigate to this website https://suryashch.github.io/3d_modelling/ to see a live version of this hosted model. I might edit this over time.
+
+### Credits
+
+1) Dan Greenheck (https://www.youtube.com/@dangreenheck)

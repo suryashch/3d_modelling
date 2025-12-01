@@ -58,12 +58,12 @@ scene.add(light_3);
 // light_4.position.set(150, -125, 0);
 // scene.add(light_4);
 
-// const loader = new GLTFLoader().setPath('models/piperack/');
-// loader.load('piperacks_lod-100.glb', (gltf) => {
-//     const mesh = gltf.scene;
-//     mesh.position.set(0,0,0);
-//     scene.add(mesh);
-// })
+const loader = new GLTFLoader().setPath('models/piperack/');
+loader.load('piperacks_lod-100.glb', (gltf) => {
+    const mesh = gltf.scene;
+    mesh.position.set(0,0,0);
+    scene.add(mesh);
+})
 
 function animate() {
     requestAnimationFrame(animate);
