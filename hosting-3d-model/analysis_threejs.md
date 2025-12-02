@@ -45,7 +45,7 @@ And the rest is just text. Opening the `index.html` file will open a localhost v
 
 ## main.js
 
-`main.js` is a javascript file containing the code to set up the scene. The main scene contents are created using the `three.js` library. 
+`main.js` is a javascript file containing the code to set up the scene. Thes main scene contents are created using the `three.js` library. 
 
 Here are my imports.
 
