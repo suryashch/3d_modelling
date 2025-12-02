@@ -69,9 +69,14 @@ loader.load('piperacks_lod-100.glb', (gltf) => {
     lod.addLevel(highResMesh, 0);
 })
 
-loader.load('piperacks_lod-04.glb', (gltf) => {
+loader.load('piperacks_lod-10.glb', (gltf) => {
     const lowResMesh = gltf.scene;
     lod.addLevel(lowResMesh, 30);
+})
+
+loader.load('piperacks_lod-04.glb', (gltf) => {
+    const lowResMesh = gltf.scene;
+    lod.addLevel(lowResMesh, 50);
 })
 
 function animate() {
