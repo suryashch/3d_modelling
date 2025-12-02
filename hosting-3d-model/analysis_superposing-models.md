@@ -14,7 +14,7 @@ The baseline file we shall build off has been described in full effect in my oth
 
 ## Adding the Compressed Model
 
-The model we wish to add to the scene is saved in the `models/piperacks` repo under the name `piperacks_lod-04.glb`. This file is the exact same as our LOD 100 version, except it has been compressed using the deciamte technique down to a ratio of 0.04.
+The model we wish to add to the scene is saved in the `models/piperacks` repo under the name `piperacks_lod-04.glb`. This file is the exact same as our LOD 100 version, except it has been compressed using the decimate technique down to a ratio of 0.04.
 
 We load this model to the scene by tweaking our original `main.js` file. Instead of loading our one object to the scene, we create a container that can dyamically switch which model is active at any current moment based on the camera's distance. Here is the code for creating the container.
 
@@ -22,6 +22,8 @@ We load this model to the scene by tweaking our original `main.js` file. Instead
 const lod = new THREE.LOD();
 lod.position.set(0,0,0);
 scene.add(lod);
+
+// assist provided by Gemini
 ```
 
 Here the LOD object acts as our container. Right now it is empty.
@@ -38,6 +40,8 @@ loader.load('piperacks_lod-04.glb', (gltf) => {
     const lowResMesh = gltf.scene;
     lod.addLevel(lowResMesh, 30);
 })
+
+// assist provided by Gemini
 ```
 
 In our two loader objects, we load both the `highres` and `lowres` versions of our mesh. The `lod.addLevel` function is what toggles the switch and the parameter we pass in after the model name is the zoom distance from the model. The code above delineates the zoom range for which the lowres version of the model is active and the range for the highres.
@@ -46,7 +50,7 @@ The rest of the code stays the same.
 
 ## Results
 
-Saving this file and navigating to https://suryashch.github.io/3d_modelling/, we are greeted with our lowres versionn of the piperack (as can be seen by the sqaure shaped pipes).
+Saving this file and navigating to https://suryashch.github.io/3d_modelling/, we are greeted with our lowres version of the piperack (as can be seen by the sqaure shaped pipes).
 
 ![LOD 04 model in scene](img/lod-04-model-in-scene.png)
 
@@ -81,8 +85,10 @@ Now, we can see three distinct zoom levels over which our model becomes more ref
 
 ## Conclusion
 
-Superposing different versions of a model into the same scene and switching between them has the potential to speed up performance of large scale 3D models in the browser. We have seen that lower mesh densities ease the strain on the GPU, and so by switching to low resolution meshes when our user is far away from the source can significantly reduce the load that the GPU faces. In further research, I will break up each individual item in the model and dynamically load each one based on the user's distance from it. This way, we get the same benefits of visual compression but on a per-object basis. This might increase load times, but I would like to see how well it can improve the navigation capabilites.
+Superposing different versions of a model into the same scene and switching between them has the potential to speed up performance of large scale 3D models in the browser. We have seen that lower mesh densities ease the strain on the GPU, and so by switching to low resolution meshes when our user is far away from the source can significantly reduce the load that the GPU faces. In further research, I will break up each individual item in the model and dynamically load each one based on the user's distance from it. This way, we get the same benefits of visual compression but on a per-object basis. This might increase the initial load times, as well as the memory, but I would like to see how well it can improve the navigation capabilites.
 
 
 #### Credits
 
+1) Google Gemini 2.5 Flash
+2) unknown user: https://codesandbox.io/p/sandbox/12nmp?file=%2Fsrc%2FApp.js.
