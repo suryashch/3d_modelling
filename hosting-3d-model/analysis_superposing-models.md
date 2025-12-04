@@ -91,4 +91,4 @@ Superposing different versions of a model into the same scene and switching betw
 #### Credits
 
 1) Google Gemini 2.5 Flash
-2) unknown user: https://codesandbox.io/p/sandbox/12nmp?file=%2Fsrc%2FApp.js.
+2) drcmda: https://codesandbox.io/p/sandbox/12nmp?file=%2Fsrc%2FApp.js.

@@ -2,7 +2,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -37,18 +37,18 @@ const groundMaterial = new THREE.MeshStandardMaterial({
 });
 
 const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
-scene.add(groundMesh);
+// scene.add(groundMesh);
 
 // const ambientLight = new THREE.AmbientLight(0xffffff, 1); // Color, Intensity (0-1)
 // scene.add(ambientLight)
 
 const light_1 = new THREE.DirectionalLight(0xffffff, 1);
-light_1.position.set(150, 150, 150);
+light_1.position.set(15, 15, 15);
 scene.add(light_1);
 
-const light_3 = new THREE.DirectionalLight(0xffffff, 1);
-light_3.position.set(-150, -150, -150);
-scene.add(light_3);
+// const light_3 = new THREE.DirectionalLight(0xffffff, 1);
+// light_3.position.set(-150, -150, -150);
+// scene.add(light_3);
 
 // const light_2 = new THREE.DirectionalLight(0xffffff, 1);
 // light_2.position.set(0, 0, 0);
@@ -58,10 +58,13 @@ scene.add(light_3);
 // light_4.position.set(150, -125, 0);
 // scene.add(light_4);
 
+const gridHelper = new THREE.GridHelper( 40, 20 ); // ( size, divisions )
+scene.add( gridHelper );
+
 const loader = new GLTFLoader().setPath('models/piperack/');
 
 const lod = new THREE.LOD();
-lod.position.set(0,0,0);
+lod.position.set(-8,1,-4);
 scene.add(lod);
 
 loader.load('piperacks_lod-100.glb', (gltf) => {
@@ -70,8 +73,8 @@ loader.load('piperacks_lod-100.glb', (gltf) => {
 })
 
 loader.load('piperacks_lod-10.glb', (gltf) => {
-    const lowResMesh = gltf.scene;
-    lod.addLevel(lowResMesh, 30);
+    const medResMesh = gltf.scene;
+    lod.addLevel(medResMesh, 30);
 })
 
 loader.load('piperacks_lod-04.glb', (gltf) => {
