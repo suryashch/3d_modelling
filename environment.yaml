@@ -1,7 +1,14 @@
-name: '3dmodel'
+name: "3dmodelling"
 channels:
+    - conda-forge
+    - defaults
 dependencies:
-  - python=3.10.*
-  - pandas
-  - numpy
-  - bpy
+    - python=3.12.*
+    - pandas
+    - matplotlib
+    - pip
+    - ipykernel
+    - nb_conda_kernels
+    - nb_conda_kernels
+    - altair-all=5.4.*
+    - scipy
