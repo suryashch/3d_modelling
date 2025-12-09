@@ -1,6 +1,6 @@
 # Superposing Models of Different LOD in a Web Based Environment
 
-I would like to explore the idea of superposing two models on top of one another in the same scene, and dynamically switching between the two when the user is a certain zoom level away from it. I have already been able to establish that reducing the mesh density of models makes them easier to navigate around (see `../reducing-mesh-density/analysis_decimate.md`). Now I would like to put that to the test by default loading the low density mesh, and switching to the high density one when the user zooms in.
+I would like to explore the idea of superposing two models on top of one another in the same scene, and dynamically switching between the two when the user is a certain zoom level away from it. [I have already been able to establish](https://github.com/suryashch/3d_modelling/blob/main/reducing-mesh-density/analysis_decimate.md) that reducing the mesh density of models makes them easier to navigate around. Now I would like to put that to the test by default loading the low density mesh, and switching to the high density one when the user zooms in.
 
 The idea for this code has been partially derived from the work done in this sandbox: https://codesandbox.io/p/sandbox/12nmp?file=%2Fsrc%2FApp.js.
 
