@@ -3,6 +3,8 @@ A repo where I explore how 3D modelling works.
 
 ## Getting started
 
+[Link](https://suryashch.github.io/3d_modelling/) to latest hosted version of 3D model.
+
 [Here is a link](https://github.com/suryashch/3d_modelling/blob/main/reducing-mesh-density/analysis_mean-pooling-on-mesh.md) to where I apply a `Pooling` Function on a set of vertices in a 3D model.
 
 [Here is a link](https://github.com/suryashch/3d_modelling/blob/main/reducing-mesh-density/analysis_decimate.md) to reduce the mesh density of objects in Blender.
