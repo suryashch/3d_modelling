@@ -26,10 +26,21 @@ if collection:
         print(obj.name)
 ```
 
-Here we print out all objects' names within our specified collection.
+In this code, we print out all objects' names within our specified collection.
+
+Now, let's access specific data attributes within our object.
+
+```py
+collection = bpy.data.collections.get('Collection')
+
+if collection:
+    for obj in collection.objects:
+        print(obj.location)
+```
+
+In this code block, we access the `location` attribute of our object. This will print out the vector coordinates of the center of our object.
 
 
-
-### Rerefences
+### References
 
 Mina Pecheux: https://www.youtube.com/@minapecheux
