@@ -40,6 +40,64 @@ if collection:
 
 In this code block, we access the `location` attribute of our object. This will print out the vector coordinates of the center of our object.
 
+Let's try navigating through every `object` in our scene and duplicating it. This process involves first looping through every `object` in the `collection` and copying its `mesh` data. In Blender, `objects` act as containers that store `data` which is typically a mesh.
+
+```py
+import bpy
+from bpy import context
+
+collection = bpy.data.collections.get('test')
+
+if collection:
+    for obj in collection.objects:
+        if obj.type == 'MESH':
+            me = obj.data.copy()
+```
+
+Once we have the mesh copied, we need to copy the object's properties, like it's name, rotation and scale. Certain transformations may be saved on the global scale too so we should account for those.
+
+Appending to the script above:
+
+```py
+if collection:
+    for obj in collection.objects:
+        if obj.type == 'MESH':
+            me = obj.data.copy()
+            me.name = f"{obj.data.name}_copy"
+            
+            new_ob = bpy.data.objects.new(f"{obj.name}_copy", me)
+            
+            new_ob.matrix_world = obj.matrix_world
+```
+
+`obj.matrix_world` controls the global rotation and transformation settings. One last step is to now add this model to the scene. Here is the final script:
+
+```py
+import bpy
+from bpy import context
+
+collection = bpy.data.collections.get('test')
+
+if collection:
+    for obj in collection.objects:
+        if obj.type == 'MESH':
+            me = obj.data.copy()
+            me.name = f"{obj.data.name}_copy"
+            
+            new_ob = bpy.data.objects.new(f"{obj.name}_copy", me)
+            
+            new_ob.matrix_world = obj.matrix_world
+            
+            context.scene.collection.objects.link(new_ob)
+```
+
+Looking at the results, we see two versions of our object.
+
+![Duplicated Object in Blender Using bpy](img/duplicated-object-using-bpy.png)
+
+
+
+
 
 ### References
 
