@@ -2,6 +2,8 @@
 
 Blender's API allows you to modify objects in a scene in bulk. This is useful for BIM models that tend to have lots of objects. I would like to use the API to eventually build a pipeline that compresses our model down into lower `Level of Detail` (LOD), such that our rendering engine can swap between low res, med res and hi res versions of the same object on the fly. To do so, we will be using the Blender API library `bpy`.
 
+This work is built on work done by (Mina Pechaux).
+
 ## Basic Scripting With bpy
 
 This is how to access all objects in a scene
@@ -94,6 +96,9 @@ if collection:
 Looking at the results, we see two versions of our object.
 
 ![Duplicated Object in Blender Using bpy](img/duplicated-object-using-bpy.png)
+
+
+## Adding Modifiers to Meshes
 
 
 
