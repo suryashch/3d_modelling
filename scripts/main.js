@@ -36,27 +36,9 @@ const groundMaterial = new THREE.MeshStandardMaterial({
     side: THREE.DoubleSide
 });
 
-const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
-// scene.add(groundMesh);
-
-// const ambientLight = new THREE.AmbientLight(0xffffff, 1); // Color, Intensity (0-1)
-// scene.add(ambientLight)
-
 const light_1 = new THREE.DirectionalLight(0xffffff, 1);
 light_1.position.set(15, 15, 15);
 scene.add(light_1);
-
-// const light_3 = new THREE.DirectionalLight(0xffffff, 1);
-// light_3.position.set(-150, -150, -150);
-// scene.add(light_3);
-
-// const light_2 = new THREE.DirectionalLight(0xffffff, 1);
-// light_2.position.set(0, 0, 0);
-// scene.add(light_2);
-
-// const light_4 = new THREE.DirectionalLight(0xffffff, 1);
-// light_4.position.set(150, -125, 0);
-// scene.add(light_4);
 
 const gridHelper = new THREE.GridHelper( 40, 20 ); // ( size, divisions )
 scene.add( gridHelper );
