@@ -1173,7 +1173,7 @@
 		},
 		{
 			"mesh":55,
-			"name":"meter",
+			"name":"meter_hires",
 			"rotation":[
 				0,
 				-0.70710688829422,
@@ -1193,7 +1193,7 @@
 		},
 		{
 			"mesh":56,
-			"name":"Pipe_50",
+			"name":"Pipe_50_hires",
 			"rotation":[
 				1,
 				0,
@@ -1246,7 +1246,7 @@
 		},
 		{
 			"mesh":57,
-			"name":"Pipe_53",
+			"name":"Pipe_53_hires",
 			"rotation":[
 				0.7071068286895752,
 				0,
@@ -1266,7 +1266,7 @@
 		},
 		{
 			"mesh":58,
-			"name":"Pipe_54",
+			"name":"Pipe_54_hires",
 			"rotation":[
 				0.7071068286895752,
 				0,
@@ -1286,7 +1286,7 @@
 		},
 		{
 			"mesh":59,
-			"name":"Well-Head",
+			"name":"Well-Head_hires",
 			"rotation":[
 				0,
 				0.06322122365236282,
@@ -1306,7 +1306,7 @@
 		},
 		{
 			"mesh":60,
-			"name":"well-piperack00",
+			"name":"well-piperack00_hires",
 			"rotation":[
 				1,
 				0,
@@ -1326,7 +1326,7 @@
 		},
 		{
 			"mesh":61,
-			"name":"well-piperack01",
+			"name":"well-piperack01_hires",
 			"rotation":[
 				0,
 				0,
@@ -1346,7 +1346,7 @@
 		},
 		{
 			"mesh":62,
-			"name":"well-piperack02",
+			"name":"well-piperack02_hires",
 			"rotation":[
 				1,
 				0,
@@ -1366,7 +1366,7 @@
 		},
 		{
 			"mesh":63,
-			"name":"Wellhead-engine",
+			"name":"Wellhead-engine_hires",
 			"rotation":[
 				0.5,
 				0.5,
@@ -1386,7 +1386,7 @@
 		},
 		{
 			"mesh":64,
-			"name":"wellhead-floor",
+			"name":"wellhead-floor_hires",
 			"scale":[
 				34.49488830566406,
 				34.49488830566406,
@@ -1400,7 +1400,7 @@
 		},
 		{
 			"mesh":65,
-			"name":"wellhead-railing_00",
+			"name":"wellhead-railing_00_hires",
 			"rotation":[
 				0,
 				0.7071067094802856,
@@ -1420,7 +1420,7 @@
 		},
 		{
 			"mesh":66,
-			"name":"wellhead-railing_01",
+			"name":"wellhead-railing_01_hires",
 			"rotation":[
 				0.7071068286895752,
 				-0.7071068286895752,
@@ -1440,7 +1440,7 @@
 		},
 		{
 			"mesh":67,
-			"name":"wellhead-railing_02",
+			"name":"wellhead-railing_02_hires",
 			"rotation":[
 				0.7071068286895752,
 				-0.7071068286895752,
@@ -1460,7 +1460,7 @@
 		},
 		{
 			"mesh":68,
-			"name":"wellhead-railing_03",
+			"name":"wellhead-railing_03_hires",
 			"rotation":[
 				-0.5,
 				0.5,
@@ -1480,7 +1480,7 @@
 		},
 		{
 			"mesh":69,
-			"name":"wellhead-railing_04",
+			"name":"wellhead-railing_04_hires",
 			"rotation":[
 				-0.5,
 				0.5,
@@ -1500,7 +1500,7 @@
 		},
 		{
 			"mesh":70,
-			"name":"wellhead-railing_05",
+			"name":"wellhead-railing_05_hires",
 			"rotation":[
 				0,
 				0.7071067094802856,
@@ -1520,7 +1520,7 @@
 		},
 		{
 			"mesh":71,
-			"name":"wellhead-railing_06",
+			"name":"wellhead-railing_06_hires",
 			"rotation":[
 				-0.5,
 				0.5,
@@ -1540,7 +1540,7 @@
 		},
 		{
 			"mesh":72,
-			"name":"wellhead-railing_07",
+			"name":"wellhead-railing_07_hires",
 			"rotation":[
 				-0.5,
 				0.5,
@@ -1560,7 +1560,7 @@
 		},
 		{
 			"mesh":73,
-			"name":"wellhead-railing_08",
+			"name":"wellhead-railing_08_hires",
 			"rotation":[
 				0.7071068286895752,
 				-0.7071068286895752,
@@ -1580,7 +1580,7 @@
 		},
 		{
 			"mesh":74,
-			"name":"wellhead-railing_09",
+			"name":"wellhead-railing_09_hires",
 			"rotation":[
 				-0.5,
 				0.5,
@@ -1600,7 +1600,7 @@
 		},
 		{
 			"mesh":75,
-			"name":"wellhead-railing_10",
+			"name":"wellhead-railing_10_hires",
 			"rotation":[
 				-0.5,
 				0.5,
@@ -1620,7 +1620,7 @@
 		},
 		{
 			"mesh":76,
-			"name":"wellhead-railing_11",
+			"name":"wellhead-railing_11_hires",
 			"rotation":[
 				0.7071068286895752,
 				-0.7071068286895752,
@@ -1640,7 +1640,7 @@
 		},
 		{
 			"mesh":77,
-			"name":"wellhead-railing_12",
+			"name":"wellhead-railing_12_hires",
 			"rotation":[
 				0.7071068286895752,
 				-0.7071068286895752,
@@ -1660,7 +1660,7 @@
 		},
 		{
 			"mesh":78,
-			"name":"wellhead-railing_13",
+			"name":"wellhead-railing_13_hires",
 			"rotation":[
 				0.7071068286895752,
 				-0.7071068286895752,
@@ -1680,7 +1680,7 @@
 		},
 		{
 			"mesh":79,
-			"name":"wellhead-railing_14",
+			"name":"wellhead-railing_14_hires",
 			"rotation":[
 				0,
 				0.7071067094802856,
@@ -1700,7 +1700,7 @@
 		},
 		{
 			"mesh":80,
-			"name":"wellhead-railing_15",
+			"name":"wellhead-railing_15_hires",
 			"rotation":[
 				0,
 				0.7071067094802856,
@@ -1720,7 +1720,7 @@
 		},
 		{
 			"mesh":81,
-			"name":"wellhead-valve",
+			"name":"wellhead-valve_hires",
 			"rotation":[
 				0,
 				-0.6609882116317749,
@@ -1784,7 +1784,7 @@
 		},
 		{
 			"mesh":82,
-			"name":"Pipe_31",
+			"name":"Pipe_31_hires",
 			"rotation":[
 				0,
 				-0.7071068286895752,
@@ -1799,7 +1799,7 @@
 		},
 		{
 			"mesh":83,
-			"name":"Pipe_32",
+			"name":"Pipe_32_hires",
 			"rotation":[
 				0.5000000596046448,
 				0.4999999403953552,
@@ -1819,7 +1819,7 @@
 		},
 		{
 			"mesh":84,
-			"name":"Pipe_33",
+			"name":"Pipe_33_hires",
 			"rotation":[
 				0,
 				0.7071066498756409,
@@ -1834,7 +1834,7 @@
 		},
 		{
 			"mesh":85,
-			"name":"Rusty-metal-frame_03",
+			"name":"Rusty-metal-frame_03_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.4999999403953552,
@@ -1854,7 +1854,7 @@
 		},
 		{
 			"mesh":86,
-			"name":"Rusty-metal-frame_11",
+			"name":"Rusty-metal-frame_11_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.4999999403953552,
@@ -1874,7 +1874,7 @@
 		},
 		{
 			"mesh":87,
-			"name":"Rusty-metal-frame_12",
+			"name":"Rusty-metal-frame_12_hires",
 			"rotation":[
 				-0.70710688829422,
 				0,
@@ -1894,7 +1894,7 @@
 		},
 		{
 			"mesh":88,
-			"name":"Rusty-metal-frame_13",
+			"name":"Rusty-metal-frame_13_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.4999999403953552,
@@ -1936,7 +1936,7 @@
 		},
 		{
 			"mesh":89,
-			"name":"Pipe_47",
+			"name":"Pipe_47_hires",
 			"rotation":[
 				0.5000000596046448,
 				0.4999999403953552,
@@ -1956,7 +1956,7 @@
 		},
 		{
 			"mesh":90,
-			"name":"Pipe_48",
+			"name":"Pipe_48_hires",
 			"rotation":[
 				0,
 				-0.7071068286895752,
@@ -1971,7 +1971,7 @@
 		},
 		{
 			"mesh":91,
-			"name":"Pipe_49",
+			"name":"Pipe_49_hires",
 			"rotation":[
 				0,
 				0.7071066498756409,
@@ -1986,7 +1986,7 @@
 		},
 		{
 			"mesh":92,
-			"name":"Rusty-metal-frame_08",
+			"name":"Rusty-metal-frame_08_hires",
 			"rotation":[
 				-0.70710688829422,
 				0,
@@ -2006,7 +2006,7 @@
 		},
 		{
 			"mesh":93,
-			"name":"Rusty-metal-frame_09",
+			"name":"Rusty-metal-frame_09_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.4999999403953552,
@@ -2026,7 +2026,7 @@
 		},
 		{
 			"mesh":94,
-			"name":"Rusty-metal-frame_10",
+			"name":"Rusty-metal-frame_10_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.4999999403953552,
@@ -2046,7 +2046,7 @@
 		},
 		{
 			"mesh":95,
-			"name":"Rusty-metal-frame_21",
+			"name":"Rusty-metal-frame_21_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.4999999403953552,
@@ -2088,7 +2088,7 @@
 		},
 		{
 			"mesh":96,
-			"name":"Pipe_44",
+			"name":"Pipe_44_hires",
 			"rotation":[
 				0,
 				-0.7071068286895752,
@@ -2103,7 +2103,7 @@
 		},
 		{
 			"mesh":97,
-			"name":"Pipe_45",
+			"name":"Pipe_45_hires",
 			"rotation":[
 				0.5000000596046448,
 				0.4999999403953552,
@@ -2123,7 +2123,7 @@
 		},
 		{
 			"mesh":98,
-			"name":"Pipe_46",
+			"name":"Pipe_46_hires",
 			"rotation":[
 				0,
 				0.7071066498756409,
@@ -2138,7 +2138,7 @@
 		},
 		{
 			"mesh":99,
-			"name":"Rusty-metal-frame_24",
+			"name":"Rusty-metal-frame_24_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.4999999403953552,
@@ -2158,7 +2158,7 @@
 		},
 		{
 			"mesh":100,
-			"name":"Rusty-metal-frame_25",
+			"name":"Rusty-metal-frame_25_hires",
 			"rotation":[
 				-0.70710688829422,
 				0,
@@ -2178,7 +2178,7 @@
 		},
 		{
 			"mesh":101,
-			"name":"Rusty-metal-frame_27",
+			"name":"Rusty-metal-frame_27_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.4999999403953552,
@@ -2198,7 +2198,7 @@
 		},
 		{
 			"mesh":102,
-			"name":"Rusty-metal-frame_28",
+			"name":"Rusty-metal-frame_28_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.4999999403953552,
@@ -2240,7 +2240,7 @@
 		},
 		{
 			"mesh":103,
-			"name":"Pipe_37",
+			"name":"Pipe_37_hires",
 			"rotation":[
 				0,
 				1,
@@ -2255,7 +2255,7 @@
 		},
 		{
 			"mesh":104,
-			"name":"Rusty-metal-frame_04",
+			"name":"Rusty-metal-frame_04_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.5,
@@ -2275,7 +2275,7 @@
 		},
 		{
 			"mesh":105,
-			"name":"Rusty-metal-frame_07",
+			"name":"Rusty-metal-frame_07_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.5,
@@ -2295,7 +2295,7 @@
 		},
 		{
 			"mesh":106,
-			"name":"Rusty-metal-frame_14",
+			"name":"Rusty-metal-frame_14_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.5,
@@ -2315,7 +2315,7 @@
 		},
 		{
 			"mesh":107,
-			"name":"Rusty-metal-frame_15",
+			"name":"Rusty-metal-frame_15_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.5,
@@ -2335,7 +2335,7 @@
 		},
 		{
 			"mesh":108,
-			"name":"Rusty-metal-frame_19",
+			"name":"Rusty-metal-frame_19_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.5,
@@ -2355,7 +2355,7 @@
 		},
 		{
 			"mesh":109,
-			"name":"Rusty-metal-frame_29",
+			"name":"Rusty-metal-frame_29_hires",
 			"rotation":[
 				-0.5000000596046448,
 				0.5,
@@ -3617,7 +3617,7 @@
 			]
 		},
 		{
-			"name":"Mesh.007",
+			"name":"Mesh.007_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3649,7 +3649,7 @@
 			]
 		},
 		{
-			"name":"Mesh.015",
+			"name":"Mesh.015_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3663,7 +3663,7 @@
 			]
 		},
 		{
-			"name":"Mesh.005",
+			"name":"Mesh.005_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3686,7 +3686,7 @@
 			]
 		},
 		{
-			"name":"Mesh.030",
+			"name":"Mesh.030_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3709,7 +3709,7 @@
 			]
 		},
 		{
-			"name":"Mesh.004",
+			"name":"Mesh.004_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3741,7 +3741,7 @@
 			]
 		},
 		{
-			"name":"Mesh.029",
+			"name":"Mesh.029_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3755,7 +3755,7 @@
 			]
 		},
 		{
-			"name":"Mesh.008",
+			"name":"Mesh.008_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3769,7 +3769,7 @@
 			]
 		},
 		{
-			"name":"Mesh.028",
+			"name":"Mesh.028_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3783,7 +3783,7 @@
 			]
 		},
 		{
-			"name":"Mesh.009",
+			"name":"Mesh.009_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3797,7 +3797,7 @@
 			]
 		},
 		{
-			"name":"Mesh.016",
+			"name":"Mesh.016_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3811,7 +3811,7 @@
 			]
 		},
 		{
-			"name":"Mesh.013",
+			"name":"Mesh.013_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3825,7 +3825,7 @@
 			]
 		},
 		{
-			"name":"Mesh.018",
+			"name":"Mesh.018_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3848,7 +3848,7 @@
 			]
 		},
 		{
-			"name":"Mesh.019",
+			"name":"Mesh.019_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3871,7 +3871,7 @@
 			]
 		},
 		{
-			"name":"Mesh.027",
+			"name":"Mesh.027_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3894,7 +3894,7 @@
 			]
 		},
 		{
-			"name":"Mesh.010",
+			"name":"Mesh.010_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3917,7 +3917,7 @@
 			]
 		},
 		{
-			"name":"Mesh.023",
+			"name":"Mesh.023_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3931,7 +3931,7 @@
 			]
 		},
 		{
-			"name":"Mesh.026",
+			"name":"Mesh.026_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3954,7 +3954,7 @@
 			]
 		},
 		{
-			"name":"Mesh.012",
+			"name":"Mesh.012_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -3977,7 +3977,7 @@
 			]
 		},
 		{
-			"name":"Mesh.020",
+			"name":"Mesh.020_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4000,7 +4000,7 @@
 			]
 		},
 		{
-			"name":"Mesh.025",
+			"name":"Mesh.025_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4023,7 +4023,7 @@
 			]
 		},
 		{
-			"name":"Mesh.011",
+			"name":"Mesh.011_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4046,7 +4046,7 @@
 			]
 		},
 		{
-			"name":"Mesh.017",
+			"name":"Mesh.017_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4069,7 +4069,7 @@
 			]
 		},
 		{
-			"name":"Mesh.021",
+			"name":"Mesh.021_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4092,7 +4092,7 @@
 			]
 		},
 		{
-			"name":"Mesh.022",
+			"name":"Mesh.022_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4115,7 +4115,7 @@
 			]
 		},
 		{
-			"name":"Mesh.014",
+			"name":"Mesh.014_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4129,7 +4129,7 @@
 			]
 		},
 		{
-			"name":"Mesh.024",
+			"name":"Mesh.024_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4143,7 +4143,7 @@
 			]
 		},
 		{
-			"name":"Mesh.006",
+			"name":"Mesh.006_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4166,7 +4166,7 @@
 			]
 		},
 		{
-			"name":"Mesh.040",
+			"name":"Mesh.040_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4180,7 +4180,7 @@
 			]
 		},
 		{
-			"name":"Mesh.037",
+			"name":"Mesh.037_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4194,7 +4194,7 @@
 			]
 		},
 		{
-			"name":"Mesh.035",
+			"name":"Mesh.035_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4208,7 +4208,7 @@
 			]
 		},
 		{
-			"name":"Mesh.039",
+			"name":"Mesh.039_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4222,7 +4222,7 @@
 			]
 		},
 		{
-			"name":"Mesh.033",
+			"name":"Mesh.033_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4236,7 +4236,7 @@
 			]
 		},
 		{
-			"name":"Mesh.036",
+			"name":"Mesh.036_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4250,7 +4250,7 @@
 			]
 		},
 		{
-			"name":"Mesh.038",
+			"name":"Mesh.038_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4264,7 +4264,7 @@
 			]
 		},
 		{
-			"name":"Mesh.041",
+			"name":"Mesh.041_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4278,7 +4278,7 @@
 			]
 		},
 		{
-			"name":"Mesh.043",
+			"name":"Mesh.043_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4292,7 +4292,7 @@
 			]
 		},
 		{
-			"name":"Mesh.047",
+			"name":"Mesh.047_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4306,7 +4306,7 @@
 			]
 		},
 		{
-			"name":"Mesh.046",
+			"name":"Mesh.046_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4320,7 +4320,7 @@
 			]
 		},
 		{
-			"name":"Mesh.045",
+			"name":"Mesh.045_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4334,7 +4334,7 @@
 			]
 		},
 		{
-			"name":"Mesh.044",
+			"name":"Mesh.044_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4348,7 +4348,7 @@
 			]
 		},
 		{
-			"name":"Mesh.048",
+			"name":"Mesh.048_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4362,7 +4362,7 @@
 			]
 		},
 		{
-			"name":"Mesh.052",
+			"name":"Mesh.052_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4376,7 +4376,7 @@
 			]
 		},
 		{
-			"name":"Mesh.054",
+			"name":"Mesh.054_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4390,7 +4390,7 @@
 			]
 		},
 		{
-			"name":"Mesh.056",
+			"name":"Mesh.056_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4404,7 +4404,7 @@
 			]
 		},
 		{
-			"name":"Mesh.055",
+			"name":"Mesh.055_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4418,7 +4418,7 @@
 			]
 		},
 		{
-			"name":"Mesh.049",
+			"name":"Mesh.049_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4432,7 +4432,7 @@
 			]
 		},
 		{
-			"name":"Mesh.051",
+			"name":"Mesh.051_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4446,7 +4446,7 @@
 			]
 		},
 		{
-			"name":"Mesh.050",
+			"name":"Mesh.050_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4460,7 +4460,7 @@
 			]
 		},
 		{
-			"name":"Mesh.061",
+			"name":"Mesh.061_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4474,7 +4474,7 @@
 			]
 		},
 		{
-			"name":"Mesh.063",
+			"name":"Mesh.063_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4488,7 +4488,7 @@
 			]
 		},
 		{
-			"name":"Mesh.059",
+			"name":"Mesh.059_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4502,7 +4502,7 @@
 			]
 		},
 		{
-			"name":"Mesh.062",
+			"name":"Mesh.062_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4516,7 +4516,7 @@
 			]
 		},
 		{
-			"name":"Mesh.060",
+			"name":"Mesh.060_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4530,7 +4530,7 @@
 			]
 		},
 		{
-			"name":"Mesh.058",
+			"name":"Mesh.058_hires",
 			"primitives":[
 				{
 					"attributes":{
@@ -4544,7 +4544,7 @@
 			]
 		},
 		{
-			"name":"Mesh.057",
+			"name":"Mesh.057_hires",
 			"primitives":[
 				{
 					"attributes":{
