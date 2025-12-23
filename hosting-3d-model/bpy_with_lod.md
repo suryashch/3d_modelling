@@ -100,7 +100,32 @@ Looking at the results, we see two versions of our object.
 
 ## Adding Modifiers to Meshes
 
+Modifiers like `decimate` are basically instructions that the engine applies to specific meshes to modify them in a certain way. These modifiers do not affect the object in-place, i.e. the original mesh data is retained. On render, the engine applies these modifications and the resulting mesh can be seen in the scene. These instructions are saved to an internal Blender data structure known as a `dependency graph`. 
 
+In order to apply a modifier to a mesh, we must first define it, and then update the `dependency graph` to get the final result. Let's use this workflow along with the previously defined ones to first apply a modifier on an object, then save it's evaluated result to another mesh. This way we can essentially create a duplicate of our object with only a `decimate` modifier applied to it.
+
+I start by defining a `apply_decimate_modifier()` function as follows:
+
+```py
+def apply_decimate_modifier(obj, depsgraph, ratio=0.4):
+    mod = obj.modifiers.new(name='Decimate', type="DECIMATE")
+    mod.ratio = ratio
+    
+    depsgraph.update()
+    
+    obj_eval = obj.evaluated_get(depsgraph)
+    
+    me = bpy.data.meshes.new_from_object(
+            obj_eval, 
+            preserve_all_data_layers=True, 
+            depsgraph=depsgraph
+        )
+    
+    me.name = f"{obj.data.name}_copy"
+    
+    obj.modifiers.remove(mod)
+    return me
+```
 
 
 
