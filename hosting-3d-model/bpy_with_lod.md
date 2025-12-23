@@ -97,6 +97,8 @@ Looking at the results, we see two versions of our object.
 
 ![Duplicated Object in Blender Using bpy](img/duplicated-object-using-bpy.png)
 
+An important consideration. We cannot save our newly created object to the same collection, as we will run into an infinite loop. Blender will continue looping through the newly created objects in the scene. Here I am just saving the new objects to the default scene tree.
+
 
 ## Adding Modifiers to Meshes
 
@@ -127,6 +129,47 @@ def apply_decimate_modifier(obj, depsgraph, ratio=0.4):
     return me
 ```
 
+Here we first define our modifier object `mod`. It's important to note that this modifier is linked specifically to our passed object. We can apply other modifiers on this object if needed, but they will be limited in scope only to this object.
+
+Once the modifier is defined, we call `depsgraph.update()` to re-render the scene (without UI updating), and get our evaluated object from the end of the `depsgraph`. The resulting mesh data is copied and saved to a variable `me`, and given a name `f{obj.name}_copy`.
+
+As a last step, we remove the `decimate` modifier from our original object, as a cleanup.
+
+We return the newly created mesh back to the main function.
+
+Here is what the main loop looks like:
+
+```py
+dg = bpy.context.evaluated_depsgraph_get()
+collection = bpy.data.collections.get('test')
+
+if collection:
+    for obj in collection.objects:
+        if obj.type == 'MESH':
+            me = apply_decimate_modifier(obj, dg, 0.4)
+            
+            new_ob = bpy.data.objects.new(f"{obj.name}_copy", me)
+            
+            new_ob.matrix_world = obj.matrix_world
+            
+            context.scene.collection.objects.link(new_ob)
+```
+
+A few new considerations. We define our `dependency graph` as `dg`, and pass this into the `apply_decimate_modifier` function. The rest of the script works mainly the same as shown in previous sections.
+
+Another key consideration, `obj_eval` only exists in memory and needs to be linked to the scene as a last step. That's where these two code lines come into play:
+
+```py
+new_ob = bpy.data.objects.new(f"{obj.name}_copy", me)
+            
+context.scene.collection.objects.link(new_ob)
+```
+
+The last few lines of the main loop, these code blocks, first create a new object to save our newly created mesh, then links the object to the main scene tree such that its visible in the scene.
+
+Here are the results of this test run.
+
+![Decimated copy of mesh](img/decimated-copy-bpy.png)
 
 
 ### References
