@@ -43,26 +43,66 @@ scene.add(light_1);
 const gridHelper = new THREE.GridHelper( 40, 20 ); // ( size, divisions )
 scene.add( gridHelper );
 
-const loader = new GLTFLoader().setPath('models/piperack/');
+const loader = new GLTFLoader();
 
-const lod = new THREE.LOD();
-lod.position.set(-8,1,-4);
-scene.add(lod);
+loader.load('models/piperack/piperacks_lod_merged.glb', (gltf) => {
+    const gltfScene = gltf.scene;
+    const lodMap = new Map();
 
-loader.load('piperacks_lod-100.glb', (gltf) => {
-    const highResMesh = gltf.scene;
-    lod.addLevel(highResMesh, 0);
+    gltfScene.traverse((child) => {
+        if (child.isMesh) {
+            const [object, version] = child.name.split('_');
+
+            if (!lodMap.has(object)) {
+                lodMap.set(object, { high: null, low: null });
+            }
+            
+            const group = lodMap.get(object);
+            if (version === 'hires') group.high = child;
+            if (version === 'lowres') group.low = child;
+        }
+    });
+
+    lodMap.forEach((meshes, name) => {
+        if (meshes.high && meshes.low) {
+            const lod = new THREE.LOD();
+
+            // Add High Quality: Visible from 0 to 15 units
+            lod.addLevel(meshes.high, 0);
+
+            // Add Low Quality: Visible from 15 units onwards
+            lod.addLevel(meshes.low, 15);
+
+            // Position the LOD object where the original was
+            lod.position.copy(meshes.high.position);
+            
+            lod.position.set(-8,1,-4);
+            // Add to your main scene
+            scene.add(lod);
+        }
+    });
 })
 
-loader.load('piperacks_lod-10.glb', (gltf) => {
-    const medResMesh = gltf.scene;
-    lod.addLevel(medResMesh, 30);
-})
+// const loader = new GLTFLoader().setPath('models/piperack/');
 
-loader.load('piperacks_lod-04.glb', (gltf) => {
-    const lowResMesh = gltf.scene;
-    lod.addLevel(lowResMesh, 50);
-})
+// const lod = new THREE.LOD();
+// lod.position.set(-8,1,-4);
+// scene.add(lod);
+
+// loader.load('piperacks_lod-100.glb', (gltf) => {
+//     const highResMesh = gltf.scene;
+//     lod.addLevel(highResMesh, 0);
+// })
+
+// loader.load('piperacks_lod-10.glb', (gltf) => {
+//     const medResMesh = gltf.scene;
+//     lod.addLevel(medResMesh, 30);
+// })
+
+// loader.load('piperacks_lod-04.glb', (gltf) => {
+//     const lowResMesh = gltf.scene;
+//     lod.addLevel(lowResMesh, 50);
+// })
 
 function animate() {
     requestAnimationFrame(animate);

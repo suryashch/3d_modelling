@@ -11,3 +11,9 @@ The model we are working with is a [GLTF](analysis_threejs.md) export from `Blen
 ![Low and High Res Mesh Superposed](img/hi-res-low-res-copy.png)
 
 
+
+
+## Traversing the Scene
+
+
+
