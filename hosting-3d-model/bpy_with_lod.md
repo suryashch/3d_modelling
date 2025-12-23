@@ -1,4 +1,4 @@
-# Understanding LOD Compression with Blender API
+# Understanding LOD Compression with Blender API (bpy)
 
 Blender's API allows you to modify objects in a scene in bulk. This is useful for BIM models that tend to have lots of objects. I would like to use the API to eventually build a pipeline that compresses our model down into lower `Level of Detail` (LOD), such that our rendering engine can swap between low res, med res and hi res versions of the same object on the fly. To do so, we will be using the Blender API library `bpy`.
 
@@ -170,6 +170,22 @@ The last few lines of the main loop, these code blocks, first create a new objec
 Here are the results of this test run.
 
 ![Decimated copy of mesh](img/decimated-copy-bpy.png)
+
+
+## Data Management
+
+An important consideration here will be to manage our data accurately. We want our scene tree to be navigable by both humans and computers. The goal with this tree will be to mimic what the `selection tree` may look like in a BIM project, except with two meshes at the leaf node- one for high resolution , one for low. Here is what the ideal tree will look like:
+
+![Ideal Scene Tree](img/scene-tree-ideal.png){width=30%}
+
+For testing purposes, let's try to simplify it down to this. Still navigable, at the expense of being slightly less readable.
+
+![Working Scene Tree](img/scene-tree-working.png){width=30%}
+
+
+
+
+
 
 
 ### References
