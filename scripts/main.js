@@ -36,68 +36,75 @@ const groundMaterial = new THREE.MeshStandardMaterial({
     side: THREE.DoubleSide
 });
 
-const light_1 = new THREE.AmbientLight(0xffffff, 1.0);
+const light_1 = new THREE.AmbientLight(0xffffff, 0.25);
 scene.add(light_1);
 
 const gridHelper = new THREE.GridHelper( 40, 20 ); // ( size, divisions )
 scene.add( gridHelper );
 
-// const loader = new GLTFLoader();
-
-// loader.load('models/piperack/piperacks_lod_working_1.glb', (gltf) => {
-//     const gltfScene = gltf.scene;
-//     const lodMap = new Map();
-
-//     gltfScene.traverse((child) => {
-//         if (child.isMesh) {
-//             const [object, version] = child.name.split(';');
-
-//             if (!lodMap.has(object)) {
-//                 lodMap.set(object, { high: null, low: null });
-//             }
-            
-//             const me = lodMap.get(object);
-//             if (version === 'hires') me.high = child;
-//             if (version === 'lowres') me.low = child;
-//         }
-//     });
-
-//     lodMap.forEach((meshes, name) => {
-//         if (meshes.high && meshes.low) {
-//             const lod = new THREE.LOD();
-
-//             meshes.high.updateWorldMatrix(true, true);
-
-//             const worldPos = new THREE.Vector3();
-//             meshes.high.getWorldPosition(worldPos);
-//             lod.position.copy(worldPos);
-
-//             meshes.high.position.set(0,0,0);
-//             meshes.low.poition.set(0,0,0);
-
-//             // Add High Quality: Visible from 0 to 15 units
-//             lod.addLevel(meshes.high, 0);
-
-//             // Add Low Quality: Visible from 15 units onwards
-//             lod.addLevel(meshes.low, 15);
-
-//             // // Position the LOD object where the original was
-//             // lod.position.copy(meshes.high.position);
-            
-//             // lod.position.set(0,0,0) //(-8,1,-4);
-//             // Add to your main scene
-//             scene.add(lod);
-//         }
-//     });
-// })
-
-
-
-
 const loader = new GLTFLoader();
-loader.load('../models/piperack/piperacks_lod_working_1.glb', (gltf) => {
-    console.log(gltf.scene.children)
+
+loader.load('models/piperack/piperacks_lod_working_1.glb', (gltf) => {
+    const gltfScene = gltf.scene;
+    // const lodMap = new Map();
+
+    gltfScene.traverse((child) => {
+        if (child.name.startsWith("Pipe_")) {
+            const mesh = child;
+            scene.attach(mesh)
+        }
+    })
+
+    // gltfScene.traverse((child) => {
+    //     if (child.isMesh) {
+    //         const [object, version] = child.name.split(';');
+
+    //         if (!lodMap.has(object)) {
+    //             lodMap.set(object, { high: null, low: null });
+    //         }
+            
+    //         const me = lodMap.get(object);
+    //         if (version === 'hires') me.high = child;
+    //         if (version === 'lowres') me.low = child;
+    //     }
+    // });
+
+    // lodMap.forEach((meshes, name) => {
+    //     if (meshes.high && meshes.low) {
+    //         const lod = new THREE.LOD();
+
+    //         meshes.high.updateWorldMatrix(true, true);
+
+    //         const worldPos = new THREE.Vector3();
+    //         meshes.high.getWorldPosition(worldPos);
+    //         lod.position.copy(worldPos);
+
+    //         meshes.high.position.set(0,0,0);
+    //         meshes.low.poition.set(0,0,0);
+
+    //         // Add High Quality: Visible from 0 to 15 units
+    //         lod.addLevel(meshes.high, 0);
+
+    //         // Add Low Quality: Visible from 15 units onwards
+    //         lod.addLevel(meshes.low, 15);
+
+    //         // // Position the LOD object where the original was
+    //         // lod.position.copy(meshes.high.position);
+            
+    //         // lod.position.set(0,0,0) //(-8,1,-4);
+    //         // Add to your main scene
+    //         scene.add(lod);
+    //     }
+    // });
 })
+
+
+
+
+// const loader = new GLTFLoader();
+// loader.load('../models/piperack/piperacks_lod_working_1.glb', (gltf) => {
+//     console.log(gltf.scene.children)
+// })
 
 
 
