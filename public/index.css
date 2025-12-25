@@ -1,0 +1,44 @@
+/* Basic Reset to remove default browser margins */
+body, h1, p {
+    margin: 0;
+    padding: 0;
+}
+
+/* General Body Styling */
+body {
+    font-family: sans-serif; /* Use a common, readable font */
+    background-color: #f4f4f4; /* Light gray background */
+    color: #333; /* Dark gray text color */
+    line-height: 1.6; /* Improve readability with line spacing */
+    padding: 20px;
+}
+
+/* Header Styling */
+header {
+    background-color: #007BFF; /* Blue header background */
+    color: white; /* White text for contrast */
+    padding: 1rem 0; /* Some padding top and bottom */
+    text-align: center; /* Center the text */
+    margin-bottom: 20px;
+}
+
+/* Main Content Styling */
+main {
+    background: white; /* White background for the content area */
+    padding: 20px;
+    border-radius: 5px; /* Optional: adds rounded corners */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Optional: adds a subtle shadow */
+}
+
+/* Footer Styling */
+footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #777;
+}
+
+/* Example of a basic CSS rule syntax: */
+p {
+    font-size: 1rem; /* property: value; */
+}
