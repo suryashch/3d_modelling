@@ -36,8 +36,8 @@ const groundMaterial = new THREE.MeshStandardMaterial({
     side: THREE.DoubleSide
 });
 
-const light_1 = new THREE.DirectionalLight(0xffffff, 1);
-light_1.position.set(15, 15, 15);
+const light_1 = new THREE.DirectionalLight(0xffffff, 0.5);
+light_1.position.set(200,200,200)
 scene.add(light_1);
 
 const gridHelper = new THREE.GridHelper( 40, 20 ); // ( size, divisions )
@@ -104,10 +104,10 @@ loader.load('models/piperack/piperacks_lod_merged.glb', (gltf) => {
 //     lod.addLevel(lowResMesh, 50);
 // })
 
-function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
-};
+// function animate() {
+//     requestAnimationFrame(animate);
+//     controls.update();
+//     renderer.render(scene, camera);
+// };
 
 animate();
