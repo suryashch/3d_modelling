@@ -102,20 +102,20 @@ If the condition was not included, the function would check to see if the first 
 
 This method will work well to apply live filters to our objects in the scene, which we shall revisit later.
 
-To drive the conceptual understanding home, I perform the same function above, but only filtering for steel items. In my model, these items are called `Rusty-metal-frame`.
+To drive the conceptual understanding home, I perform the same function above, but only filtering for items whose names end with `hires` or `lowres` respectively.
 
 ```js
 gltfScene.traverse((child) => {
-    if (child.isMesh && !child.name.startsWith("Rusty-metal-frame")) {
+    if (child.isMesh && child.name.startsWith("hires")) { // "lowres"
         const mesh = child;
         mesh.visible = false
     }
 })
 ```
 
-![Traverse function results for only steel](img/traverse-steel-basic.png)
+![Traverse function results for high and lowres](img/traverse-hires-lowres.png)
 
-This is now working as expected.
+We note the familiar pointed circles on the cross section of the pipe from the `decimate` modifier, implying that this is now working as expected.
 
 ## LOD Control
 
