@@ -152,5 +152,9 @@ The results are even clearer if we change the color of the base mesh. Here I set
 
 We can clearly see that the active LOD model is dynamically being switched, but by syncing the positions of the mesh we create the illusion that the model is getting more detailed as we zoom in.
 
+## Oonclusion
 
+LOD control in ThreeJS is a useful tool to improve performance. This template code can be copied to larger models to improve the performance of navigating around. This is useful when we have a lot of different objects in the scene and require the individual control over each one.
+
+In future work, I shall explore per object LOD control in a large 3d model and measure the performance to see how much it improves.
 
