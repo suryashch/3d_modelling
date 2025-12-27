@@ -174,13 +174,13 @@ Here are the results of this test run.
 
 ## Data Management
 
-An important consideration here will be to manage our data accurately. We want our scene tree to be navigable by both humans and computers. The goal with this tree will be to mimic what the `selection tree` may look like in a BIM project, except with two meshes at the leaf node- one for high resolution , one for low. Here is what the ideal tree will look like:
+An important consideration here will be to manage our data accurately. We want our scene tree to be navigable by both humans and computers. The goal with this tree will be to mimic what the `selection tree` may look like in a BIM project, except with two meshes at the leaf node- one for high resolution , one for low. Here is what the ideal tree will look like this.
 
-![Ideal Scene Tree](img/scene-tree-ideal.png){width=30%}
+![Ideal Scene Tree](img/scene-tree-ideal.png){width=20%}
 
 For testing purposes, let's try to simplify it down to this. Still navigable, at the expense of being slightly less readable.
 
-![Working Scene Tree](img/scene-tree-working.png){width=30%}
+![Working Scene Tree](img/scene-tree-working.png){width=20%}
 
 Test
 
