@@ -46,12 +46,15 @@ const loader = new GLTFLoader();
 
 loader.load('models/piperack/piperacks_lod_working_1.glb', (gltf) => {
     const gltfScene = gltf.scene;
+    console.log(gltfScene)
     // const lodMap = new Map();
 
+    scene.add(gltfScene)
+
     gltfScene.traverse((child) => {
-        if (child.name.startsWith("Pipe_")) {
+        if (child.isMesh && !child.name.startsWith("Pipe_")) {
             const mesh = child;
-            scene.attach(mesh)
+            mesh.visible = false
         }
     })
 

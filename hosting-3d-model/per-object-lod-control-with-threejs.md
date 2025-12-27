@@ -50,3 +50,34 @@ The `.traverse` method accepts a callback function, to which we pass our row con
 
 We then define our `mesh` object as the specific mesh which our model is currently on, and add that mesh to the scene.
 
+We run into some problems here. When I try this method, the function breaks and does not load our selection properly to the screen.
+
+```js
+gltfScene.traverse((child) => {
+    if (child.name.startsWith("Pipe_")) {
+        const mesh = child;
+        scene.add(mesh)
+    }
+})
+```
+
+Looking into the `threejs` [docs](https://threejs.org/docs/#Object3D.traverse) for the `.traverse` method we see it explicitly says not to modify the scene graph within the callback function. In our current development, we are calling `scene.add(mesh)` which edits the scene graph and breaks the iterative integrity of the traversal loop.
+
+/* why did the code block above work then? */ 
+
+Another option, and temporary fix would be to load our entire model to scene and use `.traverse` to manage which objects are visible at any time (instead of adding the entire object to scene). We try that here.
+
+```js
+gltfScene.traverse((child) => {
+    if (child.isMesh && !child.name.startsWith("Pipe_")) {
+        const mesh = child;
+        mesh.visible = false
+    }
+})
+
+```
+
+
+
+
+
