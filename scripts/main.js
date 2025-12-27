@@ -50,13 +50,13 @@ const loader = new GLTFLoader();
 
 loader.load('models/piperack/piperacks_lod_working_1.glb', (gltf) => {
     const gltfScene = gltf.scene;
-    console.log(gltfScene)
+    console.log(gltfScene.children)
     // const lodMap = new Map();
 
     scene.add(gltfScene)
 
     gltfScene.traverse((child) => {
-        if (child.isMesh && !child.name.startsWith("Pipe_")) {
+        if (child.isMesh && !child.name.startsWith("Rusty-metal-frame")) {
             const mesh = child;
             mesh.visible = false
         }

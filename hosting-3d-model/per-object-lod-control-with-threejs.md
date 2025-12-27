@@ -10,8 +10,11 @@ The model we are working with is a [GLTF](analysis_threejs.md) export from `Blen
 
 ![Low and High Res Mesh Superposed](img/hi-res-low-res-copy.png)
 
-The structure of the data here is key, as this is what will give us the ability to traverse the model's different objects. I have specifically defined the naming convention for this object, wherein for both the low and high resolution of mesh, the object name is the same, the only appendage is the string `hires` and `lowres`.
+When defining the LOD objects, we will need a way to accurately identify the same object's low and hires meshes. The structure of the data here is key, as this is what will give us the ability to traverse the model's different objects. I have specifically defined the naming convention for this object, wherein for both the low and high resolution of mesh, the object name is the same, the only appendage is the string `hires` and `lowres`.
 
+
+
+First, we need a reliable way to traverse our scene.
 
 ## Traversing the Scene
 
@@ -87,6 +90,26 @@ In this code block, the key thing to keep in mind is that we first need to check
 
 If the condition was not included, the function would check to see if the first object in the entire scene tree had the string 'Pipe_' in it. Since most likely not, it would have set that object's `.visible` property to `false`. Our meshes are set up as children of these objects, and are structured to inherit properties from their parents. Setting the parent's property to `.visible = false` would have set the same for all children. `child.isMesh` ensures that we only work with leaf nodes.
 
+This method will work well to apply live filters to our objects in the scene, which we shall revisit later.
+
+To drive the conceptual understanding home, I perform the same function above, but only filtering for steel items. In my model, these items are called `Rusty-metal-frame`.
+
+```js
+gltfScene.traverse((child) => {
+    if (child.isMesh && !child.name.startsWith("Rusty-metal-frame")) {
+        const mesh = child;
+        mesh.visible = false
+    }
+})
+```
+
+![Traverse function results for only steel](img/traverse-steel-basic.png)
+
+This is now working as expected.
+
+## LOD Control
+
+Let's tackle the main issue in this endeavour- loading low and high resolution versions of the same mesh to scene and dynamically switching between them based the user's distance from the camera.
 
 
 
