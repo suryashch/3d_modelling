@@ -102,7 +102,7 @@ An important consideration. We cannot save our newly created object to the same 
 
 ## Adding Modifiers to Meshes
 
-Modifiers like `decimate` are basically instructions that the engine applies to specific meshes to modify them in a certain way. These modifiers do not affect the object in-place, i.e. the original mesh data is retained. On render, the engine applies these modifications and the resulting mesh can be seen in the scene. These instructions are saved to an internal Blender data structure known as a `dependency graph`. 
+Modifiers like `decimate` are basically instructions that the engine applies to specific meshes to modify them in a certain way. These modifiers do not affect the object in-place, i.e. the original mesh data is retained. On render, the engine applies these modifications and the resulting mesh can be seen in the scene. These instructions are saved to an internal Blender data structure known as a `dependency graph`.
 
 In order to apply a modifier to a mesh, we must first define it, and then update the `dependency graph` to get the final result. Let's use this workflow along with the previously defined ones to first apply a modifier on an object, then save it's evaluated result to another mesh. This way we can essentially create a duplicate of our object with only a `decimate` modifier applied to it.
 
@@ -182,7 +182,7 @@ For testing purposes, let's try to simplify it down to this. Still navigable, at
 
 ![Working Scene Tree](img/scene-tree-working.png){width=30%}
 
-
+Test
 
 
 
