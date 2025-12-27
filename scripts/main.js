@@ -21,7 +21,7 @@ camera.position.set(40,20,50);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = true;
-controls.minDistance=5;
+controls.minDistance=1;
 controls.maxDistance=100;
 controls.minPolarAngle=0.5;
 controls.maxPolarAngle=1.5;
@@ -48,19 +48,41 @@ scene.add( gridHelper );
 
 const loader = new GLTFLoader();
 
-loader.load('models/piperack/piperacks_lod_working_1.glb', (gltf) => {
+loader.load('models/foot/foot-mesh-LOD.glb', (gltf) => {
     const gltfScene = gltf.scene;
-    console.log(gltfScene.children)
-    // const lodMap = new Map();
+    const lod = new THREE.LOD()
 
-    scene.add(gltfScene)
+    console.log(gltfScene)
+
+    const hires_meshes = []
+    const medres_meshes = []
+    const lowres_meshes = []
 
     gltfScene.traverse((child) => {
-        if (child.isMesh && !child.name.endsWith("hires")) {
-            const mesh = child;
-            mesh.visible = false
+        if (child.isMesh) {
+            if (child.name.endsWith("hires")) {
+                hires_meshes.push(child)
+            } else if (child.name.endsWith("medres")) {
+                medres_meshes.push(child)
+            } else {
+                lowres_meshes.push(child)
+            }
         }
     })
+
+    hires_meshes.forEach((mesh) => {
+        lod.addLevel(mesh, 0)
+    })
+
+    medres_meshes.forEach((mesh) => {
+        lod.addLevel(mesh, 5)
+    })
+
+    lowres_meshes.forEach((mesh) => {
+        lod.addLevel(mesh, 10)
+    })
+
+    scene.add(lod)
 
     // gltfScene.traverse((child) => {
     //     if (child.isMesh) {
