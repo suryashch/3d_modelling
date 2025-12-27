@@ -44,9 +44,7 @@ First, we need a reliable way to traverse our scene.
 
 ## Traversing the Scene
 
-The first step is to get comfortable with traversing our scene tree in js. Since we're working with `.glb` files, the data we need will be saved in the `scene` object. 
-
-Basic scene traversal is done using the `.traverse` method.
+Basic scene traversal is done using the `.traverse` method. The root node of our object is usually called `scene`, and we shall assign that path to a variable `gltfScene`.
 
 ```js
 loader.load('models/piperack/piperacks_lod_working_1.glb', (gltf) => {
