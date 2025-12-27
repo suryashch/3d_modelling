@@ -50,7 +50,7 @@ const loader = new GLTFLoader();
 
 loader.load('models/piperack/piperacks_lod_working_1.glb', (gltf) => {
     const gltfScene = gltf.scene;
-    console.log(gltfScene.children)
+    console.log(gltfScene)
     // const lodMap = new Map();
 
     scene.add(gltfScene)

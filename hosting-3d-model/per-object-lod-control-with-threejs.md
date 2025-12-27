@@ -6,19 +6,13 @@ Let's see if we can implement this using our `piperacks` model.
 
 ## Setting the Scene
 
-The model we are working with is a [GLTF](analysis_threejs.md) export from `Blender`. Using the [Decimate](../reducing-mesh-density/analysis_decimate.md) technique, we were able to supoerpose two versions of the model on top of one another, one `lowres` and one `highres`. This is illustrarted in the figure below. The object has been moved to the side to show the superposition.
+The model we are working with is a [GLTF](analysis_threejs.md) export from `Blender`. Using the [Decimate](../reducing-mesh-density/analysis_decimate.md) technique, we were able to superpose two versions of the model on top of one another, one `lowres` and one `highres`. This is illustrarted in the figure below. The object has been moved to the side to show the superposition.
 
 ![Low and High Res Mesh Superposed](img/hi-res-low-res-copy.png)
 
 When defining the LOD objects, we will need a way to accurately identify the same object's low and hires meshes. The structure of the data here is key, as this is what will give us the ability to traverse the model's different objects. I have specifically defined the naming convention for this object, wherein for both the low and high resolution of mesh, the object name is the same, the only appendage is the string `hires` and `lowres`.
 
-
-
-First, we need a reliable way to traverse our scene.
-
-## Traversing the Scene
-
-The first step is to get comfortable with traversing our scene tree in js. Since we're working with `.glb` files, the data we need will be saved in the `scene` object. We can view what the glb file looks like by outputing its contents to the console. Here I show the basic code needed, to view the contents of our glb file.
+First, we need to get comfortable with nagivating around our 3D model file. We can view what the glb file looks like by outputing its contents to the console. Here I show the basic code needed, to view the contents of our glb file.
 
 ```js
 const loader = new GLTFLoader();
@@ -28,11 +22,29 @@ loader.load('../models/piperack/piperacks_lod_working_1.glb', (gltf) => {
 })
 ```
 
-We define our `loader` object with is an instance of the `GLTFLoader()` class. We then load our model by providing the full path to the `loader.load` function. We have the opportunity to pass a callback function, to which we pass our row context as `gltf`. Calling `console.log()` will print stuff to the browser's console window. This can be accessed by right clicking on the webpage and selecting `inspect`.
+We define our `loader` object which is an instance of the `GLTFLoader()` class. We then load our model by providing the full path to the `loader.load()` function. We have the opportunity to pass a callback function, to which we pass our row context as `gltf`. Calling `console.log()` will print stuff to the browser's console window. This can be accessed by right clicking on the webpage and selecting `inspect`.
 
 Calling this `gltf.scene` object will print the contents of the binary file to the sceen. I show here a screenshot of what this might look like.
 
+![Viewing the Scene metadata in console](img/glb-file-scene.png)
+
+We can go one step down, and view the children of our high level `scene` object.
+
+```js
+loader.load('../models/piperack/piperacks_lod_working_1.glb', (gltf) => {
+    console.log(gltf.scene.children)
+})
+```
+
 ![Contents of a GLB file](img/glb-file-contents.png)
+
+The metadata is stored in `JSON` style format. We can see data about the transformations (`position`, `scale`, `rotation`), as well as data about the `material`, `uuid`, and others. This will be useful down the line.
+
+First, we need a reliable way to traverse our scene.
+
+## Traversing the Scene
+
+The first step is to get comfortable with traversing our scene tree in js. Since we're working with `.glb` files, the data we need will be saved in the `scene` object. 
 
 Basic scene traversal is done using the `.traverse` method.
 
