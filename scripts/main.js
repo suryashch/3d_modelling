@@ -39,6 +39,10 @@ const groundMaterial = new THREE.MeshStandardMaterial({
 const light_1 = new THREE.AmbientLight(0xffffff, 0.25);
 scene.add(light_1);
 
+const light_2 = new THREE.DirectionalLight(0xffffff, 0.25);
+light_2.position.set(10,10,10)
+scene.add(light_2);
+
 const gridHelper = new THREE.GridHelper( 40, 20 ); // ( size, divisions )
 scene.add( gridHelper );
 

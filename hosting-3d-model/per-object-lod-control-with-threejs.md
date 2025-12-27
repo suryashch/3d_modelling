@@ -77,6 +77,15 @@ gltfScene.traverse((child) => {
 
 ```
 
+Here are our results.
+
+![Traverse function results for only pipes](img/traverse-pipes-basic.png)
+
+As expected, we get only the results that start with the string 'Pipe_'.
+
+In this code block, the key thing to keep in mind is that we first need to check if the child is a mesh using `child.isMesh`. This addition specifies to the `.traverse` function that we are currently working with a leaf node. 
+
+If the condition was not included, the function would check to see if the first object in the entire scene tree had the string 'Pipe_' in it. Since most likely not, it would have set that object's `.visible` property to `false`. Our meshes are set up as children of these objects, and are structured to inherit properties from their parents. Setting the parent's property to `.visible = false` would have set the same for all children. `child.isMesh` ensures that we only work with leaf nodes.
 
 
 
