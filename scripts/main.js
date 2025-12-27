@@ -58,9 +58,18 @@ loader.load('models/foot/foot-mesh-LOD.glb', (gltf) => {
     const medres_meshes = []
     const lowres_meshes = []
 
+    let hires_pos = null
+    let hires_rot = null
+    let hires_scale = null
+
     gltfScene.traverse((child) => {
-        if (child.isMesh) {
+        if (child.isMesh) {        
+            
             if (child.name.endsWith("hires")) {
+                hires_pos = child.position
+                hires_rot = child.rotation
+                hires_scale = child.scale
+                
                 hires_meshes.push(child)
             } else if (child.name.endsWith("medres")) {
                 medres_meshes.push(child)
@@ -75,14 +84,21 @@ loader.load('models/foot/foot-mesh-LOD.glb', (gltf) => {
     })
 
     medres_meshes.forEach((mesh) => {
+        mesh.position.copy(hires_pos)
+        mesh.rotation.copy(hires_rot)
+        mesh.scale.copy(hires_scale)
         lod.addLevel(mesh, 5)
     })
 
     lowres_meshes.forEach((mesh) => {
+        mesh.position.copy(hires_pos)
+        mesh.rotation.copy(hires_rot)
+        mesh.scale.copy(hires_scale)
         lod.addLevel(mesh, 10)
     })
 
     scene.add(lod)
+    // scene.add(gltfScene)
 
     // gltfScene.traverse((child) => {
     //     if (child.isMesh) {
