@@ -106,7 +106,7 @@ To drive the conceptual understanding home, I perform the same function above, b
 
 ```js
 gltfScene.traverse((child) => {
-    if (child.isMesh && child.name.startsWith("hires")) { // "lowres"
+    if (child.isMesh && child.name.endsWith("hires")) { // "lowres"
         const mesh = child;
         mesh.visible = false
     }

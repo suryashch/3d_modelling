@@ -22,7 +22,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = true;
 controls.minDistance=1;
-controls.maxDistance=100;
+controls.maxDistance=1000;
 controls.minPolarAngle=0.5;
 controls.maxPolarAngle=1.5;
 controls.autoRotate=false;
@@ -48,56 +48,90 @@ scene.add( gridHelper );
 
 const loader = new GLTFLoader();
 
-loader.load('models/foot/foot-mesh-LOD.glb', (gltf) => {
+loader.load('models/piperack/piperacks_lod_working_1.glb', (gltf) => {
     const gltfScene = gltf.scene;
-    const lod = new THREE.LOD()
 
     console.log(gltfScene)
 
-    const hires_meshes = []
-    const medres_meshes = []
-    const lowres_meshes = []
-
-    let hires_pos = null
-    let hires_rot = null
-    let hires_scale = null
+    const objects = new Map()
 
     gltfScene.traverse((child) => {
-        if (child.isMesh) {        
-            
-            if (child.name.endsWith("hires")) {
-                hires_pos = child.position
-                hires_rot = child.rotation
-                hires_scale = child.scale
-                
-                hires_meshes.push(child)
-            } else if (child.name.endsWith("medres")) {
-                medres_meshes.push(child)
+        if (child.isMesh) {
+            const [obj, res] = child.name.split(';')
+
+            if (!objects.has(obj)) {
+                objects.set(obj, new Map())
+                objects.get(obj).set(res, child)
+
             } else {
-                lowres_meshes.push(child)
+                objects.get(obj).set(res, child)
             }
         }
     })
 
-    hires_meshes.forEach((mesh) => {
-        lod.addLevel(mesh, 0)
+    console.log(objects)
+
+    objects.forEach((res_map, object_id) => {
+        const lod = new THREE.LOD()
+
+        let hires_pos = res_map.get('hires').position
+        let hires_rot = res_map.get('hires').rotation
+        let hires_scale = res_map.get('hires').scale
+
+        res_map.forEach((mesh, resolution) => {
+            if (resolution === 'hires') {
+                lod.addLevel(mesh, 0)
+            } else {
+                mesh.position.copy(hires_pos)
+                mesh.rotation.copy(hires_rot)
+                mesh.scale.copy(hires_scale)
+                mesh.updateMatrix()
+                lod.addLevel(mesh, 50)
+
+
+            }
+        })
+
+        scene.add(lod)
     })
 
-    medres_meshes.forEach((mesh) => {
-        mesh.position.copy(hires_pos)
-        mesh.rotation.copy(hires_rot)
-        mesh.scale.copy(hires_scale)
-        lod.addLevel(mesh, 5)
-    })
+    // gltfScene.traverse((child) => {
+    //     if (child.isMesh) {        
+            
+    //         if (child.name.endsWith("hires")) {
+    //             hires_pos = child.position
+    //             hires_rot = child.rotation
+    //             hires_scale = child.scale
+                
+    //             hires_meshes.push(child)
+    //         } else if (child.name.endsWith("medres")) {
+    //             medres_meshes.push(child)
+    //         } else {
+    //             lowres_meshes.push(child)
+    //         }
+        
+    //     }
+    // })
 
-    lowres_meshes.forEach((mesh) => {
-        mesh.position.copy(hires_pos)
-        mesh.rotation.copy(hires_rot)
-        mesh.scale.copy(hires_scale)
-        lod.addLevel(mesh, 10)
-    })
+    // hires_meshes.forEach((mesh) => {
+    //     lod.addLevel(mesh, 0)
+    // })
 
-    scene.add(lod)
+    // medres_meshes.forEach((mesh) => {
+    //     mesh.position.copy(hires_pos)
+    //     mesh.rotation.copy(hires_rot)
+    //     mesh.scale.copy(hires_scale)
+    //     lod.addLevel(mesh, 5)
+    // })
+
+    // lowres_meshes.forEach((mesh) => {
+    //     mesh.position.copy(hires_pos)
+    //     mesh.rotation.copy(hires_rot)
+    //     mesh.scale.copy(hires_scale)
+    //     lod.addLevel(mesh, 10)
+    // })
+
+    // scene.add(lod)
     // scene.add(gltfScene)
 
     // gltfScene.traverse((child) => {
