@@ -85,10 +85,8 @@ loader.load('models/piperack/piperacks_lod_working_1.glb', (gltf) => {
                 mesh.position.copy(hires_pos)
                 mesh.rotation.copy(hires_rot)
                 mesh.scale.copy(hires_scale)
-                // mesh.updateMatrix()
+                
                 lod.addLevel(mesh, 50)
-
-
             }
         })
 
