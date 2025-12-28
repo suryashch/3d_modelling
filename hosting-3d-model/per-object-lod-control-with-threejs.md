@@ -119,7 +119,83 @@ We note the familiar pointed circles on the cross section of the pipe from the `
 
 ## LOD Control
 
-Let's tackle the main issue in this endeavour- loading low and high resolution versions of the same mesh to scene and dynamically switching between them based the user's distance from the camera.
+Let's tackle the main issue in this endeavour- loading low and high resolution versions of the same mesh to the scene and dynamically switching between them based the user's distance from the camera.
+
+We build on the work done [here](basic-lod-control-with-threejs.md). 
+
+Instead of arrays, lets work with a `Map()` which stores key value pairs (similar to dictionaries in python).
+
+I wrote this code that creates a `Map()` object to store the individual object names, and then creates another nested map to store the `hires` and `lowres` versions of the mesh.
+
+```js
+const objects = new Map()
+
+gltfScene.traverse((child) => {
+    if (child.isMesh) {
+        const [obj, res] = child.name.split(';')
+
+        if (!objects.has(obj)) {
+            objects.set(obj, new Map())
+            objects.get(obj).set(res, child)
+
+        } else {
+            objects.get(obj).set(res, child)
+        }
+    }
+})
+```
+
+Within the main `traverse()` loop, we are first splitting our object's name into `obj` and `res`. `obj` is the variable to store our object name and `res` is the variable to store the resolution (`lowres` or `hires`). If the object does not exist in our `Map()`, we first create a new entry for the object, and assign its value to be a new `Map()`. Then, in the nested map we set the `res` key to be our 3D object.
+
+The result of this mapping step will create a nested `Map()` that contains object names, and their corresponding `lowres` and `hires` meshes. If we print the results to console, this is what we see.
+
+```js
+console.log(objects)
+```
+
+![`objects` map preliminary results](img/objects-map-prelim-results.png)
+
+We see that each object in our scene is saved as an individual entry in the map, which contains separate values for the lowres and hires meshes.
+
+The next step is to build our LOD containers. The logic behind this step is to create one `LOD` instance per object. Within this instance, the `LOD` will contain two `levels`, one for the `hires` version of the mesh and one for `lowres`.
+
+Here is the main code loop that achieves this.
+
+```js
+objects.forEach((res_map, object_id) => {
+    const lod = new THREE.LOD()
+
+    let hires_pos = res_map.get('hires').position
+    let hires_rot = res_map.get('hires').rotation
+    let hires_scale = res_map.get('hires').scale
+
+    res_map.forEach((mesh, resolution) => {
+        if (resolution === 'hires') {
+            lod.addLevel(mesh, 0)
+        } else {
+            mesh.position.copy(hires_pos)
+            mesh.rotation.copy(hires_rot)
+            mesh.scale.copy(hires_scale)
+            
+            lod.addLevel(mesh, 50)
+        }
+    })
+
+    scene.add(lod)
+})
+```
+
+In this code block, we first loop through each item in our outer `Map()`, to return the key (`object_id`) and value (`res_map`). Here, our `res_map` variable is another map. Before we can loop through the secodn list, we first create an instance of our LOD class, and define variables which contain the `position`, `rotation` and `scale` of our `hires` mesh. This is for superposition purposes, and explained more [here](basic-lod-control-with-threejs.md).
+
+We then loop through our inner map, saving each value to a variable called `mesh`.
+- If the `resolution` is determined to be `hires`, no transformation is needed and we can add the mesh to the LOD level as is.
+- If the `resolution` is `lowres`, we assign the transformation parameters `position`, `rotation` and `scale` to be the variables `hires_pos`, `hires_rot` and `hires_scale` respectively, before adding to our level. We also define the distance threshold to be 50 units.
+
+Here are the results of this code block.
+
+![Piperacks LOD prelim results](img/piperacks-lod-prelim.gif)
+
+Unfortunately, we see some scaling issues. This, I suspect, is due to a global transformation that may exist at one of our object levels, which gets transferred down through the children (as we discussed earlier in this document). However, at a high level glance, we can see that the `LOD` container is working as expected, and we can see that the pipe object changes from low-resolution to high-resolution as we zoom in. This is promising.
 
 
 
