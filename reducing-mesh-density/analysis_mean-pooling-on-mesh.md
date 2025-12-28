@@ -58,6 +58,7 @@ If you would like to see the whole code and process I used to get these results,
 
 Here is a Gif explaining how the Center of Mass function works.
 
+![Mean Pooling GIF](img/mean-pooling.gif)
 
 This step turned out to be quite computationally expensive, so run with caution.
 
