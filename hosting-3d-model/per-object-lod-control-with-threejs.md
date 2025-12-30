@@ -201,6 +201,65 @@ Instead of trying to fix the global transformations, I shall simply bake our [de
 
 One caveat- we cannot bake our objects' location to mesh data as this will remove our ability to control the per-object LOD control. We shall keep these transformations separate. To only apply rotation and scaling transformations to our scene, we select all object in the scene, and type Ctrl A. This will `apply transformations`, and we select the option `rotation and scale` only. This will bake the rotation and scale transformations to our mesh, and will not be accessible later.
 
+We also color code our models so we can quickly see which ones are active at any time. The `red` mesh is our low quality one, and our `green` mesh is the high quality.
+
+![Per Object LOD Control Color Coded](img/per-object-lod-control-mesh-colors.png)
+
+The models have been adjusted for position to show the different colors.
+
+We also tweak our code as follows.
+
+```js
+objects.forEach((res_map, object_id) => {
+    const lod = new THREE.LOD()
+
+    let hires_pos = res_map.get('hires').position
+    let worldPos = new THREE.Vector3();
+    let worldRot = new THREE.Quaternion();
+    let worldScale = new THREE.Vector3();
+    
+    res_map.get('hires').updateMatrixWorld(true)
+
+    res_map.get('hires').matrixWorld.decompose(worldPos, worldRot, worldScale);
+    
+    lod.position.copy(hires_pos)
+    lod.quaternion.copy(worldRot);
+    lod.scale.copy(worldScale);
+
+    res_map.forEach((mesh, resolution) => {
+        mesh.position.set(0, 0, 0);
+        mesh.quaternion.set(0, 0, 0, 1);
+        mesh.scale.set(1, 1, 1);
+
+        if (resolution === 'hires') {
+            lod.addLevel(mesh, 0)
+        } else {
+            lod.addLevel(mesh, 5)
+        }
+    })
+
+    scene.add(lod)
+})
+```
+
+Let's break this down.
+
+We are effectively copying the `location`, `rotation`, and `scale` data from our mesh and applying it to our `LOD` container. The `rotation`, and `scale` data have been baked into the scene, and so we will need to access these from the `worldMatrix`. The variables `worldRot` and `worldScale` contain these values. The location data for each object is saved to our object itself, and so we access it from the object metadata using the `object.position()` attribute.
+
+2 important notes here. You must ensure that there are no nested structures in the scene. For example, if you have objects sitting in groups, you run into the risk of certain transformations being done unknowingly. As discussed above, a child will inherit the tranfromations from a parent regardless of what the `.position` attribute says.
+
+Another note: While `worldPos` is being defined in the code, it is only used for decomposition purposes, and not being used to load our Container.
+
+Once we acquire our necessary transformations, we assign them to our LOD container, using `lod.position.copy()`, `lod.quaternion.copy` and `lod.scale.copy` method. Our LOD now contains all the transformations needed to accurately represent our mesh. As a result, we must reset all the transformations on our meshes to default. This means, location at 0,0,0; rotation at 0,0,0 and scale at 1,1,1.
+
+Once loaded to scene, this is what we're greeted with.
+
+
+
+On load, our scene only shows the low quality mesh (`red`). However, when we zoom into objects, we see that green meshes pop up as we get closer. Not every mesh is green at any one time, and this depends on how far the object is from the camera. This is wxactly the result we wanted.
+
+
+
 
 
 
