@@ -185,7 +185,7 @@ objects.forEach((res_map, object_id) => {
 })
 ```
 
-In this code block, we first loop through each item in our outer `Map()`, to return the key (`object_id`) and value (`res_map`). Here, our `res_map` variable is another map. Before we can loop through the secodn list, we first create an instance of our LOD class, and define variables which contain the `position`, `rotation` and `scale` of our `hires` mesh. This is for superposition purposes, and explained more [here](basic-lod-control-with-threejs.md).
+In this code block, we first loop through each item in our outer `Map()`, to return the key (`object_id`) and value (`res_map`). Here, our `res_map` variable is another map. Before we can loop through the secodn list, we first create an instance of our LOD class, and define variables which contain the `position`, `rotation` and `scale` of our `hires` mesh. This is for superposition purposes, and [explained more here](basic-lod-control-with-threejs.md).
 
 We then loop through our inner map, saving each value to a variable called `mesh`.
 - If the `resolution` is determined to be `hires`, no transformation is needed and we can add the mesh to the LOD level as is.
