@@ -8,7 +8,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x000000);
+renderer.setClearColor("#262837");
 renderer.setPixelRatio(window.devicePixelRatio);
 
 document.body.appendChild(renderer.domElement);
@@ -29,20 +29,9 @@ controls.autoRotate=false;
 controls.target = new THREE.Vector3(0,1,0);
 controls.update()
 
-const groundGeometry = new THREE.PlaneGeometry(60, 60, 2, 2);
-groundGeometry.rotateX(-Math.PI /2);
-const groundMaterial = new THREE.MeshStandardMaterial({
-    color:  0x555555,
-    side: THREE.DoubleSide
-});
-
-// const light_1 = new THREE.AmbientLight(0xffffff, 0xffffff, 1, 1);
-// scene.add(light_1);
-
 const light_2 = new THREE.DirectionalLight(0xffffff, 0.25);
 light_2.position.set(10,10,10)
 scene.add(light_2);
-
 
 const light_3 = new THREE.DirectionalLight(0xffffff, 0.25);
 light_2.position.set(-10,-10,10)
@@ -59,9 +48,26 @@ scene.add(light_5);
 const gridHelper = new THREE.GridHelper( 40, 20 ); // ( size, divisions )
 scene.add( gridHelper );
 
+// const textureLoader = new THREE.TextureLoader()
+// const texture = textureLoader.load("../public/textures/f4b58461da68e01bcafc32e54520a1e1.jpg")
+
+// texture.wrapS = THREE.RepeatWrapping;
+// texture.wrapT = THREE.RepeatWrapping
+
+// texture.repeat.set(5,5)
+
+// const lores_mat = new THREE.MeshBasicMaterial({
+//     color: "#C00000",
+//     map: texture
+// })
+// const hires_mat = new THREE.MeshBasicMaterial({
+//     color: "#37962A",
+//     map: texture
+// })
+
 const loader = new GLTFLoader();
 
-loader.load('models/piperack/piperacks_lod_working_3.glb', (gltf) => {
+loader.load('models/piperack/piperacks_lod_working_3.glb', (gltf) => {    
     const gltfScene = gltf.scene;
 
     const objects = new Map()
@@ -102,8 +108,10 @@ loader.load('models/piperack/piperacks_lod_working_3.glb', (gltf) => {
             mesh.scale.set(1, 1, 1);
 
             if (resolution === 'hires') {
+                // mesh.material = hires_mat
                 lod.addLevel(mesh, 0)
             } else {
+                // mesh.material = lores_mat
                 lod.addLevel(mesh, 5)
             }
         })
