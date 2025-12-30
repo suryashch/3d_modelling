@@ -5,6 +5,19 @@ A repo where I explore how 3D modelling works.
 
 [Link](https://suryashch.github.io/3d_modelling/) to latest hosted version of 3D model.
 
+### Latest Research
+
+[Per Object LOD Control with ThreeJS](https://github.com/suryashch/3d_modelling/blob/main/hosting-3d-model/per-object-lod-control-with-threejs.md)
+This document explains how to set up "Level of Detail" (LOD) for individual objects in a 3D scene using Three.js. It shows how to make the computer switch to a simpler, faster version of an object when it is far away and a detailed version when it is close. This method helps the scene run smoothly by focusing the computer's power only on the things the viewer can see clearly.
+
+[Understanding LOD Compression with Blender API (bpy)](https://github.com/suryashch/3d_modelling/blob/main/hosting-3d-model/bpy_with_lod.md)
+This document demonstrates how to use the Blender Python API (bpy) to automate the creation of multiple Level of Detail (LOD) versions of a 3D model. By scripting the decimation process, it allows for the consistent generation of high, medium, and low-resolution meshes that can be exported for use in web or game engines. This automated approach ensures that all LOD levels are correctly named and organized, significantly reducing the manual effort required to prepare assets for optimized real-time rendering.
+
+[Superposing Models of Different LOD in a Web Based Environment](https://github.com/suryashch/3d_modelling/blob/main/hosting-3d-model/analysis_superposing-models.md)
+This document explains how to put multiple 3D models on top of each other in a web browser using Three.js. It focuses on how to make sure the different models align correctly and stay in the right place even when you move the camera. The guide also covers how to keep the website running fast when using many models at once by managing the computer's memory and processing power efficiently.
+
+--------------------------------------------------------------------------
+
 ### Recommended Reading Order
 
 1) [Reducing Mesh Density of 3D Objects in Blender](https://github.com/suryashch/3d_modelling/blob/main/reducing-mesh-density/analysis_decimate.md)
