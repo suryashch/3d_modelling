@@ -197,7 +197,8 @@ Here are the results of this code block.
 
 Unfortunately, we see some scaling issues. This, I suspect, is due to a global transformation that may exist at one of our object levels, which gets transferred down through the children (as we discussed earlier in this document). However, at a high level glance, we can see that the `LOD` container is working as expected, and we can see that the pipe object changes from low-resolution to high-resolution as we zoom in. This is promising.
 
-## Scaling and Global Transforms
+Instead of trying to fix the global transformations, I shall simply bake our [dependency graph](bpy_with_lod.md) to mesh. By typing selecting `Apply All Tranformations` in Blender, I have effectively baked all the world transformations that may be done to mesh. When I export this glb version to the github, the scale seems to have been fixed.
+
 
 
 
