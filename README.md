@@ -42,4 +42,5 @@ This document demonstrates how to use the Blender Python API (bpy) to automate t
 This document explains how to set up "Level of Detail" (LOD) for individual objects in a 3D scene using Three.js. It shows how to make the computer switch to a simpler, faster version of an object when it is far away and a detailed version when it is close. This method helps the scene run smoothly by focusing the computer's power only on the things the viewer can see clearly.
 
 
+
 * Summaries provided by Gemini Flash
