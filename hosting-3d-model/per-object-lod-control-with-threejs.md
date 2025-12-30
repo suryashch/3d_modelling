@@ -197,7 +197,9 @@ Here are the results of this code block.
 
 Unfortunately, we see some scaling issues. This, I suspect, is due to a global transformation that may exist at one of our object levels, which gets transferred down through the children (as we discussed earlier in this document). However, at a high level glance, we can see that the `LOD` container is working as expected, and we can see that the pipe object changes from low-resolution to high-resolution as we zoom in. This is promising.
 
-Instead of trying to fix the global transformations, I shall simply bake our [dependency graph](bpy_with_lod.md) to mesh. By typing selecting `Apply All Tranformations` in Blender, I have effectively baked all the world transformations that may be done to mesh. When I export this glb version to the github, the scale seems to have been fixed.
+Instead of trying to fix the global transformations, I shall simply bake our [dependency graph](bpy_with_lod.md) to mesh. This will convert all global transformations into object metadata, thereby removing the need to keep track of any scaling, rotation, or translation that is done later.
+
+One caveat- we cannot bake our objects' location to mesh data as this will remove our ability to control the per-object LOD control. We shall keep these transformations separate. To only apply rotation and scaling transformations to our scene, we select all object in the scene, and type Ctrl A. This will `apply transformations`, and we select the option `rotation and scale` only. This will bake the rotation and scale transformations to our mesh, and will not be accessible later.
 
 
 
