@@ -287,6 +287,3 @@ With these refinements in place, we go back to our original scene and the effect
 We have seen that dynamically switching the active mesh in a scene is possible. Through this endeavour, we hvae explored concepts related to `dependency graphs`, global v local transforms, containers, mesh compression and much more. The combined result of these individual concepts and final version of our scene can be found [here](https://suryashch.github.io/3d_modelling/).
 
 Performance gains are still yet to be measured, and further optimization can be done by cleaning our scene tree, working with materials, compressing meshes even more, and editing the swap distance on a per object basis, but for now this looks like a good start.
-
-
-
