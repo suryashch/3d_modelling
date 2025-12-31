@@ -254,9 +254,33 @@ Once we acquire our necessary transformations, we assign them to our LOD contain
 
 Once loaded to scene, this is what we're greeted with.
 
+![First Pass of Working LOD Controlled Model](img/first-working-lod-model.gif)
 
+On load, our scene only shows the low quality mesh (`red`). However, when we zoom into objects, we see that green meshes pop up as we get closer. Not every mesh is green at any one time, and this depends on how far the object is from the camera. This is exactly the result we wanted.
 
-On load, our scene only shows the low quality mesh (`red`). However, when we zoom into objects, we see that green meshes pop up as we get closer. Not every mesh is green at any one time, and this depends on how far the object is from the camera. This is wxactly the result we wanted.
+## Refinements
+
+We notice that certain objects are too long to be accurately affected by the LOD. For example, straight pipes may be several meters long, and as a result won't dynamically switch their LOD until you zoom in right to their center. I will fix this by breaking up these long objects into smaller ones. This serves a dual purpose of measuring performance too since we're increasing the number of unique objects in the scene.
+
+The main piperack in the scene used to be modelled as one continuous object, here we split it up into smaller `spools`.
+
+![Splitting of Long Pipes into Smaller Ones](img/long-pipes-split.png)
+
+Another key consideration would be to change our object's origin point. THe origin can be thought of as the `center of rotation` of an object, and is used to calculate the LOD's distance on rendering to the scene. We need to make sure these origins are accurate, to give the desired effect of "zooming in". To change the object origin, we select all objects in the scene, right click --> Set Origin --> Origin to Geometry.
+
+We should see small orange dots at the center of each object now, implying that our objects have their origin points set up and ready.
+
+Before (Look for orange dot in axes indicator):
+
+![Object's origin Before](img/object-origin-before.png)
+
+After (Each object in the scene has its own origin):
+
+![Object's origin After](img/object-origin-after.png)
+
+With these refinements in place, we go back to our original scene and the effect that these changes had to our final scene.
+
+![Refined LOD Model](img/refined-lod-model.gif)
 
 ## Conclusion
 
