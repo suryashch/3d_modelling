@@ -1,8 +1,7 @@
-// code partially derived from Dan Greenheck https://www.youtube.com/watch?v=aOQuuotM-Ww
-
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import Stats from 'three/addons/libs/stats.module.js'
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -13,20 +12,25 @@ renderer.setPixelRatio(window.devicePixelRatio);
 
 document.body.appendChild(renderer.domElement);
 
+const stats = new Stats();
+stats.showPanel(0);
+
+document.body.appendChild(stats.dom)
+
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-camera.position.set(40,20,50);
+camera.position.set(40,10,25);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+controls.enableDamping = false;
 controls.enablePan = true;
 controls.minDistance=1;
-controls.maxDistance=1000;
+controls.maxDistance=100;
 controls.minPolarAngle=0.5;
 controls.maxPolarAngle=1.5;
 controls.autoRotate=false;
-controls.target = new THREE.Vector3(0,1,0);
+controls.target = new THREE.Vector3(0,0,0);
 controls.update()
 
 const light_2 = new THREE.DirectionalLight(0xffffff, 0.25);
@@ -34,36 +38,19 @@ light_2.position.set(10,10,10)
 scene.add(light_2);
 
 const light_3 = new THREE.DirectionalLight(0xffffff, 0.25);
-light_2.position.set(-10,-10,10)
+light_3.position.set(-10,-10,10)
 scene.add(light_3);
 
 const light_4 = new THREE.DirectionalLight(0xffffff, 0.25);
-light_2.position.set(10,-10,10)
+light_4.position.set(10,-10,10)
 scene.add(light_4);
 
 const light_5 = new THREE.DirectionalLight(0xffffff, 0.25);
-light_2.position.set(-10,10,10)
+light_5.position.set(-10,10,10)
 scene.add(light_5);
 
-const gridHelper = new THREE.GridHelper( 40, 20 ); // ( size, divisions )
+const gridHelper = new THREE.GridHelper( 100, 50 ); // ( size, divisions )
 scene.add( gridHelper );
-
-// const textureLoader = new THREE.TextureLoader()
-// const texture = textureLoader.load("../public/textures/f4b58461da68e01bcafc32e54520a1e1.jpg")
-
-// texture.wrapS = THREE.RepeatWrapping;
-// texture.wrapT = THREE.RepeatWrapping
-
-// texture.repeat.set(5,5)
-
-// const lores_mat = new THREE.MeshBasicMaterial({
-//     color: "#C00000",
-//     map: texture
-// })
-// const hires_mat = new THREE.MeshBasicMaterial({
-//     color: "#37962A",
-//     map: texture
-// })
 
 const loader = new GLTFLoader();
 
@@ -108,10 +95,8 @@ loader.load('models/piperack/piperacks_lod_working_4.glb', (gltf) => {
             mesh.scale.set(1, 1, 1);
 
             if (resolution === 'hires') {
-                // mesh.material = hires_mat
                 lod.addLevel(mesh, 0)
             } else {
-                // mesh.material = lores_mat
                 lod.addLevel(mesh, 5)
             }
         })
@@ -121,9 +106,13 @@ loader.load('models/piperack/piperacks_lod_working_4.glb', (gltf) => {
 })
 
 function animate() {
+    stats.begin();
+
     requestAnimationFrame(animate);
     controls.update();
     renderer.render(scene, camera);
+
+    stats.end();
 };
 
 animate();
