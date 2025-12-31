@@ -67,7 +67,7 @@ scene.add( gridHelper );
 
 const loader = new GLTFLoader();
 
-loader.load('models/piperack/piperacks_lod_working_3.glb', (gltf) => {    
+loader.load('models/piperack/piperacks_lod_working_4.glb', (gltf) => {    
     const gltfScene = gltf.scene;
 
     const objects = new Map()
