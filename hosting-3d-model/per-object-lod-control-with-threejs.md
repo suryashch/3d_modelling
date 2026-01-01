@@ -312,7 +312,7 @@ As we navigate around the scene, the numbers change in real time, and we can see
 
 1) I have two versions of the 3D model, one that only contains the Hi Quality mesh, and one that contains both low and hi res versions superposed. An important caveat here is that the total number of unique objects in each scene is the same, i.e. the same pipe splitting that we did to our LOD-scene exists in our basic scene.
 
-2) We navigate around our scene and observe how `draw calls` and `triangles` change per object. `draw calls` is a measure of CPU performance and refers to how many objects are active in our scene at any time. `triangles` refers to the number of `faces` that we have in our scene, and is a direct measurement of the [vertices and edges](../reducing-mesh-density/analysis_decimate.md) that are active at any time in the scene. This will be a measure of our GPU performance.
+2) We navigate around our scene and observe how `draw calls` and `triangles` change per object. `draw calls` is a proxy for CPU performance and refers to how many objects are being rendered to our scene at any time. `triangles` refers to the number of `faces` that we have in our scene, and is a direct measurement of the [vertices and edges](../reducing-mesh-density/analysis_decimate.md) that are active at any time in the scene. This will be a proxy measure of our GPU performance.
 
 We create the code block to load our strictly high-res model as follows.
 
@@ -357,3 +357,6 @@ In further research I will explore more CPU friendly methods of LOD swapping, in
 
 [Reducing Mesh Density of 3D Objects in Blender](../reducing-mesh-density/analysis_decimate.md)
 
+[Understanding LOD Compression with Blender API (bpy)](bpy_with_lod.md)
+
+[drcmda](https://codesandbox.io/p/sandbox/12nmp?file=%2Fsrc%2FApp.js)
