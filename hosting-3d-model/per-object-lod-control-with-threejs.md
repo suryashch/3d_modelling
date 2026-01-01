@@ -266,7 +266,7 @@ The main piperack in the scene used to be modelled as one continuous object, her
 
 ![Splitting of Long Pipes into Smaller Ones](img/long-pipes-split.png)
 
-Another key consideration would be to change our object's origin point. THe origin can be thought of as the `center of rotation` of an object, and is used to calculate the LOD's distance on rendering to the scene. We need to make sure these origins are accurate, to give the desired effect of "zooming in". To change the object origin, we select all objects in the scene, right click --> Set Origin --> Origin to Geometry.
+Another key consideration would be to change our object's origin point. The origin can be thought of as the 'Center of Rotation' of an object, and is used to calculate the LOD's distance on rendering to the scene. We need to make sure these origins are accurate, to give the desired effect of "zooming in". To change the object origin, we select all objects in the scene, right click --> Set Origin --> Origin to Geometry.
 
 We should see small orange dots at the center of each object now, implying that our objects have their origin points set up and ready.
 
@@ -278,15 +278,76 @@ After (Each object in the scene has its own origin):
 
 ![Object's origin After](img/object-origin-after.png)
 
-With these refinements in place, we go back to our original scene and the effect that these changes had to our final scene.
+With these refinements in place, we go back to our original scene and observe the effect that these changes had to our final scene.
 
 ![Refined LOD Model](img/refined-lod-model.gif)
+
+Navigating around the scene appears to be a lot smoother than before. We see that each individual object changes its mesh quality based on how much we zoom into it. Specific aspects of our scene turn green indicating that their high quality mesh is active, while the rest of the scene loads in low quality, GPU friendly mode. This is the result we hoped for, lets see how it stacks up, vis-a-vis performance measurements.
+
+## Measuring the Performance
+
+I implement this simple webpage element that tracks the number of triangles present in the current scene, along with the number of objects in each LOD level, as well as Draw Calls. If you would like to see the whole code block, it is saved in the `scripts` folder. I attribute this code block partially to Claude 2.5 Sonnet.
+
+We import this custom performance monitor to our scene as follows.
+
+```js
+import { PerformanceMonitor } from './performance_monitor.js'
+
+const perfMonitor = new PerformanceMonitor()
+
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+
+    perfMonitor.update(renderer, scene);
+};
+```
+
+The performance monitor shows up on the webpage like so.
+
+![Performance Monitor](img/performance-monitor.png)
+
+As we navigate around the scene, the numbers change in real time, and we can see the total number of objects active in any LOD at any time. In this experiment, `LOD-0` corresponds to the hi-res version of the mesh, and `LOD-1` corresponds to the low-res. I devise a high-level experiment to measure performance as follows.
+
+1) I have two versions of the 3D model, one that only contains the Hi Quality mesh, and one that contains both low and hi res versions superposed. An important caveat here is that the total number of unique objects in each scene is the same, i.e. the same pipe splitting that we did to our LOD-scene exists in our basic scene.
+
+2) We navigate around our scene and observe how `draw calls` and `triangles` change per object. `draw calls` is a measure of CPU performance and refers to how many objects are active in our scene at any time. `triangles` refers to the number of `faces` that we have in our scene, and is a direct measurement of the [vertices and edges](../reducing-mesh-density/analysis_decimate.md) that are active at any time in the scene. This will be a measure of our GPU performance.
+
+We create the code block to load our strictly high-res model as follows.
+
+```js
+const loader = new GLTFLoader().setPath('models/piperack/');
+loader.load('piperacks_lod_working_4_onlyhires.glb', (gltf) => {
+    const mesh = gltf.scene;
+    mesh.position.set(0,0,0);
+    scene.add(mesh);
+})
+```
+
+Swapping between our two models involves commenting these specific code blocks out and conducting measurements. We observe the following results.
+
+![Performance Results 50ft View](img/performance-results-50ft-view.png)
+
+At a 50ft view, we see the same number of `Draw Calls`- 303 corresponding to 302 objects in our scene + 1 additional drawcall for our grid. Since we aren't zoomed into any objects, we see a drastic reduction in the number of `triangles` in our scene (~228,000 vs ~45,000), implying a roughly 5x GPU performance improvement.
+
+![Performance Results Wellhead](img/performance-results-main-piperack.png)
+
+As we zoom into the weelhead, we see the number of `triangles` in the scene jump drastically for our dynamic LOD model. It appears that most of the model complexity in the scene comes from the intricate valves and geometry that exists in this wellhead. Even though we have the hi-res model active for both versions of our scene, we observe a ~1.3x reduction in the total triangles, as the piperack in the background is rendered in lower quality for our dynamic scene. 
+
+![Performance Results West End of Piperack](img/performance-results-westend-of-piperack.png)
+
+Here is where we observe the best results. Since our intricate wellhead geometry is too far away from the user, it gets rendered to the scene in low quality in our dynamic version, drastically improving the triangle count in the scene. We see an ~4x improvement in GPU performance for almost no visual difference between the two images.
+
+![Performance Results of Main Piperack](img/performance-results-main-piperack.png)
+
+Lastly, we test a scene with lots of objects in the background and a long piperack as the main focus. This scene shows ~3x GPU performance improvements due to the low-res rendering of our background objects. This is likely the main performance improvement we can expect in everyday use.
 
 ## Conclusion
 
 We have seen that dynamically switching the active mesh in a scene is possible. Through this endeavour, we hvae explored concepts related to `dependency graphs`, global v local transforms, containers, mesh compression and much more. The combined result of these individual concepts and final version of the scene can be found [here](https://suryashch.github.io/3d_modelling/).
 
-Performance gains are still yet to be measured, and further optimization can be done by cleaning our scene tree, working with materials, compressing meshes even more, and editing the swap distance on a per object basis, but for now this looks like a good start.
+A formal experiment to test performance gains is still yet to be done, and further optimization can be implemented by cleaning our scene tree, working with materials, compressing meshes even more, and editing the swap distance on a per object basis, but for now this looks like a good start.
 
 In further research I will explore more CPU friendly methods of LOD swapping, including batching of LOD's, compression ratios, and better controller options for the distance based switching.
 

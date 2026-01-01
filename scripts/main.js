@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import Stats from 'three/addons/libs/stats.module.js'
+import { PerformanceMonitor } from './performance_monitor.js'
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -11,11 +11,6 @@ renderer.setClearColor("#262837");
 renderer.setPixelRatio(window.devicePixelRatio);
 
 document.body.appendChild(renderer.domElement);
-
-const stats = new Stats();
-stats.showPanel(0);
-
-document.body.appendChild(stats.dom)
 
 const scene = new THREE.Scene();
 
@@ -52,6 +47,15 @@ scene.add(light_5);
 const gridHelper = new THREE.GridHelper( 100, 50 ); // ( size, divisions )
 scene.add( gridHelper );
 
+const perfMonitor = new PerformanceMonitor()
+
+// const loader = new GLTFLoader().setPath('models/piperack/');
+// loader.load('piperacks_lod_working_4_onlyhires.glb', (gltf) => {
+//     const mesh = gltf.scene;
+//     mesh.position.set(0,0,0);
+//     scene.add(mesh);
+// })
+    
 const loader = new GLTFLoader();
 
 loader.load('models/piperack/piperacks_lod_working_4.glb', (gltf) => {    
@@ -106,13 +110,11 @@ loader.load('models/piperack/piperacks_lod_working_4.glb', (gltf) => {
 })
 
 function animate() {
-    stats.begin();
-
     requestAnimationFrame(animate);
     controls.update();
     renderer.render(scene, camera);
 
-    stats.end();
+    perfMonitor.update(renderer, scene);
 };
 
 animate();
