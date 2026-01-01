@@ -1,4 +1,4 @@
-// code credited to Claude Sonnet 2.5
+// code credited to Claude Sonnet 4.5
 
 import * as THREE from 'three';
 

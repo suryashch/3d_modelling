@@ -6,13 +6,13 @@ Let's see if we can implement this using our `piperacks` model.
 
 ## Setting the Scene
 
-The model we are working with is a [GLTF](analysis_threejs.md) export from `Blender`. Using the [Decimate](../reducing-mesh-density/analysis_decimate.md) technique, we were able to superpose two versions of the model on top of one another, one `lowres` and one `highres`. This is illustrarted in the figure below. The object has been moved to the side to show the superposition.
+The model we are working with is a [GLTF](analysis_threejs.md) export from `Blender`. Using the [Decimate](../reducing-mesh-density/analysis_decimate.md) technique, we were able to superpose two versions of the model on top of one another, one `lowres` and one `highres`. This is illustrated in the figure below. The object has been moved to the side to show the superposition.
 
 ![Low and High Res Mesh Superposed](img/hi-res-low-res-copy.png)
 
-When defining the LOD objects, we will need a way to accurately identify the same object's low and hires meshes. The structure of the data here is key, as this is what will give us the ability to traverse the model's different objects. I have specifically defined the naming convention for this object, wherein for both the low and high resolution of mesh, the object name is the same, the only appendage is the string `hires` and `lowres`.
+When defining the LOD objects, we will need a way to accurately identify the same object's low and hires meshes. The structure of the data here is key, as this is what will give us the ability to traverse the model's different objects. I have specifically defined the naming convention for this 3D model, wherein for both the low and high resolution of mesh, the object name is the same, the only appendage is the string `hires` and `lowres`.
 
-First, we need to get comfortable with nagivating around our 3D model file. We can view what the glb file looks like by outputing its contents to the console. Here I show the basic code needed, to view the contents of our glb file.
+First, we need to get comfortable with navigating around our 3D model file. We can view what the glb file looks like by outputing its contents to the console. Here I show the basic code needed, to view the contents of our glb file.
 
 ```js
 const loader = new GLTFLoader();
@@ -26,7 +26,7 @@ We define our `loader` object which is an instance of the `GLTFLoader()` class. 
 
 Calling this `gltf.scene` object will print the contents of the binary file to the sceen. I show here a screenshot of what this might look like.
 
-![Viewing the Scene metadata in console](img/glb-file-scene.png)
+![Viewing the Scene Metadata in Console](img/glb-file-scene.png)
 
 We can go one step down, and view the children of our high level `scene` object.
 
@@ -36,7 +36,7 @@ loader.load('../models/piperack/piperacks_lod_working_1.glb', (gltf) => {
 })
 ```
 
-![Contents of a GLB file](img/glb-file-contents.png)
+![Contents of a GLB File](img/glb-file-contents.png)
 
 The metadata is stored in `JSON` style format. We can see data about the transformations (`position`, `scale`, `rotation`), as well as data about the `material`, `uuid`, and others. This will be useful down the line.
 
@@ -76,8 +76,6 @@ gltfScene.traverse((child) => {
 
 Looking into the `threejs` [docs](https://threejs.org/docs/#Object3D.traverse) for the `.traverse` method we see it explicitly says not to modify the scene graph within the callback function. In our current development, we are calling `scene.add(mesh)` which edits the scene graph and breaks the iterative integrity of the traversal loop.
 
-/* why did the code block above work then? */ 
-
 Another option, and temporary fix would be to load our entire model to scene and use `.traverse` to manage which objects are visible at any time (instead of adding the entire object to scene). We try that here.
 
 ```js
@@ -92,11 +90,11 @@ gltfScene.traverse((child) => {
 
 Here are our results.
 
-![Traverse function results for only pipes](img/traverse-pipes-basic.png)
+![Traverse Function Results For Only Pipes](img/traverse-pipes-basic.png)
 
 As expected, we get only the results that start with the string 'Pipe_'.
 
-In this code block, the key thing to keep in mind is that we first need to check if the child is a mesh using `child.isMesh`. This addition specifies to the `.traverse` function that we are currently working with a leaf node. 
+In this code block, the key thing to keep in mind is that we first need to check if the child is a mesh using `child.isMesh`. This addition specifies to the `.traverse` function that we are currently working with a leaf node.
 
 If the condition was not included, the function would check to see if the first object in the entire scene tree had the string 'Pipe_' in it. Since most likely not, it would have set that object's `.visible` property to `false`. Our meshes are set up as children of these objects, and are structured to inherit properties from their parents. Setting the parent's property to `.visible = false` would have set the same for all children. `child.isMesh` ensures that we only work with leaf nodes.
 
@@ -121,7 +119,7 @@ We note the familiar pointed circles on the cross section of the pipe from the `
 
 Let's tackle the main issue in this endeavour- loading low and high resolution versions of the same mesh to the scene and dynamically switching between them based the user's distance from the camera.
 
-We build on the work done [here](basic-lod-control-with-threejs.md). 
+We build on the work done [here](basic-lod-control-with-threejs.md).
 
 Instead of arrays, lets work with a `Map()` which stores key value pairs (similar to dictionaries in python).
 
@@ -185,7 +183,7 @@ objects.forEach((res_map, object_id) => {
 })
 ```
 
-In this code block, we first loop through each item in our outer `Map()`, to return the key (`object_id`) and value (`res_map`). Here, our `res_map` variable is another map. Before we can loop through the secodn list, we first create an instance of our LOD class, and define variables which contain the `position`, `rotation` and `scale` of our `hires` mesh. This is for superposition purposes, and [explained more here](basic-lod-control-with-threejs.md).
+In this code block, we first loop through each item in our outer `Map()`, to return the key (`object_id`) and value (`res_map`). Here, our `res_map` variable is another map. Before we can loop through the second list, we first create an instance of our LOD class, and define variables which contain the `position`, `rotation` and `scale` of our `hires` mesh. This is for superposition purposes, and [explained more here](basic-lod-control-with-threejs.md).
 
 We then loop through our inner map, saving each value to a variable called `mesh`.
 - If the `resolution` is determined to be `hires`, no transformation is needed and we can add the mesh to the LOD level as is.
@@ -246,7 +244,7 @@ Let's break this down.
 
 We are effectively copying the `location`, `rotation`, and `scale` data from our mesh and applying it to our `LOD` container. The `rotation`, and `scale` data have been baked into the scene, and so we will need to access these from the `worldMatrix`. The variables `worldRot` and `worldScale` contain these values. The location data for each object is saved to our object itself, and so we access it from the object metadata using the `object.position()` attribute.
 
-2 important notes here. You must ensure that there are no nested structures in the scene. For example, if you have objects sitting in groups, you run into the risk of certain transformations being done unknowingly. As discussed above, a child will inherit the tranfromations from a parent regardless of what the `.position` attribute says.
+2 important notes here. You must ensure that there are no nested structures in the scene. For example, if you have objects sitting in groups, you run into the risk of certain transformations being done unknowingly. As discussed above, a child will inherit the tranformations from a parent regardless of what the `.position` attribute says.
 
 Another note: While `worldPos` is being defined in the code, it is only used for decomposition purposes, and not being used to load our Container.
 
@@ -286,7 +284,7 @@ Navigating around the scene appears to be a lot smoother than before. We see tha
 
 ## Measuring the Performance
 
-I implement this simple webpage element that tracks the number of triangles present in the current scene, along with the number of objects in each LOD level, as well as Draw Calls. If you would like to see the whole code block, it is saved in the `scripts` folder. I attribute this code block partially to Claude 2.5 Sonnet.
+I implement this simple `PerformanceMonitor` webpage element that tracks the number of `triangles` present in the current scene, along with the number of objects in each LOD level, as well as `Draw Calls`. If you would like to see the whole code block, it is saved in the `scripts` folder. I attribute this code block partially to Claude 4.5 Sonnet.
 
 We import this custom performance monitor to our scene as follows.
 
@@ -308,13 +306,13 @@ The performance monitor shows up on the webpage like so.
 
 ![Performance Monitor](img/performance-monitor.png)
 
-As we navigate around the scene, the numbers change in real time, and we can see the total number of objects active in any LOD at any time. In this experiment, `LOD-0` corresponds to the hi-res version of the mesh, and `LOD-1` corresponds to the low-res. I devise a high-level experiment to measure performance as follows.
+As we navigate around the scene, the numbers change in real time, and we can see the total number of objects active in any LOD at any time. `LOD-0` corresponds to the hi-res version of the mesh, and `LOD-1` corresponds to the low-res. I devise a high-level experiment to measure performance as follows.
 
-1) I have two versions of the 3D model, one that only contains the Hi Quality mesh, and one that contains both low and hi res versions superposed. An important caveat here is that the total number of unique objects in each scene is the same, i.e. the same pipe splitting that we did to our LOD-scene exists in our basic scene.
+1) I have two versions of the 3D model, one that only contains the `hires` mesh, and one that contains both `lowres` and `hires` versions superposed. An important caveat here is that the total number of unique objects in each scene is the same, i.e. the same pipe splitting that we did to our LOD-scene exists in our basic scene.
 
-2) We navigate around our scene and observe how `draw calls` and `triangles` change per object. `draw calls` is a proxy for CPU performance and refers to how many objects are being rendered to our scene at any time. `triangles` refers to the number of `faces` that we have in our scene, and is a direct measurement of the [vertices and edges](../reducing-mesh-density/analysis_decimate.md) that are active at any time in the scene. This will be a proxy measure of our GPU performance.
+2) We navigate around our scene and observe how `draw calls` and `triangles` change in different locations. `draw calls` is a proxy for CPU performance and refers to how many objects are being rendered to our scene at any time. `triangles` refers to the number of `faces` that we have in our scene, and is a direct measurement of the [vertices and edges](../reducing-mesh-density/analysis_decimate.md) that are active at any time in the scene. This will be a proxy measure of our GPU performance.
 
-We create the code block to load our strictly high-res model as follows.
+We create the code block to load our strictly `hires` model as follows.
 
 ```js
 const loader = new GLTFLoader().setPath('models/piperack/');
@@ -333,15 +331,15 @@ At a 50ft view, we see the same number of `Draw Calls`- 303 corresponding to 302
 
 ![Performance Results Wellhead](img/performance-results-main-piperack.png)
 
-As we zoom into the weelhead, we see the number of `triangles` in the scene jump drastically for our dynamic LOD model. It appears that most of the model complexity in the scene comes from the intricate valves and geometry that exists in this wellhead. Even though we have the hi-res model active for both versions of our scene, we observe a ~1.3x reduction in the total triangles, as the piperack in the background is rendered in lower quality for our dynamic scene.
+As we zoom into the wellhead, we see the number of `triangles` in the scene jump drastically for our dynamic LOD model. It appears that most of the model complexity in the scene comes from the intricate valves and geometry that exists in this wellhead. Even though we have the `hires` model active for both versions of our scene, we observe a ~1.3x reduction in the total triangles, as the piperack in the background is rendered in lower quality for our dynamic scene.
 
 ![Performance Results West End of Piperack](img/performance-results-westend-of-piperack.png)
 
-Here is where we observe the best results. Since our intricate wellhead geometry is too far away from the user, it gets rendered to the scene in low quality in our dynamic version, drastically improving the triangle count in the scene. We see an ~4x improvement in GPU performance for almost no visual difference between the two images.
+Here is where we observe the best results. Since our intricate wellhead geometry is too far away from the user, it gets rendered in `lowres` in our dynamic version, drastically improving the triangle count in the scene. We see an ~4x improvement in GPU performance for almost no visual difference between the two images.
 
 ![Performance Results of Main Piperack](img/performance-results-main-piperack.png)
 
-Lastly, we test a scene with lots of objects in the background and a long piperack as the main focus. This scene shows ~3x GPU performance improvements due to the low-res rendering of our background objects. This is likely the main performance improvement we can expect in everyday use.
+Lastly, we test a scene with lots of objects in the background and a long piperack as the main focus. This scene shows ~3x GPU performance improvements due to the `lowres` rendering of our background objects. This is likely the main performance improvement we can expect in everyday use.
 
 ## Conclusion
 
@@ -349,14 +347,18 @@ We have seen that dynamically switching the active mesh in a scene is possible. 
 
 A formal experiment to test performance gains is still yet to be done, and further optimization can be implemented by cleaning our scene tree, working with materials, compressing meshes even more, and editing the swap distance on a per object basis, but for now this looks like a good start.
 
-In further research I will explore more CPU friendly methods of LOD swapping, including batching of LOD's, compression ratios, and better controller options for the distance based switching.
+In further research I will explore more CPU friendly methods of LOD swapping, including batching of LOD's, higher compression ratios, and better controller options for the distance based switching.
 
 ## References
 
 [Hosting 3D models on a Website](analysis_threejs.md)
 
-[Reducing Mesh Density of 3D Objects in Blender](../reducing-mesh-density/analysis_decimate.md)
-
 [Understanding LOD Compression with Blender API (bpy)](bpy_with_lod.md)
 
+[Basic LOD Control with ThreeJS](basic-lod-control-with-threejs.md)
+
+[Reducing Mesh Density of 3D Objects in Blender](../reducing-mesh-density/analysis_decimate.md)
+
 [drcmda](https://codesandbox.io/p/sandbox/12nmp?file=%2Fsrc%2FApp.js)
+
+[three.object3d.traverse](https://threejs.org/docs/#Object3D.traverse)
