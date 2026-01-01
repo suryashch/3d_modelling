@@ -2,6 +2,8 @@
 
 Threejs provides useful tools for viewing 3D models in a web environment. One of those tools is `three.LOD`, which allows you to define multiple versions of your mesh, and switch between them depending on the camera's distance from the object. This way, objects that are far away from the user can load in low-resolution, easing the strain on the GPU. When the user zooms into an object, the LOD controller dynamically swaps the low-res mesh to high resolution again. This type of switch is called LOD (Level of Detail) switching.
 
+We theorize this method should improve webpage performance at the expense of initial load time and memory.
+
 Let's see if we can implement this using our `piperacks` model.
 
 ## Setting the Scene
@@ -284,7 +286,7 @@ Navigating around the scene appears to be a lot smoother than before. We see tha
 
 ## Measuring the Performance
 
-I implement this simple `PerformanceMonitor` webpage element that tracks the number of `triangles` present in the current scene, along with the number of objects in each LOD level, as well as `Draw Calls`. If you would like to see the whole code block, it is saved in the `scripts` folder. I attribute this code block partially to Claude 4.5 Sonnet.
+I implement this simple `PerformanceMonitor` webpage element that tracks the number of `triangles` present in the current scene, along with the number of objects in each LOD level, as well as `Draw Calls`. If you would like to see the whole code block, it is saved in the `scripts` folder. This code was developed with assistance from Claude.
 
 We import this custom performance monitor to our scene as follows.
 
@@ -335,17 +337,19 @@ As we zoom into the wellhead, we see the number of `triangles` in the scene jump
 
 ![Performance Results West End of Piperack](img/performance-results-westend-of-piperack.png)
 
-Here is where we observe the best results. Since our intricate wellhead geometry is too far away from the user, it gets rendered in `lowres` in our dynamic version, drastically improving the triangle count in the scene. We see an ~4x improvement in GPU performance for almost no visual difference between the two images.
+Here is where we observe the best results. Since our intricate wellhead geometry is too far away from the user, it gets rendered in `lowres` in our dynamic version, drastically improving the triangle count in the scene. We see a ~4x improvement in GPU performance for almost no visual difference between the two images.
 
 ![Performance Results of Main Piperack](img/performance-results-main-piperack.png)
 
 Lastly, we test a scene with lots of objects in the background and a long piperack as the main focus. This scene shows ~3x GPU performance improvements due to the `lowres` rendering of our background objects. This is likely the main performance improvement we can expect in everyday use.
 
+We were unable to test memory considerations, for some reason the memory tracker in the `PerformanceMonitor` was not working. However, we would be likely to see a significantly higher memory usage from our `Dynamic LOD` model, since we are loading more meshes into RAM. This is our fundamental trade-off, and will need to be kept in consideration when working with large models.
+
 ## Conclusion
 
-We have seen that dynamically switching the active mesh in a scene is possible. Through this endeavour, we hvae explored concepts related to `dependency graphs`, global v local transforms, containers, mesh compression and much more. The combined result of these individual concepts and final version of the scene can be found [here](https://suryashch.github.io/3d_modelling/).
+We have seen that dynamically switching the active mesh in a scene is possible. Through this endeavour, we have explored concepts related to `dependency graphs`, global v local transforms, containers, mesh compression and much more. The combined result of these individual concepts and final version of the scene can be found [here](https://suryashch.github.io/3d_modelling/).
 
-A formal experiment to test performance gains is still yet to be done, and further optimization can be implemented by cleaning our scene tree, working with materials, compressing meshes even more, and editing the swap distance on a per object basis, but for now this looks like a good start.
+A formal experiment to test memory usage is still yet to be done, and further optimization can be implemented by cleaning our scene tree, working with materials, compressing meshes even more, and editing the swap distance on a per object basis, but for now this looks like a good start.
 
 In further research I will explore more CPU friendly methods of LOD swapping, including batching of LOD's, higher compression ratios, and better controller options for the distance based switching.
 
