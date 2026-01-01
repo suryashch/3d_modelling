@@ -158,3 +158,8 @@ LOD control in ThreeJS is a useful tool to improve performance. This template co
 
 In future work, I shall explore per object LOD control in a large 3d model and measure the performance to see how much it improves.
 
+## References
+
+[Hosting 3D models on a Website](analysis_threejs.md)
+
+human-foot-base-mesh credit to ferrumiron6, Creative Commons License https://creativecommons.org/licenses/by/4.0/

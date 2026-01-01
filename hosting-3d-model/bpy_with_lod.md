@@ -191,3 +191,5 @@ Test
 ### References
 
 Mina Pecheux: https://www.youtube.com/@minapecheux
+
+human-foot-base-mesh credit to ferrumiron6, Creative Commons License https://creativecommons.org/licenses/by/4.0/

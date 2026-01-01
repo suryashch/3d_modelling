@@ -6,7 +6,7 @@ Let's see if we can implement this using our `piperacks` model.
 
 ## Setting the Scene
 
-The model we are working with is a [GLTF](analysis_threejs.md) export from `Blender`. Using the [Decimate](../reducing-mesh-density/analysis_decimate.md) technique, we were able to superpose two versions of the model on top of one another, one `lowres` and one `highres`. This is illustrated in the figure below. The object has been moved to the side to show the superposition.
+The model we are working with is a [GLTF](analysis_threejs.md) export from `Blender`. Using the [Decimate](../reducing-mesh-density/analysis_decimate.md) technique, we were able to superpose two versions of the model on top of one another, one `lowres` and one `highres`. The `DecimateRratio` being used here is 0.4. This is illustrated in the figure below. The object has been moved to the side to show the superposition.
 
 ![Low and High Res Mesh Superposed](img/hi-res-low-res-copy.png)
 
