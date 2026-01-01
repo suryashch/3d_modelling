@@ -1,3 +1,5 @@
+// code credited to Claude Sonnet 2.5
+
 import * as THREE from 'three';
 
 export class PerformanceMonitor {

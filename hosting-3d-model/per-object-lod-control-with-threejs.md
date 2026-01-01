@@ -333,7 +333,7 @@ At a 50ft view, we see the same number of `Draw Calls`- 303 corresponding to 302
 
 ![Performance Results Wellhead](img/performance-results-main-piperack.png)
 
-As we zoom into the weelhead, we see the number of `triangles` in the scene jump drastically for our dynamic LOD model. It appears that most of the model complexity in the scene comes from the intricate valves and geometry that exists in this wellhead. Even though we have the hi-res model active for both versions of our scene, we observe a ~1.3x reduction in the total triangles, as the piperack in the background is rendered in lower quality for our dynamic scene. 
+As we zoom into the weelhead, we see the number of `triangles` in the scene jump drastically for our dynamic LOD model. It appears that most of the model complexity in the scene comes from the intricate valves and geometry that exists in this wellhead. Even though we have the hi-res model active for both versions of our scene, we observe a ~1.3x reduction in the total triangles, as the piperack in the background is rendered in lower quality for our dynamic scene.
 
 ![Performance Results West End of Piperack](img/performance-results-westend-of-piperack.png)
 
