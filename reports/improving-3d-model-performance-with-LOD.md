@@ -1,20 +1,22 @@
 # Improving 3D Model Performance With LOD Control
 
-In the construction industry, 3D models provide a level of context to the user that cannot be matched with a spreadsheet. However, Building Information Modelling (BIM) is slow to be adopted by the North American market. One of the many issues for this slow adoption I believe, is the lack of standardized tools- different tradespeople prefer their own flavour of 3D Editor. For quick mock-ups and visualizations, one such tool is often overlooked- the humble web browser. In this paper, I propose a Proof of Concept whereby 3D models can be hosted on any webpage and viewed on any device with a web browser- no dedicated software needed. I explore the basics of 3D modelling, mesh compression techniques, setting scenes in `three.js`, and swapping between different versions of a mesh depending on how far away the user is from the object, along with general optimization techniques for 3D models.
+In the construction industry, 3D models provide a level of context to the user that cannot be matched with a spreadsheet. However, Building Information Modelling (BIM) is slow to be adopted by the North American market. One of the many issues for this slow adoption I believe, is the lack of standardized tools- different tradespeople prefer their own flavour of 3D Editor. For quick mock-ups and visualizations, one such tool is often overlooked- the humble web browser.
 
-[Our Final Scene](https://suryashch.github.io/3d_modelling/) contains 303 objects, each with a `lowres` and `hires` version of their 3D mesh (red and green respectively), that dynamically render to the screen as you zoom into them.
+In this paper, I propose a Proof of Concept whereby 3D models can be hosted on any webpage and viewed on any device with a web browser- no dedicated software needed. I explore the basics of 3D modelling, mesh compression techniques, creating scenes in `three.js`, and swapping between different versions of a mesh depending on how far away the user is from the object, along with general optimization techniques for 3D models.
 
-This scene achieved a peak `5x` improvement in GPU performance, and average `3.3x` improvement in webpage performance over the standard 3D model, all while keeping draw calls constant. The full paper and research body of knowledge can be found [here].
+[Our Final Scene](https://suryashch.github.io/3d_modelling/) contains 303 objects, each with a `lowres` and `hires` version of their 3D mesh (red and green respectively), that dynamically renders to the screen as you zoom in.
+
+Through this project, I achieved a peak `5x` improvement in GPU performance, and average `3.3x` improvement in webpage performance over the standard 3D model, all while keeping draw calls constant. The full paper and research body of knowledge can be found [here](../hosting-3d-model/per-object-lod-control-with-threejs.md).
 
 ## 3D Modelling Basics
 
-The fundamental building blocks of 3D models are `vertices` and `edges`. `vertices` can be thought of as 'corners' while `edges` are what connect the corners to each other. In a cube, we have 8 `vertices` and 12 `edges`, as you can see in the image below (in no praticular order).
+[The fundamental building blocks of 3D models](../reducing-mesh-density/analysis_decimate.md) are `vertices` and `edges`. `vertices` can be thought of as 'corners' while `edges` are what connect the corners to each other. In a cube, we have 8 `vertices` and 12 `edges`, as you can see in the image below (in no praticular order).
 
 ![cubes edges and vertices defined](../reducing-mesh-density/img/cubes-edges-vertices.png)
 
-As the total number of vertices and edges in your scene increase, so does the strain on your GPU, and as a result the scene becomes laggy when you try to move around. Reducing the number of vertices and edges in the scene will improve the performance.
+As the total number of vertices and edges in your scene increase, so does the strain on your GPU, and as a result the scene becomes laggy when you try to move around. Reducing the number of `vertices` and `edges` in the scene will improve the performance.
 
-One piece of geometry that often goes overlooked in BIM is the humble pipe- modelled as a cylinder. Cylinders are circles, with depth. However, circles don't have any corners. A circle can be thought of as infinitely many corners that all connect to each other. It is impossible to model a perfect circle, so we approximate it using a large number of `vertices`. The more `vertices`, the more the object starts looking like a circle.
+One piece of geometry that often goes overlooked in BIM projects is the humble pipe- modelled as a cylinder. Circles don't have any corners- a circle can be thought of as infinitely many corners that all connect to each other. It is impossible to model a perfect circle, so we approximate it using a large number of `vertices`. The more `vertices`, the more the object starts looking like a circle.
 
 Hence, when we extrude all these individual edges and vertices into the page, we get a cylinder (pipe), which is hilariously inefficient for how simple of a shape it is.
 
@@ -27,12 +29,14 @@ Each one of these edges and vertices need to be kept track of by your computer's
 The `density` of a mesh is a measure of how many individual `vertices` and `edges` exist within it. We can reduce the density of the mesh by removing some `vertices` from it. By removing these data points however, we trade density for details and as you see in the image below, the finer details of our mesh is lost.
 
 Before:
+
 ![Cylinder Example Before Decimation](../reducing-mesh-density/img/cylinder.png)
 
 After:
+
 ![Cylinder Example After Decimation](../reducing-mesh-density/img/cylinder_decimated.png)
 
-One easy way to reduce the mesh density is using a technique called `Decimate` in Blender. This modifier will remove `edges` in a mesh upto a specified `ratio`, while maintaining the overall shape of the object. Here we run a test case of `decimating` a 3D mesh model of a [human foot] upto a ratio of 0.1.
+One easy way to reduce the mesh density is using a technique called [`Decimate`](../reducing-mesh-density/analysis_decimate.md) in Blender. This modifier will remove `edges` in a mesh upto a specified `ratio`, while maintaining the overall shape of the object. Here we run a test case of `decimating` a 3D mesh model of a [human foot] upto a ratio of 0.1.
 
 ![Mesh model of human foot before and after compression](../reducing-mesh-density/img/foot_comparison.png)
 
@@ -44,7 +48,7 @@ Both meshes look similar. **At far enough distances, mesh quality can be reduced
 
 ## Loading a 3D Model to a Webpage
 
-The `JavaScript` library `Three.js` provides useful tools for viewing 3D models in a web-based environment. The basic concept behind `Three.js` is to create a `scene`, and add objects to it, like `lights`, `cameras`, `backgrounds`, and of course, `3D objects`. 
+The `JavaScript` library `Three.js` provides useful tools for viewing 3D models in a web-based environment. [The basic concept](../hosting-3d-model/analysis_threejs.md) behind `Three.js` is to create a `scene`, and add objects to it, like `lights`, `cameras`, `backgrounds`, and of course, `3D objects`.
 
 The file format we will be using for our 3D objects is the [GLTF] file format. GLTF is an open source 3D file format that is optimized for rendering in a web environment.
 
@@ -54,13 +58,13 @@ The 3D model we will be working with is of a `piperack`. The base file size is ~
 
 ## Basic LOD in three.js
 
-LOD (Level of Detail) modelling involves creating low and high resolution meshes for each object in the scene, and dynamically rendering each one based on how far away the object is from the camera. This way, far-away objects can render in low-resolution, GPU-friendly mode, and near objects can render in their full high definition. Since the total number of `vertices` and `edges` are less in our `low-res` model, we can use this improve the performance of our scene.
+[LOD](../hosting-3d-model/analysis_superposing-models.md) (Level of Detail) modelling involves creating low and high resolution meshes for each object in the scene, and dynamically rendering each one based on how far away the object is from the camera. This way, far-away objects can render in low-resolution, GPU-friendly mode, and near objects can render in their full high definition. Since the total number of `vertices` and `edges` are less in our `low-res` model, we can use this improve the performance of our scene.
 
-In `three.js`, LOD control is done using the `three.LOD` class. At a high level, a `LOD` can be thought of as a container that holds meshes. Based on some distance threshold, the `LOD` swaps which mesh is active at any time. In the example below, we load 3 versions of our `human foot` mesh- `hires`, `medres`, and `lowres`, corresponding to 1, 0.4, and 0.1 `decimate ratios` respectively. The meshes have been coloured for identification purposes.
+In `three.js`, LOD control is done using the `three.LOD` class. At a high level, a `LOD` can be thought of as a container that holds meshes. Based on some distance threshold, the `LOD` swaps which mesh is active at any time. [In this example](../hosting-3d-model/basic-lod-control-with-threejs.md), we load 3 versions of our `human foot` mesh- `hires`, `medres`, and `lowres`, corresponding to 1, 0.4, and 0.1 `decimate ratios` respectively. The meshes have been coloured for identification purposes.
 
 ![Foot model LOD version colored](../hosting-3d-model/img/human-foot-LOD-versions-color.png)
 
-We load these 3 meshes into one `LOD` container and set distance thresholds of 10 units and 5 units from the camera. Now, as we zoom into the page, we active mesh changes at those specified distance thresholds.
+We load these 3 meshes into one `LOD` container and set distance thresholds of 10 units and 5 units from the camera. Now, as we zoom into the page, the active mesh changes at those specified distance thresholds.
 
 ![Foot model LOD containers aligned and colors changed](../hosting-3d-model/img/foot-lod-pos-synced-color.gif)
 
@@ -76,7 +80,7 @@ Now, instead of loading our model to scene, we need to loop through every object
 
 We create a `Map()` object, that contains each Object `name`, and the data associated with the high and low resolution mesh. Conceptually, this is what the scene tree looks like after traversing the model.
 
-![Working Scene Tree](img/scene-tree-working.png){width=20%}
+![Working Scene Tree](../hosting-3d-model/img/scene-tree-working.png)
 
 Each object in the scene is saved to one `LOD` container, and each container contains 2 meshes.
 
@@ -98,7 +102,13 @@ The complex geometry of the wellhead in the background is rendered in `lowres` i
 
 The main piperack of the scene is loaded dynamically- far away objects in `lowres` while near objects in `hires`. This will be on average, the compression capabilites that can be achieved in everyday use.
 
+The full explanation and in-depth analysis of results can be found [here](../hosting-3d-model/per-object-lod-control-with-threejs.md).
+
 ## Conclusion
+
+Out in the field, understanding spatial context from drawings is key, and no spreadsheet can compare with the spatial context provided by 3D models. However, a true lightweight, cross platform solution for visualizations is lacking. Taking advantage of the web browser allows us.
+
+With the recent advents in cloud computing, this traditionally resource-intensive industry looks 
 
 Web-based GPU engines are more powerful than ever. Utilizing their improved capabilites along with performance boosts like `LOD` control can open the door for viewing larger models on the web. I envision a future where 3D models, regardless of their source, can be quickly downloaded, marked up, edited, and shared with the ease that pdfs have come to achieve. This, I believe, is a step in that direction.
 
