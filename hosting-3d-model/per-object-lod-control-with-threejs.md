@@ -343,7 +343,11 @@ Here is where we observe the best results. Since our intricate wellhead geometry
 
 Lastly, we test a scene with lots of objects in the background and a long piperack as the main focus. This scene shows ~3x GPU performance improvements due to the `lowres` rendering of our background objects. This is likely the main performance improvement we can expect in everyday use.
 
-We were unable to test memory considerations, for some reason the memory tracker in the `PerformanceMonitor` was not working. However, we would be likely to see a significantly higher memory usage from our `Dynamic LOD` model, since we are loading more meshes into RAM. This is our fundamental trade-off, and will need to be kept in consideration when working with large models.
+On average, we see a ~3.3x GPU performance improvement, with limited difference in CPU usage.
+
+We were unable to test memory considerations, for some reason the memory tracker in the `PerformanceMonitor` was not working. However, we would be likely to see a significantly higher memory usage from our `Dynamic LOD` model, since we are loading more meshes into RAM. Looking at our model sizes, the base `onlyhires` model is 7.4MB, while the dynamic LOD model is ~9.4MB, implying a 1.3x increase in memory.
+
+This is our fundamental trade-off, and will need to be kept in consideration when working with large models.
 
 ## Conclusion
 
