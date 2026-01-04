@@ -331,7 +331,7 @@ Swapping between our two models involves commenting these specific code blocks o
 
 At a 50ft view, we see the same number of `Draw Calls`- 303 corresponding to 302 objects in our scene + 1 additional drawcall for our grid. Since we aren't zoomed into any objects, we see a drastic reduction in the number of `triangles` in our scene (~228,000 vs ~45,000), implying a roughly 5x GPU performance improvement.
 
-![Performance Results Wellhead](img/performance-results-main-piperack.png)
+![Performance Results Wellhead](img/performance-results-wellhead.png)
 
 As we zoom into the wellhead, we see the number of `triangles` in the scene jump drastically for our dynamic LOD model. It appears that most of the model complexity in the scene comes from the intricate valves and geometry that exists in this wellhead. Even though we have the `hires` model active for both versions of our scene, we observe a ~1.3x reduction in the total triangles, as the piperack in the background is rendered in lower quality for our dynamic scene.
 
