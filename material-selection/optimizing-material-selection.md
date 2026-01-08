@@ -4,7 +4,15 @@ In large 3D models an often overlooked aspect of memory and computational usage 
 
 ## UVs and Normals
 
+
+
+## Exploring Different Materials in three.js
+
+
+
 ## Selecting the Optimal Material
+
+
 
 ## Implementing to the Scene
 
