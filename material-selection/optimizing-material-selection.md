@@ -4,7 +4,7 @@ In large 3D models an often overlooked aspect of memory and computational usage 
 
 ## UVs and Normals
 
-
+While conducting [EDA on our .obj file](../reducing-mesh-density/notebooks/obj-eda.ipynb), we noticed a section of data labelled `vt`, or `vertex textures`. The format of this data appears to be coordinates. Digging in a little deeper, the two numbers are indeed coordinates that refer to a 2D space.
 
 ## Exploring Different Materials in three.js
 
@@ -15,5 +15,7 @@ In large 3D models an often overlooked aspect of memory and computational usage 
 
 
 ## Implementing to the Scene
+
+
 
 ## Conclusion
