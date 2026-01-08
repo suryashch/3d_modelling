@@ -9,6 +9,7 @@ While conducting [EDA on our .obj file](../reducing-mesh-density/notebooks/obj-e
 ## Exploring Different Materials in three.js
 
 
+## Vertex Colors
 
 ## Selecting the Optimal Material
 
