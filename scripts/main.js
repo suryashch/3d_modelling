@@ -49,13 +49,16 @@ scene.add( gridHelper );
 
 const perfMonitor = new PerformanceMonitor()
 
-const loader = new GLTFLoader().setPath('models/bim-model/');
-loader.load('sixty5_100_piping_test_full.glb', (gltf) => { // 'piperacks_merged.glb
+const loader = new GLTFLoader().setPath('models/piperack/');
+loader.load('piperacks_merged.glb', (gltf) => { // 'piperacks_merged.glb
     const mesh = gltf.scene;
     mesh.position.set(0,0,0);
+    scene.overrideMaterial = new THREE.MeshBasicMaterial({
+        color:"#156082",
+    });
     scene.add(mesh);
 })
-    
+
 // const loader = new GLTFLoader();
 
 // loader.load('models/piperack/piperacks_lod_working_4.glb', (gltf) => {    
