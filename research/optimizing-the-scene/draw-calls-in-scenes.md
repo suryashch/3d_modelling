@@ -18,13 +18,51 @@ Using our original `piperacks` model as an example, we see the results from a 50
 
 ![Original Piperack Scene](../hosting-3d-model/img/performance-results-50ft-view.png)
 
-To test out how `draw calls` work, I merge all the objects in my scene into one mesh. This means I should only have one large `draw call` that I need to make to render my scene. Sure enough, onl loading to the scene, we get these results.
+To test out how `draw calls` work, I merge all the objects in my scene into one mesh. This means I should only have one large `draw call` that I need to make to render my scene. Sure enough, on loading to the scene, we get these results.
 
 ![Merged Model performance](../hosting-3d-model/img/performance-results-merged-model.png)
 
 2 `draw calls`- one for rendering the mesh, one for rendering the 2D grid.
 
-We observe that the number of draw calls and triangles do not change as we move around the scene. This is becuase of a method called `Frustum Culling`.
+To drive the understanding home, I load two models to our scene and measure the performance- the `architectural` model and `interiors-kitchens` model from our test BIM model. Here are the results we observe from the `Interior Kitchen` Model.
+
+![Performance Results Interior Kitchen Model](img/performance-results-interiors-kitchens.png)
+
+Here are the results we observe from the Architectural Model.
+
+![Performance Results Architectural Model](img/performance-results-architectural.png)
+
+There are a few striking differences we observe.
+
+1) The number of `draw calls` in the interior model (3,096) is much less than the architectural model (16,374). This implies there are a lot more individual objects in the architectural model than the interior one.
+
+2) The total number of [triangles](../reducing-mesh-density/analysis_decimate.md) in the scene are roughly the same (~1.6M). This implies that the `interior-kitchen` model is more finely modelled than the `architectural` model, since the `architectural` model has vastly more individual objects.
+
+3) The FPS count for the interior model is ~100 FPS compared to ~13 from the architectural model- significantly lower.
+
+Since both models contain roughly the same number of `triangles`, we can infer that `draw calls` are the limiting factor here for our slow model performance. In this case, we have a CPU bottleneck rather than a GPU one.
+
+## Merging Objects
+
+Since `draw calls` need to be limited, an obvious question we might ask is, why not just merge all our geometries in the model into one giant mesh and load that to the scene? Logically speaking, we will have the same number of triangles in the scene but with a massive reduction in `draw calls`.
+
+There are a few reasons why that won't work. Firstly, by merging all our objects into one giant mesh, we lose the ability for per object selection. We cannot select an individual pipe object and view it's details.
+
+Secondly, and counter-intuitively, we actually observe reduced when we load our one-giant-mesh model to the scene.
+
+![Navigating Around One-Giant-Mesh](img/performance-results-architectural-merged-mesh.gif)
+
+We observe that the number of draw calls and triangles do not change as we move around the scene. This is becuase of a method called `Frustum Culling`, whereby objects that are out of the camera's viewing angle are not rendered to the screen. Frustum Culling is enabled by default in Three.js scenes.
+
+![Performance Results One-Giant-Mesh](img/performance-results-piperacks-merged.png)
+
+Since our entire scene is one mesh, we lose this ability to `cull` objects that are off the screen. As a result, the total number of triangles and draw calls do not change when we move around the scene and our performance is capped (lower FPS than the dynamic model).
+
+The optimal solution contains a mix of LOD control and Merging geometries. This process is called `batching`.
+
+## Batching the Scene
+
+
 
 
 ### References

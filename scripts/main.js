@@ -50,7 +50,7 @@ scene.add( gridHelper );
 const perfMonitor = new PerformanceMonitor()
 
 const loader = new GLTFLoader().setPath('models/piperack/');
-loader.load('piperacks_lod_working_4_onlyhires.glb', (gltf) => { // 'piperacks_merged.glb
+loader.load('piperacks_merged.glb', (gltf) => { // 'piperacks_merged.glb
     const mesh = gltf.scene;
     mesh.position.set(0,0,0);
     scene.add(mesh);
