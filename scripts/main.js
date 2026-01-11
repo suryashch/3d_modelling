@@ -49,8 +49,8 @@ scene.add( gridHelper );
 
 const perfMonitor = new PerformanceMonitor()
 
-const loader = new GLTFLoader().setPath('models/piperack/');
-loader.load('piperacks_merged.glb', (gltf) => { // 'piperacks_merged.glb
+const loader = new GLTFLoader().setPath('models/bim-model/');
+loader.load('sixty5_100_piping_test_full.glb', (gltf) => { // 'piperacks_merged.glb
     const mesh = gltf.scene;
     mesh.position.set(0,0,0);
     scene.add(mesh);
