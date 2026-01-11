@@ -58,7 +58,17 @@ We observe that the number of draw calls and triangles do not change as we move 
 
 Since our entire scene is one mesh, we lose this ability to `cull` objects that are off the screen. As a result, the total number of triangles and draw calls do not change when we move around the scene and our performance is capped (lower FPS than the dynamic model).
 
-The optimal solution contains a mix of LOD control and Merging geometries. This process is called `batching`.
+Let's consolidate our findings from above into a table.
+
+| Model | Draw Calls | Triangles | FPS | Performance |
+| :----- | :-----: | :-----: | :-----: | :-----: |
+| BIM - MEP | 22,591 | 8,462,391 | ~11 | Poor |
+| BIM - Interior | 3,096 | 1,607,878 | ~100 | Good |
+| BIM - Architectural | 16,374 | 1,641,473 | ~20 | Poor |
+| Piperacks - Dynamic | Varied | Varied | ~180 | Excellent |
+| Piperacks - Merged | 2 | 207,376 | ~100 | Good |
+
+The optimal solution contains a mix of LOD Control and Merging geometries. This process is called `batching`.
 
 ## Batching the Scene
 
