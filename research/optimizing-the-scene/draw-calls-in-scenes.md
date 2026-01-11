@@ -2,7 +2,7 @@
 
 In our [LOD Control Model](per-object-lod-control-with-threejs.md), we were able to establish that dynamic switching between low and high quality meshes reduces GPU strain. Our results proved that this optimization did not affect `draw calls`, but did not elaborate more on it. In this paper I explore the basics of draw calls, their impact on the performance of the scene, and explore optimization techniques to limit their net impact.
 
-## What are Draw Calls?
+## What Are Draw Calls?
 
 A `draw call`, as the name suggests, is a call from the CPU to the GPU to `draw` an object to the screen. The more objects you have in your scene, the more draw calls you have. If you aren't careful, this number of `draw calls` can significantly limit the performance capabilities of the scene well before GPU bottlenecks start emerging. In BIM projects where we have lots of individual objects, this is especially an issue.
 
@@ -48,7 +48,7 @@ Since `draw calls` need to be limited, an obvious question we might ask is, why 
 
 There are a few reasons why that won't work. Firstly, by merging all our objects into one giant mesh, we lose the ability for per object selection. We cannot select an individual pipe object and view it's details.
 
-Secondly, and counter-intuitively, we actually observe reduced when we load our one-giant-mesh model to the scene.
+Secondly, and counter-intuitively, we actually observe reduced performance when we load our one-giant-mesh model to the scene.
 
 ![Navigating Around One-Giant-Mesh](img/performance-results-architectural-merged-mesh.gif)
 
@@ -56,7 +56,7 @@ We observe that the number of draw calls and triangles do not change as we move 
 
 ![Performance Results One-Giant-Mesh](img/performance-results-piperacks-merged.png)
 
-Since our entire scene is one mesh, we lose this ability to `cull` objects that are off the screen. As a result, the total number of triangles and draw calls do not change when we move around the scene and our performance is capped (lower FPS than the dynamic model).
+Since our entire scene is one mesh, we lose this ability to `cull` objects that are off the screen. As a result, the total number of triangles and draw calls do not change when we move around the scene- the GPU stores every single vertex and edge in memory regardless of if it's visible or not. As a result, our performance is capped (lower FPS than the dynamic model).
 
 Let's consolidate our findings from above into a table.
 
