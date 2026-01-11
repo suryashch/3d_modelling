@@ -68,7 +68,7 @@ Let's consolidate our findings from above into a table.
 | Piperacks - Dynamic | Varied | Varied | ~180 | Excellent |
 | Piperacks - Merged | 2 | 207,376 | ~100 | Good |
 
-The optimal solution contains a mix of LOD Control and Merging geometries. This process is called `batching`.
+The optimal solution contains a mix of LOD Control and Merging geometries. This process is called `batching`. Let's see if we can improve on these base results.
 
 ## Batching the Scene
 
