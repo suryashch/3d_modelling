@@ -46,7 +46,7 @@ Since both models contain roughly the same number of `triangles`, we can infer t
 
 Since `draw calls` need to be limited, an obvious question we might ask is, why not just merge all our geometries in the model into one giant mesh and load that to the scene? Logically speaking, we will have the same number of triangles in the scene but with a massive reduction in `draw calls`.
 
-There are a few reasons why that won't work. Firstly, by merging all our objects into one giant mesh, we lose the ability for per object selection. We cannot select an individual pipe object and view it's details.
+There are a few reasons why that won't work. Firstly, by merging all our objects into one giant mesh, we lose the ability for per object selection. We cannot select an individual pipe object and [view it's details](../information-modelling/working-with-object-metadata-in-bim.md).
 
 Secondly, and counter-intuitively, we actually observe reduced performance when we load our one-giant-mesh model to the scene.
 
@@ -80,4 +80,8 @@ The optimal solution contains a mix of LOD Control and Merging geometries. This 
 [buildingsmart-community](https://github.com/buildingsmart-community)
 
 [Sixty5](https://www.strijp-s.nl/en/building/sixty5)
+
+[basic scene](analysis_threejs.md)
+
+[view it's details](../information-modelling/working-with-object-metadata-in-bim.md)
 
