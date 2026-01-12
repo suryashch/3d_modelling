@@ -58,6 +58,15 @@ We observe that the number of draw calls and triangles do not change as we move 
 
 Since our entire scene is one mesh, we lose this ability to `cull` objects that are off the screen. As a result, the total number of triangles and draw calls do not change when we move around the scene- the GPU stores every single vertex and edge in memory regardless of if it's visible or not. As a result, our performance is capped (lower FPS than the dynamic model).
 
+And finally, we also observe that our new exported one-giant-mesh file has exploded out to 10x the size. This is becuase the [GLTF](../hosting-3d-model/analysis_threejs.md) file format is efficient at grouping unique geometries into one `InstancedMesh`. This means, if we have multiple geometries in the model that have the same mesh, materials, parameters (like steel beams, long pipes, bolts etc), they get saved as one `InstancedMesh` in memory. Since we're merging our objects together, we lose the ability to instance our individual meshes and so each vertex needs to be saved to memory, thus exploding the file size.
+
+```yml
+sixty5_piping.glb: 74.8 MB
+sixty5_piping_merged.glb: 610.7 MB
+```
+
+Our file size has increased by rouhgly 10x, and we will run into memory limitations far before and CPU or BPU bottlenecks.
+
 Let's consolidate our findings from above into a table.
 
 | Model | Draw Calls | Triangles | FPS | Performance |
