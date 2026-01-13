@@ -51,13 +51,11 @@ const perfMonitor = new PerformanceMonitor()
 
 // // Basic Loader
 // const loader = new GLTFLoader().setPath('models/piperack/');
-// loader.load('piperacks_merged.glb', (gltf) => { // 'piperacks_merged.glb
+// loader.load('piperacks-batching-test.glb', (gltf) => { // 'piperacks_merged.glb
 //     const mesh = gltf.scene;
 //     mesh.position.set(0,0,0);
-//     scene.overrideMaterial = new THREE.MeshBasicMaterial({
-//         color:"#156082",
-//     });
 //     scene.add(mesh);
+//     console.log(mesh)
 // })
 
 
@@ -74,11 +72,9 @@ loader.load('models/piperack/piperacks-batching-test.glb', (gltf) => {
     gltfScene.traverse((child) => {
         if (child.isMesh) {
             if (child.name === "Merged_Output") {
-                //batchLOD.addLevel(child, 10)
                 objects.set(child.name, child)
             
             } else {
-
                 const [obj, res] = child.name.split(';')
 
                 if (!objects.has(obj)) {
