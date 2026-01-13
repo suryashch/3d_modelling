@@ -2,7 +2,9 @@
 
 We have been able to establish that [dynamically swapping a mesh's resolution](../hosting-3d-model/per-object-lod-control-with-threejs.md) in a scene can improve the overall performance. As a refresher on it's workings, we loaded low and high resolution versions of the same mesh to one `LOD` container, and swapped which mesh was active at any time depending on how far away it was from the camera. This way, low res meshes could be rendered to the screen when the user was far away, and high res versions of the mesh could be rendered when our user zoomed in.
 
-As we navigated around the page, the webpage was performing distance calculations between the camera and every LOD container in the scene thousands of times per second. Since our model only contained 303 objects, we were able to get away with this computation intensive step without too much lag. However, when the number of objects in the scene explode (as is the case with BIM models), our computational debt increases and the webpage starts experiencing lag.
+![Basic LOD Control Model](../hosting-3d-model/img/piperacks-lod-prelim.gif)
+
+As we navigated around the page, the webpage was performing distance calculations between the camera and every LOD container in the scene thousands of times per second. Since our model only contained 303 objects, we were able to get away with this computationally intensive step without too much of a performance drop. However, when the number of objects in the scene explode (as is the case with BIM models), our computational debt increases and the webpage starts experiencing lag.
 
 Why are we measuring the distance to every single object in our scene? It would be more efficient to group objects together in space. Now, if our camera is far enough away from this group of objects, we can immediately confirm that all the objects in the group should be rendered in low-res. When we get close to a group, we can apply our same distance based LOD swapping, but now only on objects within that group- a much smaller scale. This is the basic mechanism behind the workings of an `Octree`.
 
@@ -28,11 +30,12 @@ While a valve on a pipe is likely very small in the scene. We would need to recu
 
 ## How Does an Octree Work?
 
-A fundamental understanding- Octrees do not store any data. They are used for spatial querying. An Octree is used to answer the question- "Which objects in my scene are physically close to my area of interest"? In Video Games, the Octree may be used for player - object interactions.
+A fundamental understanding- **Octrees do not store any data.** They are used for spatial querying. An Octree is used to answer the question- "Which objects in my scene are physically close to my area of interest"? In Video Games, the Octree may be used for player - object interactions.
 
 Say our player has walked up to a treasure chest on the map and clicked the `A` button to open it. Now instead of searching through every treasure chest in the game to determine which one the player actually clicked on, we use an `Octree` to discard entire segments of the map and narrow our search down to only the specific segment which the player is closest to; vastly improving the performance of the game.
 
-We can apply this logic to our LOD scene too, instead of measuring the distance between our camera and every single object in the scene, we measure the distance between our camera and the levels of our Octree. If the node fails the distance calculation, we can be certain that all the children objects in that branch will fail too, and so that entire branch of our tree is discarded, or `pruned`.
+We can apply this logic to our LOD scene too, instead of measuring the distance between our camera and every single object in the scene, we measure the distance between our camera and the levels of our Octree. If the node fails the distance calculation, we can be certain that all the children objects of that node will fail too, and so that entire branch of our tree is discarded, or `pruned`.
+
 
 
 If the node passes the distance check, we go down one level in the tree and perform those distance calculations again- just on a subset of the original data.
