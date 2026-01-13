@@ -49,16 +49,90 @@ scene.add( gridHelper );
 
 const perfMonitor = new PerformanceMonitor()
 
-const loader = new GLTFLoader().setPath('models/piperack/');
-loader.load('piperacks_merged.glb', (gltf) => { // 'piperacks_merged.glb
-    const mesh = gltf.scene;
-    mesh.position.set(0,0,0);
-    scene.overrideMaterial = new THREE.MeshBasicMaterial({
-        color:"#156082",
+// // Basic Loader
+// const loader = new GLTFLoader().setPath('models/piperack/');
+// loader.load('piperacks_merged.glb', (gltf) => { // 'piperacks_merged.glb
+//     const mesh = gltf.scene;
+//     mesh.position.set(0,0,0);
+//     scene.overrideMaterial = new THREE.MeshBasicMaterial({
+//         color:"#156082",
+//     });
+//     scene.add(mesh);
+// })
+
+
+// Batched Loader
+const loader = new GLTFLoader();
+
+loader.load('models/piperack/piperacks-batching-test.glb', (gltf) => {    
+    const gltfScene = gltf.scene;
+    console.log(gltf.scene)
+
+    const objects = new Map()
+    const batchLOD = new THREE.LOD()
+
+    gltfScene.traverse((child) => {
+        if (child.isMesh) {
+            if (child.name === "Merged_Output") {
+                //batchLOD.addLevel(child, 10)
+                objects.set(child.name, child)
+            
+            } else {
+
+                const [obj, res] = child.name.split(';')
+
+                if (!objects.has(obj)) {
+                    objects.set(obj, new Map())
+                    objects.get(obj).set(res, child)
+
+                } else {
+                    objects.get(obj).set(res, child)
+                }
+            }
+        }
+    })
+
+    objects.forEach((res_map, object_id) => {
+        if (object_id === 'Merged_Output') {
+            batchLOD.addLevel(res_map, 10)
+        } else {
+        
+            const lod = new THREE.LOD()
+
+            let hires_pos = res_map.get('hires').position
+            let worldPos = new THREE.Vector3();
+            let worldQuat = new THREE.Quaternion();
+            let worldScale = new THREE.Vector3();
+            
+            res_map.get('hires').updateMatrixWorld(true)
+
+            res_map.get('hires').matrixWorld.decompose(worldPos, worldQuat, worldScale);
+            
+            lod.position.copy(hires_pos)
+            lod.quaternion.copy(worldQuat);
+            lod.scale.copy(worldScale);
+
+            res_map.forEach((mesh, resolution) => {
+                mesh.position.set(0, 0, 0);
+                mesh.quaternion.set(0, 0, 0, 1);
+                mesh.scale.set(1, 1, 1);
+
+                if (resolution === 'hires') {
+                    lod.addLevel(mesh, 0)
+                } else {
+                    lod.addLevel(mesh, 5)
+                }
+            })
+
+            batchLOD.addLevel(lod,0)
+        }
     });
-    scene.add(mesh);
+    scene.add(batchLOD)
 })
 
+
+
+// Dynamic LOD Loader
 // const loader = new GLTFLoader();
 
 // loader.load('models/piperack/piperacks_lod_working_4.glb', (gltf) => {    

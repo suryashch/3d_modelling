@@ -65,7 +65,7 @@ sixty5_piping.glb: 74.8 MB
 sixty5_piping_merged.glb: 610.7 MB
 ```
 
-Our file size has increased by rouhgly 10x, and we will run into memory limitations far before and CPU or BPU bottlenecks.
+Our file size has increased by roughly 10x, and we will run into memory limitations far before any CPU or BPU bottlenecks.
 
 Let's consolidate our findings from above into a table.
 
@@ -81,7 +81,7 @@ The optimal solution contains a mix of LOD Control and Merging geometries. This 
 
 ## Batching the Scene
 
-
+Let's create a simple batching + LOD example.
 
 
 ### References
