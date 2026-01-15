@@ -52,7 +52,7 @@ Our scene contains XXXX objects. As we make our way down the nodes, the final LO
 
 An Octree can be used effectively for spatial querying in large 3D scenes. For objects that don't meet LOD distance criteria, entire groups can be discarded without needing to loop through every item in the group. This effectively reduces our computational time from O(n) to O(log n), and allows for truly vast scene generation and hosting.
 
-In BIM models detail is key, but that detail often comes at the expense of increased computational requirements. By utilizing some clever game dev techniques we can greatly reduce this debt, and truly make 3D models accessible to all.
+In BIM models detail is key, but that detail often comes at the expense of increased computational requirements. By utilizing some clever game dev techniques we can greatly reduce this debt, increasing the max size cap that our viewer can handle, and truly make 3D models accessible to all.
 
 ## Links
 
