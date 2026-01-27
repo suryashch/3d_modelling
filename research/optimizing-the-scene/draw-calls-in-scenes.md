@@ -81,7 +81,7 @@ The optimal solution contains a mix of LOD Control and Merging geometries. This 
 
 ## Batching the Scene
 
-Let's create a simple batching + LOD example.
+Let's create a simple batching + LOD example with the `BIM - Architectural` model.
 
 
 ### References
