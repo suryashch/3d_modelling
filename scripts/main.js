@@ -49,13 +49,55 @@ scene.add( gridHelper );
 
 const perfMonitor = new PerformanceMonitor()
 
-// Basic Loader
+// // Basic Loader
+// const loader = new GLTFLoader().setPath('models/bim-model/');
+// loader.load('sixty5-architectural.glb', (gltf) => { // 'piperacks_merged.glb
+//     const mesh = gltf.scene;
+//     mesh.position.set(0,0,0);
+//     scene.add(mesh);
+//     console.log(mesh)
+// })
+
+// Batched Mesh Loader
 const loader = new GLTFLoader().setPath('models/bim-model/');
 loader.load('sixty5-architectural.glb', (gltf) => { // 'piperacks_merged.glb
-    const mesh = gltf.scene;
-    mesh.position.set(0,0,0);
-    scene.add(mesh);
-    console.log(mesh)
+    const meshes = []
+
+    gltf.scene.traverse((child) => {
+        if (child.isMesh) {
+            meshes.push(child);
+        }
+    });
+
+    let totalVertexCount = 0;
+    let totalIndexCount = 0;
+
+    meshes.forEach((m) => {
+        totalVertexCount += m.geometry.attributes.position.count;
+        totalIndexCount += m.geometry.index.count;
+    })
+
+    const batchedMesh = new THREE.BatchedMesh(
+        meshes.length,
+        totalVertexCount,
+        totalIndexCount,
+        new THREE.MeshStandardMaterial()
+    )
+
+    meshes.forEach((m,i) => {
+        const geometryId = batchedMesh.addGeometry(m.geometry);
+        const instanceId = batchedMesh.addInstance(geometryId);
+
+        m.updateMatrixWorld();
+        batchedMesh.setMatrixAt(instanceId, m.matrixWorld);
+    })
+
+    meshes.forEach(m => {
+        m.geometry.dispose();
+    });
+
+    scene.add(batchedMesh);
+    console.log(batchedMesh);
 })
 
 
