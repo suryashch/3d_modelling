@@ -110,7 +110,7 @@ const batchedMesh = new THREE.BatchedMesh(
 
 The reason why we pre allocate this memory in our `BatchedMesh` object is so that this entire block of memory (known as a buffer) gets passed from the CPU to the GPU as one `draw call`. In the vanilla implementation, our CPU was passing 16,000 individual draw calls the GPU causing the massive bottleneck.
 
-We pass our required parameters to `BatchedMesh`. Note, for trial purposes we create a new `MeshstandardMaterial`, which will be applied to all objects in our scene. Under normal conditions, we would likely need to split the geometry in the model by their internal memory property, and save each group to a different `BatchedMesh` object.
+We pass our required parameters to `BatchedMesh`. Note, for trial purposes we create a new `MeshstandardMaterial`, which will be applied to all objects in our scene. Under normal conditions, we would likely need to split the geometry in the model by their internal memory property, and save each group to a different `BatchedMesh` object. This would result in one draw call per material that exists in the model.
 
 
 
