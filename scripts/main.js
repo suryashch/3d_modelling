@@ -66,6 +66,7 @@ loader.load('sixty5-architectural.glb', (gltf) => { // 'piperacks_merged.glb
     gltf.scene.traverse((child) => {
         if (child.isMesh) {
             meshes.push(child);
+            console.log(child)
         }
     });
 
@@ -97,7 +98,6 @@ loader.load('sixty5-architectural.glb', (gltf) => { // 'piperacks_merged.glb
     });
 
     scene.add(batchedMesh);
-    console.log(batchedMesh);
 })
 
 
