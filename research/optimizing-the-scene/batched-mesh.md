@@ -160,6 +160,77 @@ We notice immediate improvements.
 
 The first thing to note is that we are getting an FPS count of ~90. A stark improvement from the roughly 10FPS we were getting from the vanilla implementation of the model. Secondly, we see that the number of draw calls in the scene have significantly reduced- from 16,000 down to only 2. A side note, we see 2 as the number here instead of 1 because the scene is also drawing our reference grid. The entire 16,000 objects in the model have been condensed down into 1 draw call here and the results are showing.
 
+## Multi-Material Batching
+
+The results in the previous section were promising, but we're not out of the woods yet. We only created one `BatchedMesh` object with a default `MeshStandardMaterial`. Our original model had many more materials, and if we want to maintain the original look and feel, we will need to account for these materials. We should still see performance improvements from earlier since we will have much less draw calls than our original.
+
+We need a new baseline since our original export did not include the materials from the model. We load our new model using the vanilla `gltfLoader`.
+
+![Performance Results Architectural Model Including materials](img/performance-results-architectural-including-mat.png)
+
+AS expected, we get poor results.
+
+Let's implement our tweaked `BatchedMesh` code. Here is what the updated code looks like.
+
+```js
+const loader = new GLTFLoader().setPath('models/bim-model/');
+loader.load('sixty5-architectural.glb', (gltf) => {
+    const materials_map = new Map()
+
+    gltf.scene.traverse((child) => {
+        if (child.isMesh) {
+            
+            if (!materials_map.has(child.material.name)) {
+                materials_map.set(child.material.name, []);
+                materials_map.get(child.material.name).push(child);
+            } else {
+                materials_map.get(child.material.name).push(child);
+            }
+        }    
+    });
+
+    materials_map.forEach((meshes, mat) => {
+        let totalVertexCount = 0;
+        let totalIndexCount = 0;
+
+        meshes.forEach((m) => {
+            totalVertexCount += m.geometry.attributes.position.count;
+            totalIndexCount += m.geometry.index.count;
+        })
+
+        const batchedMesh = new THREE.BatchedMesh(
+            meshes.length,
+            totalVertexCount,
+            totalIndexCount,
+            meshes[0].material
+        )
+
+        meshes.forEach((m,i) => {
+            const geometryId = batchedMesh.addGeometry(m.geometry);
+            const instanceId = batchedMesh.addInstance(geometryId);
+
+            m.updateMatrixWorld();
+            batchedMesh.setMatrixAt(instanceId, m.matrixWorld);
+        })
+
+        scene.add(batchedMesh);
+    })
+})
+```
+
+The code functions virtually exactly the same as before, except we swap our `meshes` array for a `Map` object. Each key in the map will correspond to a material in our model. Each value in the `Map` will correspond to our original `meshes` array. The `BatchedMesh` object creation step is now wrapped within a for loop that loops over each key in our `materials` object. This means, we will create a new `BatchedMesh` for every object in the scene.
+
+With these tweaks in place, we load our model to scene and observe the following results.
+
+![Performance Results Architectural Model Including materials - Optimized](img/performance-results-architectural-including-mat-optimized.png)
+
+The results are better than the baseline, but not great. Our `draw calls` figure has gone up from 2 to 42. Since each draw call corresponds to a material, we can infer that our scene our 41 unique materials in it. However, we observe a drop in FPS count- down to approximately 40. While this is better than our baseline, it is not comparable to the original 100FPS performance we saw with the single draw call model from earlier.
+
+I suspect this might have to do with our material choice themselves. [Certain materials cause larger strain on the GPU than others](../auxiliary-scene-elements/optimizing-material-selection.md), especially transparent materials like glass. We swap our architectural model for a different one to observe the results.
+
+
+
+
 ## Conclusion
 
 Through this endeavour, we were able to successfully reduce the total number of draw calls in a scene by batching our mesh objects based on material. For models with lots of individual mesh objects but relatively few total materials, this serves as a valid method of reducing the total bottleneck on our GPU. As we can see here, though our scene had a lot of tringles (~1.6M), the real slowdown in performance was the CPU-GPU interface and the number of draw calls. 
