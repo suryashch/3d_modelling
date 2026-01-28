@@ -81,7 +81,17 @@ The optimal solution contains a mix of LOD Control and Merging geometries. This 
 
 ## Batching the Scene
 
-Let's create a simple batching + LOD example with the `BIM - Architectural` model.
+Let's create a simple batching + LOD example with the `BIM - Architectural` model. The standard three.js library includes an object called the [`BatchedMesh`](https://threejs.org/docs/#BatchedMesh). It essentially allows the user to group objects that share the same materials, and pass them to the GPU as one `draw call`. [In this example](batched-mesh.md), we implement batching on our `BIM - Architectural` model and observe the performance results. The example walks through the specific code implementation used. For now, we shall just show the results.
+
+![Performance Results Architectural Model Optimized](img/performance-results-architectural-optimized.png)
+
+For reference, here were the original performance metrics from the standard un-optimized version of the `Architectural` model.
+
+![Performance Results Architectural Model non-optimized](img/performance-results-architectural.png)
+
+The difference in results is stark. Our batched model has far fewer `draw calls`, as well as highly improved FPS results (~90 versus ~10). The optimized architecrual model appears to have similar performance results as our `BIM interior` model.
+
+How did this work? 
 
 
 ### References
@@ -93,4 +103,8 @@ Let's create a simple batching + LOD example with the `BIM - Architectural` mode
 [basic scene](analysis_threejs.md)
 
 [view it's details](../information-modelling/working-with-object-metadata-in-bim.md)
+
+[In this example](batched-mesh.md)
+
+[batched mesh](https://threejs.org/docs/#BatchedMesh)
 
