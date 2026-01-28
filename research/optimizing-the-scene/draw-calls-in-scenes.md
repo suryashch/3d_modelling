@@ -6,7 +6,7 @@ In our [LOD Control Model](per-object-lod-control-with-threejs.md), we were able
 
 A `draw call`, as the name suggests, is a call from the CPU to the GPU to `draw` an object to the screen. The more objects you have in your scene, the more draw calls you have. If you aren't careful, this number of `draw calls` can significantly limit the performance capabilities of the scene well before GPU bottlenecks start emerging. In BIM projects where we have lots of individual objects, this is especially an issue.
 
-In this project I am working with an open source BIM model provided by [buildingsmart-community](https://github.com/buildingsmart-community). The model is of a real residential development in the Netherlands called [Sixty5](https://www.strijp-s.nl/en/building/sixty5). For ease of memory and github hosting limits, we limit our model to just the MEP (Mechanical, Electrical, Plumbing) layer for the time being.
+In this project I am working with an open source BIM model provided by [buildingsmart-community](https://github.com/buildingsmart-community). The model is of a real residential development in the Netherlands called [Sixty5](https://www.strijp-s.nl/en/building/sixty5). For ease of memory and github hosting limits, we split our model into individual layers, and load just the MEP (Mechanical, Electrical, Plumbing) layer for the time being.
 
 If we load this model directly to our scene, we start to appreciate why `draw calls` need to be limited. We have ~22000 draw calls in our scene- one for each object. Here is what the raw model looks like in our [basic scene](analysis_threejs.md).
 
@@ -24,7 +24,7 @@ To test out how `draw calls` work, I merge all the objects in my scene into one 
 
 2 `draw calls`- one for rendering the mesh, one for rendering the 2D grid.
 
-To drive the understanding home, I load two models to our scene and measure the performance- the `architectural` model and `interiors-kitchens` model from our test BIM model. Here are the results we observe from the `Interior Kitchen` Model.
+To drive the understanding home, I load two models to our scene and measure the performance- the `architectural` layer and `interiors-kitchens` layer from our test BIM model. Here are the results we observe from the `Interior Kitchen` Model.
 
 ![Performance Results Interior Kitchen Model](img/performance-results-interiors-kitchens.png)
 
@@ -77,11 +77,11 @@ Let's consolidate our findings from above into a table.
 | Piperacks - Dynamic | Varied | Varied | ~180 | Excellent |
 | Piperacks - Merged | 2 | 207,376 | ~100 | Good |
 
-The optimal solution contains a mix of LOD Control and Merging geometries. This process is called `batching`. Let's see if we can improve on these base results.
+The optimal solution contains a mix of LOD Control and Merging geometries. One process we could use is called `batching`. Let's see if we can improve on these base results.
 
 ## Batching the Scene
 
-Let's create a simple batching + LOD example with the `BIM - Architectural` model. The standard three.js library includes an object called the [`BatchedMesh`](https://threejs.org/docs/#BatchedMesh). It essentially allows the user to group objects that share the same materials, and pass them to the GPU as one `draw call`. [In this example](batched-mesh.md), we implement batching on our `BIM - Architectural` model and observe the performance results. The example walks through the specific code implementation used. For now, we shall just show the results.
+Let's create a simple batching example with the `BIM - Architectural` model. The standard three.js library includes an object called the [`BatchedMesh`](https://threejs.org/docs/#BatchedMesh). It essentially allows the grouping of objects that share the same materials, to be passed to the GPU as one `draw call`. Crucially, we are still able to maintain the per-object interactivity. [In this example](batched-mesh.md), we implement batching on our `BIM - Architectural` model and observe the performance results. The example walks through the specific code implementation used. For now, we shall just show the results.
 
 ![Performance Results Architectural Model Optimized](img/performance-results-architectural-optimized-noglass.png)
 
@@ -95,7 +95,9 @@ The difference in results is stark. Our batched model has far fewer `draw calls`
 
 How did this work? One key difference between the vanilla implementation of our `gltfLoader` and `BatchedMesh` is that we pre-allocated memory in the scene for the total number of vertices, triangles and indices. This allowed for a more structured draw call instruction being sent from the CPU to GPU. By pre-allocating the memory, we pass this array as a whole to the GPU for rendering.
 
-Compared to the vanilla implementation which sent individual calls for each object, the `BatchedMesh` creates one draw call containing all the geometry and transforms required to render to the screen. We split by material since this is the most computationally expensive step in a GPU.
+Compared to the vanilla implementation which sent individual calls for each object, the `BatchedMesh` creates one draw call containing all the geometry and transforms required to render to the screen.
+
+We split by material since this is the most computationally expensive step in a GPU. The lowest computational layer in a GPU is called a `shader`. Shaders can only process one material at a time, but can perform multiple parallel calculations on this one material. The `BatchedMesh` object is grouped by material for this reason, and as a result, all the geometries which share that same material can be grouped and passed to one `shader` in the GPU.
 
 ## Conclusion
 
