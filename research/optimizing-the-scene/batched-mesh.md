@@ -224,23 +224,34 @@ With these tweaks in place, we load our model to scene and observe the following
 
 ![Performance Results Architectural Model Including materials - Optimized](img/performance-results-architectural-including-mat-optimized.png)
 
-The results are better than the baseline, but not great. Our `draw calls` figure has gone up from 2 to 42. Since each draw call corresponds to a material, we can infer that our scene our 41 unique materials in it. However, we observe a drop in FPS count- down to approximately 40. While this is better than our baseline, it is not comparable to the original 100FPS performance we saw with the single draw call model from earlier.
+The results are better than the baseline, but not great. Our `draw calls` figure has gone up from 2 to 42. Since each draw call corresponds to a material, we can infer that our scene has 41 unique materials in it. However, we observe a drop in FPS count- down to approximately 40. While this is better than our baseline, it is not comparable to the original 100FPS performance we saw with the single draw call model from earlier.
 
-I suspect this might have to do with our material choice themselves. [Certain materials cause larger strain on the GPU than others](../auxiliary-scene-elements/optimizing-material-selection.md), especially transparent materials like glass. We swap our architectural model for a different one to observe the results.
+I suspect this might have to do with our material choice themselves. [Certain materials cause larger strain on the GPU than others](../auxiliary-scene-elements/optimizing-material-selection.md), especially transparent materials like glass. For testing purposes, we remove this material from teh scene to test the results. This was done through Blender.
 
+Here are the updated results.
 
+![Performance Results Architectural Model Including materials - Optimized - No Glass](img/performance-results-architectural-optimized-noglass.png)
 
+Perfect. We observe a high FPS count again, proving our theory that `Draw Calls` are a culprit to slow performance in scenes with lots of objects. To drive the point home, I load this same model using the vanilla `gltfLoader`.
+
+![Performance Results Architectural Model Including materials - non optimized - no glass](img/performance-results-architectural-noglass.png)
+
+We see our familiar low performance metrics with an FPS count of ~17. Conclusively, we can say that batching our scene drastically improved the performance.
 
 ## Conclusion
 
-Through this endeavour, we were able to successfully reduce the total number of draw calls in a scene by batching our mesh objects based on material. For models with lots of individual mesh objects but relatively few total materials, this serves as a valid method of reducing the total bottleneck on our GPU. As we can see here, though our scene had a lot of tringles (~1.6M), the real slowdown in performance was the CPU-GPU interface and the number of draw calls. 
+Through this endeavour, we were able to successfully reduce the total number of draw calls in a scene by batching our mesh objects based on material. For models with lots of individual mesh objects but relatively few total materials, this serves as a valid method of reducing the total bottleneck on our GPU. As we can see here, though our scene had a lot of tringles (~1.6M), the real slowdown in performance was the CPU-GPU interface and the number of draw calls.
 
-Batching our scene can help improve the overall performance.
+Its important to note that while we were able to successfully reduce the draw calls in our scene, this only cleared the bottleneck between CPU and GPU. Now that our CPU ceiling is much higher, this will shift the next bottleneck back to the total Triangles count, i.e. the GPU.
+
+In further research I explore [LOD control](../hosting-3d-model/per-object-lod-control-with-threejs.md) using `BatchedMesh` implementations, getting the best of both worlds - optimized draw call and optimized triangle counts.
 
 ## Links
 
-[batched mesh](https://threejs.org/docs/#BatchedMesh)
+[Three.js batched mesh docs](https://threejs.org/docs/#BatchedMesh)
 
-[traversing through the scene](../hosting-3d-model/bpy_with_lod.md)
+[Scene Traversal with bpy](../hosting-3d-model/bpy_with_lod.md)
 
-[CPU bottleneck that we tend to observe in large scenes](draw-calls-in-scenes.md)
+[Draw calls in scenes](draw-calls-in-scenes.md)
+
+[LOD control with Three.js](../hosting-3d-model/per-object-lod-control-with-threejs.md)
