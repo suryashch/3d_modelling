@@ -83,36 +83,40 @@ The optimal solution contains a mix of LOD Control and Merging geometries. This 
 
 Let's create a simple batching + LOD example with the `BIM - Architectural` model. The standard three.js library includes an object called the [`BatchedMesh`](https://threejs.org/docs/#BatchedMesh). It essentially allows the user to group objects that share the same materials, and pass them to the GPU as one `draw call`. [In this example](batched-mesh.md), we implement batching on our `BIM - Architectural` model and observe the performance results. The example walks through the specific code implementation used. For now, we shall just show the results.
 
-![Performance Results Architectural Model Optimized](img/performance-results-architectural-optimized.png)
+![Performance Results Architectural Model Optimized](img/performance-results-architectural-optimized-noglass.png)
 
 For reference, here were the original performance metrics from the standard un-optimized version of the `Architectural` model.
 
 ![Performance Results Architectural Model non-optimized](img/performance-results-architectural.png)
 
-The difference in results is stark. Our batched model has far fewer `draw calls`, as well as highly improved FPS results (~90 versus ~10). The optimized architecrual model appears to have similar performance results as our `BIM interior` model, aligning with our theory that draw calls were the factor slowing down performance.
+The difference in results is stark. Our batched model has far fewer `draw calls`, as well as highly improved FPS results (~75 versus ~10). The optimized architectural model appears to have similar performance results as our `BIM interior` model, aligning with our theory that draw calls were the factor slowing down performance.
 
 ## How Does Batching Work?
 
-How did this work? 
+How did this work? One key difference between the vanilla implementation of our `gltfLoader` and `BatchedMesh` is that we pre-allocated memory in the scene for the total number of vertices, triangles and indices. This allowed for a more structured draw call instruction being sent from the CPU to GPU. By pre-allocating the memory, we pass this array as a whole to the GPU for rendering.
 
-
+Compared to the vanilla implementation which sent individual calls for each object, the `BatchedMesh` creates one draw call containing all the geometry and transforms required to render to the screen. We split by material since this is the most computationally expensive step in a GPU.
 
 ## Conclusion
 
+Scenes with a large number of individual objects are performance bound by the CPU- regardless of how compressed each individual mesh is. By batching our mesh objects in the scene, we were able to drastically reduce the total number of CPU - GPU calls (known as `draw calls`), and improve the overall performance of the scene. Batching our objects allowed us to pre-allocate memory, and pass all our individual objects as one giant `draw call`.
 
+While the performance of the scene was significantly improved, we note that the new method only removed the bottleneck between the CPU and GPU, and shifted our performance ceiling back to the GPU. This means our scenes are once again upper-bound by the total number of vertices and edges.
 
+In future research I explore having the best of both worlds- both batching and [LOD control](../hosting-3d-model/per-object-lod-control-with-threejs.md), to reduce our triangle count while also keeping draw calls low.
 
-### References
+### Links
 
 [buildingsmart-community](https://github.com/buildingsmart-community)
 
-[Sixty5](https://www.strijp-s.nl/en/building/sixty5)
+[BIM Model - Sixty5](https://www.strijp-s.nl/en/building/sixty5)
 
-[basic scene](analysis_threejs.md)
+[Hosting a 3D model on a Webpage](analysis_threejs.md)
 
-[view it's details](../information-modelling/working-with-object-metadata-in-bim.md)
+[BIM Metadata Explained](../information-modelling/working-with-object-metadata-in-bim.md)
 
-[In this example](batched-mesh.md)
+[Batched Mesh](batched-mesh.md)
 
-[batched mesh](https://threejs.org/docs/#BatchedMesh)
+[three.js BatchedMesh docs](https://threejs.org/docs/#BatchedMesh)
 
+[Per Object LOD control with three.js](../hosting-3d-model/per-object-lod-control-with-threejs.md).
