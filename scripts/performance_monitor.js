@@ -57,13 +57,13 @@ export class PerformanceMonitor {
     trackLODLevels(scene) {
         this.activeLODLevels.clear();
         
-        scene.traverse((child) => {
-            if (child instanceof THREE.LOD) {
-                const level = child.getCurrentLevel();
-                const count = this.activeLODLevels.get(level) || 0;
-                this.activeLODLevels.set(level, count + 1);
-            }
-        });
+    //     scene.traverse((child) => {
+    //         if (child instanceof THREE.LOD) {
+    //             const level = child.getCurrentLevel();
+    //             const count = this.activeLODLevels.get(level) || 0;
+    //             this.activeLODLevels.set(level, count + 1);
+    //         }
+    //     });
     }
 
     render() {

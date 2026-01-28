@@ -93,10 +93,6 @@ loader.load('sixty5-architectural.glb', (gltf) => { // 'piperacks_merged.glb
         batchedMesh.setMatrixAt(instanceId, m.matrixWorld);
     })
 
-    meshes.forEach(m => {
-        m.geometry.dispose();
-    });
-
     scene.add(batchedMesh);
 })
 
