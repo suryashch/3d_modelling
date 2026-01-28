@@ -89,9 +89,17 @@ For reference, here were the original performance metrics from the standard un-o
 
 ![Performance Results Architectural Model non-optimized](img/performance-results-architectural.png)
 
-The difference in results is stark. Our batched model has far fewer `draw calls`, as well as highly improved FPS results (~90 versus ~10). The optimized architecrual model appears to have similar performance results as our `BIM interior` model.
+The difference in results is stark. Our batched model has far fewer `draw calls`, as well as highly improved FPS results (~90 versus ~10). The optimized architecrual model appears to have similar performance results as our `BIM interior` model, aligning with our theory that draw calls were the factor slowing down performance.
+
+## How Does Batching Work?
 
 How did this work? 
+
+
+
+## Conclusion
+
+
 
 
 ### References
