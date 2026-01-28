@@ -7,6 +7,9 @@ A repo where I explore how 3D modelling works.
 
 ### Latest Research
 
+[Reducing Draw Calls in Scenes](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/draw-calls-in-scenes.md)
+This document explains how draw calls are the true limiting factor in scenes with lots of individual objects. It shows how to reduce the total draw call count, reducing the bottleneck between CPU and GPU, and improving the overall FPS performance count of the scene.
+
 [Per Object LOD Control with ThreeJS](https://github.com/suryashch/3d_modelling/blob/main/hosting-3d-model/per-object-lod-control-with-threejs.md)
 This document explains how to set up "Level of Detail" (LOD) for individual objects in a 3D scene using Three.js. It shows how to make the computer switch to a simpler, faster version of an object when it is far away and a detailed version when it is close. This method helps the scene run smoothly by focusing the computer's power only on the things the viewer can see clearly.
 
