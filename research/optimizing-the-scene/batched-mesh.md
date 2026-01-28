@@ -82,6 +82,7 @@ gltf.scene.traverse((child) => {
     }
 })
 ```
+
 The output of this looks like so in the console.
 
 ![Object Attributes printed to console](img/object-geometry-attributes-in-console.png)
@@ -112,8 +113,58 @@ The reason why we pre allocate this memory in our `BatchedMesh` object is so tha
 
 We pass our required parameters to `BatchedMesh`. Note, for trial purposes we create a new `MeshstandardMaterial`, which will be applied to all objects in our scene. Under normal conditions, we would likely need to split the geometry in the model by their internal memory property, and save each group to a different `BatchedMesh` object. This would result in one draw call per material that exists in the model.
 
+Finally, we add our individual geometry to the `BatchedMesh` object. This involves first adding the mesh object, then acquiring the transformation matrix properties and assigning them back to the specific instance in our object.
 
+```js
+meshes.forEach((mesh,_) => {
+    const geometryId = batchedMesh.addGeometry(mesh.geometry);
+    const instanceId = batchedMesh.addInstance(geometryId);
 
+    mesh.updateMatrixWorld();
+    batchedMesh.setMatrixAt(instanceId, mesh.matrixWorld);
+})
+```
+
+First, for each object in our `meshes` array, we add the geometry to the `BatchedMesh` object. This function returns a `geometryId` which we can use to reference it in the buffer. We also need to assign an `instanceId` since we can have multiple instances of the same geometry. This function takes in the specific `geometryId` from earlier and assigns a new `instanceId`. From the [docs](https://threejs.org/docs/#BatchedMesh), it appears that the same `geometryId` is used to generate multiple instances of the object in the buffer. This means, if I add a cube object to my `BatchedMesh`, it gets assigned a signle `geometryId`. If I add multiple instances of this cube to my scene, they each get assigned a specific `instanceId`, but they all reference the same `geometryId`.
+
+From the docs on `BatchedMesh`:
+
+```js
+const box = new THREE.BoxGeometry( 1, 1, 1 );
+const sphere = new THREE.SphereGeometry( 1, 12, 12 );
+const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+// initialize and add geometries into the batched mesh
+const batchedMesh = new BatchedMesh( 10, 5000, 10000, material );
+const boxGeometryId = batchedMesh.addGeometry( box );
+const sphereGeometryId = batchedMesh.addGeometry( sphere );
+// create instances of those geometries
+const boxInstancedId1 = batchedMesh.addInstance( boxGeometryId );
+const boxInstancedId2 = batchedMesh.addInstance( boxGeometryId );
+const sphereInstancedId1 = batchedMesh.addInstance( sphereGeometryId );
+const sphereInstancedId2 = batchedMesh.addInstance( sphereGeometryId );
+```
+
+We see that two instances of the `box` have been added to our object, both referencing the same `boxGeometryId`, but with different `instanceId`.
+
+Back to the original code, the last line of our code updates the `matrixWorld()` transformation of the specific geometry. Essentially we are copying over the transformation matrix from the original object into our `BatchedMesh`.
+
+The last step is to add our `BatchedMesh` obejct to scene.
+
+```js
+scene.add(batchedMesh);
+```
+
+We notice immediate improvements.
+
+![Performance Results Optimized Architectural Model](img/performance-results-architectural-optimized.png)
+
+The first thing to note is that we are getting an FPS count of ~90. A stark improvement from the roughly 10FPS we were getting from the vanilla implementation of the model. Secondly, we see that the number of draw calls in the scene have significantly reduced- from 16,000 down to only 2. A side note, we see 2 as the number here instead of 1 because the scene is also drawing our reference grid. The entire 16,000 objects in the model have been condensed down into 1 draw call here and the results are showing.
+
+## Conclusion
+
+Through this endeavour, we were able to successfully reduce the total number of draw calls in a scene by batching our mesh objects based on material. For models with lots of individual mesh objects but relatively few total materials, this serves as a valid method of reducing the total bottleneck on our GPU. As we can see here, though our scene had a lot of tringles (~1.6M), the real slowdown in performance was the CPU-GPU interface and the number of draw calls. 
+
+Batching our scene can help improve the overall performance.
 
 ## Links
 
