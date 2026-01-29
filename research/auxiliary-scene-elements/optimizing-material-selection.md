@@ -41,6 +41,14 @@ The `normal` vector `vn`, provides us with a face's angle and can be used to mea
 The `vt` coordinates refer to 2D coordinates that relate to a UV Map
 
 
+### MeshStandardMaterial
+
+
+### MeshLambertMaterial
+
+
+### Custom Materials
+
 
 ## Vertex Colors
 
