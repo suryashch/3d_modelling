@@ -50,57 +50,60 @@ scene.add( gridHelper );
 const perfMonitor = new PerformanceMonitor()
 
 // Basic Loader
-// const loader = new GLTFLoader().setPath('models/bim-model/');
-// loader.load('sixty5-architectural-noglass.glb', (gltf) => { // 'piperacks_merged.glb
-//     const mesh = gltf.scene;
-//     mesh.position.set(0,0,0);
-//     scene.add(mesh);
-// })
-
-// Batched Mesh Loader
 const loader = new GLTFLoader().setPath('models/bim-model/');
-loader.load('sixty5-architectural-noglass.glb', (gltf) => {
-    const materials = new Map()
-
-    gltf.scene.traverse((child) => {
-        if (child.isMesh) {
-            
-            if (!materials.has(child.material.name)) {
-                materials.set(child.material.name, []);
-                materials.get(child.material.name).push(child);
-            } else {
-                materials.get(child.material.name).push(child);
-            }
-        }    
+loader.load('sixty5-interiors-kitchens.glb', (gltf) => { // 'piperacks_merged.glb
+    const mesh = gltf.scene;
+    mesh.position.set(0,0,0);
+    scene.overrideMaterial = new THREE.MeshLambertMaterial({
+        color:"#156082",
     });
-
-    materials.forEach((meshes, mat) => {
-        let totalVertexCount = 0;
-        let totalIndexCount = 0;
-
-        meshes.forEach((m) => {
-            totalVertexCount += m.geometry.attributes.position.count;
-            totalIndexCount += m.geometry.index.count;
-        })
-
-        const batchedMesh = new THREE.BatchedMesh(
-            meshes.length,
-            totalVertexCount,
-            totalIndexCount,
-            meshes[0].material
-        )
-
-        meshes.forEach((m,i) => {
-            const geometryId = batchedMesh.addGeometry(m.geometry);
-            const instanceId = batchedMesh.addInstance(geometryId);
-
-            // m.updateMatrixWorld();
-            batchedMesh.setMatrixAt(instanceId, m.matrixWorld);
-        })
-
-        scene.add(batchedMesh);
-    })
+    scene.add(mesh);
 })
+
+// // Batched Mesh Loader
+// const loader = new GLTFLoader().setPath('models/bim-model/');
+// loader.load('sixty5-architectural-noglass.glb', (gltf) => {
+//     const materials = new Map()
+
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh) {
+            
+//             if (!materials.has(child.material.name)) {
+//                 materials.set(child.material.name, []);
+//                 materials.get(child.material.name).push(child);
+//             } else {
+//                 materials.get(child.material.name).push(child);
+//             }
+//         }    
+//     });
+
+//     materials.forEach((meshes, mat) => {
+//         let totalVertexCount = 0;
+//         let totalIndexCount = 0;
+
+//         meshes.forEach((m) => {
+//             totalVertexCount += m.geometry.attributes.position.count;
+//             totalIndexCount += m.geometry.index.count;
+//         })
+
+//         const batchedMesh = new THREE.BatchedMesh(
+//             meshes.length,
+//             totalVertexCount,
+//             totalIndexCount,
+//             meshes[0].material
+//         )
+
+//         meshes.forEach((m,i) => {
+//             const geometryId = batchedMesh.addGeometry(m.geometry);
+//             const instanceId = batchedMesh.addInstance(geometryId);
+
+//             m.updateMatrixWorld();
+//             batchedMesh.setMatrixAt(instanceId, m.matrixWorld);
+//         })
+
+//         scene.add(batchedMesh);
+//     })
+// })
 
 
 // // Batched Loader
