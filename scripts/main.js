@@ -17,8 +17,11 @@ const scene = new THREE.Scene();
 // const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
 
 const camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000 );
+// camera.zoom.set(1)
 scene.add( camera );
 camera.position.set(40,10,25);
+camera.zoom = 10;
+camera.updateProjectionMatrix();
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -28,7 +31,7 @@ controls.maxDistance=100;
 controls.minPolarAngle=0.5;
 controls.maxPolarAngle=1.57;
 controls.autoRotate=false;
-controls.target = new THREE.Vector3(0,0,0);
+controls.target = new THREE.Vector3(-15,0,-15);
 controls.rotateSpeed = 0.5;
 controls.zoomSpeed = 0.75;
 controls.panSpeed = 0.5;
@@ -418,6 +421,8 @@ function animate() {
     requestAnimationFrame(animate);
     controls.update();
     renderer.render(scene, camera);
+
+    console.log(camera.position)
 
     perfMonitor.update(renderer, scene);
 };
