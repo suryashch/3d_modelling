@@ -42,3 +42,24 @@ footer {
 p {
     font-size: 1rem; /* property: value; */
 }
+
+.ui-panel {
+    position: fixed;
+    background: rgba(38, 40, 55, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    z-index: 100;
+    padding: 20px;
+}
+
+.top-left { top: 20px; left: 20px; }
+
+h1.ui-panel {
+    margin: 0;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 50px;
+    border-left: 4px solid #3FDCFB;
+}
