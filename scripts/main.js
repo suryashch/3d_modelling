@@ -14,18 +14,24 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+// const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+
+const camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000 );
+scene.add( camera );
 camera.position.set(40,10,25);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = false;
+controls.enableDamping = true;
 controls.enablePan = true;
 controls.minDistance=1;
 controls.maxDistance=100;
 controls.minPolarAngle=0.5;
-controls.maxPolarAngle=1.5;
+controls.maxPolarAngle=1.57;
 controls.autoRotate=false;
 controls.target = new THREE.Vector3(0,0,0);
+controls.rotateSpeed = 0.5;
+controls.zoomSpeed = 0.75;
+controls.panSpeed = 0.5;
 controls.update()
 
 const light_2 = new THREE.DirectionalLight(0xffffff, 0.25);
@@ -49,7 +55,7 @@ scene.add( gridHelper );
 
 const perfMonitor = new PerformanceMonitor()
 
-// // Basic Loader
+// // // Basic Loader
 // const loader = new GLTFLoader().setPath('models/bim-model/');
 // loader.load('sixty5-interiors-kitchens.glb', (gltf) => { // 'piperacks_merged.glb
 //     const mesh = gltf.scene;
@@ -62,7 +68,7 @@ const perfMonitor = new PerformanceMonitor()
 
 // Batched Mesh Loader
 const loader = new GLTFLoader().setPath('models/bim-model/');
-loader.load('sixty5-mep-lowres.glb', (gltf) => {
+loader.load('sixty5-interiors-kitchens.glb', (gltf) => {
     const materials = new Map()
 
     gltf.scene.traverse((child) => {
@@ -105,6 +111,185 @@ loader.load('sixty5-mep-lowres.glb', (gltf) => {
     })
 })
 
+const loader_2 = new GLTFLoader().setPath('models/bim-model/');
+loader_2.load('sixty5-structural.glb', (gltf) => {
+    const materials = new Map()
+
+    gltf.scene.traverse((child) => {
+        if (child.isMesh) {
+            
+            if (!materials.has(child.material.name)) {
+                materials.set(child.material.name, []);
+                materials.get(child.material.name).push(child);
+            } else {
+                materials.get(child.material.name).push(child);
+            }
+        }    
+    });
+
+    materials.forEach((meshes, mat) => {
+        let totalVertexCount = 0;
+        let totalIndexCount = 0;
+
+        meshes.forEach((m) => {
+            totalVertexCount += m.geometry.attributes.position.count;
+            totalIndexCount += m.geometry.index.count;
+        })
+
+        const batchedMesh = new THREE.BatchedMesh(
+            meshes.length,
+            totalVertexCount,
+            totalIndexCount,
+            meshes[0].material
+        )
+
+        meshes.forEach((m,i) => {
+            const geometryId = batchedMesh.addGeometry(m.geometry);
+            const instanceId = batchedMesh.addInstance(geometryId);
+
+            m.updateMatrixWorld();
+            batchedMesh.setMatrixAt(instanceId, m.matrixWorld);
+        })
+
+        scene.add(batchedMesh);
+    })
+})
+
+const loader_3 = new GLTFLoader().setPath('models/bim-model/');
+loader_3.load('sixty5-mep-lowres.glb', (gltf) => {
+    const materials = new Map()
+
+    gltf.scene.traverse((child) => {
+        if (child.isMesh) {
+            
+            if (!materials.has(child.material.name)) {
+                materials.set(child.material.name, []);
+                materials.get(child.material.name).push(child);
+            } else {
+                materials.get(child.material.name).push(child);
+            }
+        }    
+    });
+
+    materials.forEach((meshes, mat) => {
+        let totalVertexCount = 0;
+        let totalIndexCount = 0;
+
+        meshes.forEach((m) => {
+            totalVertexCount += m.geometry.attributes.position.count;
+            totalIndexCount += m.geometry.index.count;
+        })
+
+        const batchedMesh = new THREE.BatchedMesh(
+            meshes.length,
+            totalVertexCount,
+            totalIndexCount,
+            meshes[0].material
+        )
+
+        meshes.forEach((m,i) => {
+            const geometryId = batchedMesh.addGeometry(m.geometry);
+            const instanceId = batchedMesh.addInstance(geometryId);
+
+            m.updateMatrixWorld();
+            batchedMesh.setMatrixAt(instanceId, m.matrixWorld);
+        })
+
+        scene.add(batchedMesh);
+    })
+})
+
+
+// const loader_4 = new GLTFLoader().setPath('models/bim-model/');
+// loader_4.load('sixty5-architectural-noglass.glb', (gltf) => {
+//     const materials = new Map()
+
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh) {
+            
+//             if (!materials.has(child.material.name)) {
+//                 materials.set(child.material.name, []);
+//                 materials.get(child.material.name).push(child);
+//             } else {
+//                 materials.get(child.material.name).push(child);
+//             }
+//         }    
+//     });
+
+//     materials.forEach((meshes, mat) => {
+//         let totalVertexCount = 0;
+//         let totalIndexCount = 0;
+
+//         meshes.forEach((m) => {
+//             totalVertexCount += m.geometry.attributes.position.count;
+//             totalIndexCount += m.geometry.index.count;
+//         })
+
+//         const batchedMesh = new THREE.BatchedMesh(
+//             meshes.length,
+//             totalVertexCount,
+//             totalIndexCount,
+//             meshes[0].material
+//         )
+
+//         meshes.forEach((m,i) => {
+//             const geometryId = batchedMesh.addGeometry(m.geometry);
+//             const instanceId = batchedMesh.addInstance(geometryId);
+
+//             m.updateMatrixWorld();
+//             batchedMesh.setMatrixAt(instanceId, m.matrixWorld);
+//         })
+
+//         scene.add(batchedMesh);
+//     })
+// })
+
+// const loader_4 = new GLTFLoader().setPath('models/bim-model/');
+// loader_4.load('sixty5-architectural.glb', (gltf) => {
+//     const meshes = [];
+
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh) {
+//             meshes.push(child);
+//         }
+//     });
+
+//     let totalVertexCount = 0;
+//     let totalIndexCount = 0;
+
+//     meshes.forEach((m) => {
+//         totalVertexCount += m.geometry.attributes.position.count;
+//         totalIndexCount += m.geometry.index.count;
+//     })
+
+//     const batchedMesh = new THREE.BatchedMesh(
+//         meshes.length,
+//         totalVertexCount,
+//         totalIndexCount,
+//         new THREE.MeshBasicMaterial({
+//             wireframe:true,
+//             color: "0x000000"
+//         })
+//     )
+
+//     batchedMesh.matrix.identity();
+//     batchedMesh.position.set(0, 0, 0);
+//     batchedMesh.scale.set(1, 1, 1);
+
+//     meshes.forEach((m,i) => {
+//         const geom = m.geometry.clone();
+//         m.updateMatrixWorld();
+//         geom.applyMatrix4(m.matrixWorld);
+        
+//         const geometryId = batchedMesh.addGeometry(geom);
+//         const instanceId = batchedMesh.addInstance(geometryId);
+
+//         m.updateMatrixWorld();
+//         batchedMesh.setMatrixAt(instanceId, new THREE.Matrix4());
+//     })
+
+//     scene.add(batchedMesh);
+// })
 
 // // Batched Loader
 // const loader = new GLTFLoader();
