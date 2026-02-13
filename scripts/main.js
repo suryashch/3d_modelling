@@ -162,7 +162,7 @@ loader_2.load('sixty5-structural.glb', (gltf) => {
 })
 
 const loader_3 = new GLTFLoader().setPath('models/bim-model/');
-loader_3.load('sixty5-mep.glb', (gltf) => {
+loader_3.load('sixty5-mep-lowres.glb', (gltf) => {
     const materials = new Map()
 
     gltf.scene.traverse((child) => {
