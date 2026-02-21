@@ -7,6 +7,8 @@ A repo where I explore how 3D modelling works.
 
 ### Latest Research
 
+[Instancing and Batching]
+
 [Reducing Draw Calls in Scenes](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/draw-calls-in-scenes.md)
 This document explains how draw calls are the true limiting factor in scenes with lots of individual objects. It shows how to reduce the total draw call count, reducing the bottleneck between CPU and GPU, and improving the overall FPS performance count of the scene.
 
