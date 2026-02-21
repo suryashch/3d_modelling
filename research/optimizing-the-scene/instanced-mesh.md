@@ -68,17 +68,17 @@ for ( let i = 0; i < 5; i++ ) {
 
 In the code above, we first define the basic geometry and material of our cube object. We then create our `InstancedMesh` object with a max count of 5.
 
-The next step involves assigning the transformation matrices of each individual instance, and this required a bit of a non standard route. We first create a `dummy` object that will be used to store the random position, rotatation and scale transfromations which we apply. We loop over our max_instance_count, which is 5 in this case, and start randonly assigning position, rotatation and scale values. Once done, we copy the dummy objects transformation matrix over to our new instance using the `setMatrixAt()` method.
+The next step involves assigning the transformation matrices of each individual instance, and this required a bit of a non standard route. We first create a `dummy` object that will be used to store the random position, rotatation and scale transformations which we apply. We loop over our max_instance_count, which is 5 in this case, and start randomly assigning position, rotation and scale values. Once done, we copy the dummy objects transformation matrix over to our new instance using the `setMatrixAt()` method.
 
 An important note that is mentioned both in the docs, and online is that the `needsUpdate()` flag needs to be manually set to `true`. This flag signals to the GPU that a recalculation of the object's matrix is needed. More information about this flag can be sought in the [ThreeJS manual](https://threejs.org/manual/#en/how-to-update-things).
 
-Once loaded to the screen, we see our 5 instances of the cube in random positions, rotatations and scales as intended.
+Once loaded to the screen, we see our 5 instances of the cube in random positions, rotations and scales as intended.
 
 Let's move on to our large BIM model.
 
 ## Code Implementation
 
-The first problem we need to tackle is finding out which objects in our scene share the same geometry. We take a look at our 3D model in the browser console prior to conducting any batching. Using tha basic loader, we call this code to our [Pre established Three JS scene](../hosting-3d-model/analysis_threejs.md).
+The first problem we need to tackle is finding out which objects in our scene share the same geometry. We take a look at our 3D model in the browser console prior to conducting any batching. Using the basic loader, we call this code to our [Pre established Three JS scene](../hosting-3d-model/analysis_threejs.md).
 
 ```js
 const loader = new GLTFLoader().setPath('models/bim-model/');
@@ -96,7 +96,7 @@ Now we open the console in our browser to see what we get.
 
 ![Console Log of the gltf.scene](img/instancing-console-base.png)
 
-Note the first two objects in the scene. They are both "IfcFlowFittingM_Bend_Circular_DYKA". This appears to be a fitting of some sort. In theory, these 2 objects should share the same geometry, however, we note that their `uuid` ia different. But, when we expand both objects in the scene-
+Note the first two objects in the scene. They are both "IfcFlowFittingM_Bend_Circular_DYKA". This appears to be a fitting of some sort. In theory, these 2 objects should share the same geometry, however, we note that their `uuid` is different. But, when we expand both objects in the scene-
 
 ![Expanding the Geometry of the 2 objects](img/instancing-geometry-uuid.png)
 
@@ -232,7 +232,7 @@ uuid_map.forEach((value, key) => {
 });
 ```
 
-The entire collection of steps above essentially creates a dictionary of each unique geometry in the scene, and save the specific transformation matrices of all the instances. Once created, it assigns these transformation matrices to an instance of the object. THe final result looks like this.
+The entire collection of steps above essentially creates a dictionary of each unique geometry in the scene, and save the specific transformation matrices of all the instances. Once created, it assigns these transformation matrices to an instance of the object. The final result looks like this.
 
 ![Instanced BIM model, first results](img/instanced-mesh-BIM-first-result.png)
 
@@ -244,7 +244,7 @@ Some promising statistics here. Firstly, we note that the number of draw calls h
 
 Due to these higher draw calls, we can understandably see a lower FPS count (~30) signalling that we are once again bottlenecked by the CPU.
 
-But the key highlight here is the memory usage. We observe that the memory being used by the webpage is more than half what we saw in the baseline (200MB versus ~500MB). This is good news and we shall work to optimize this figure even more.
+But the key highlight here is the memory usage. We observe that the memory being used by the webpage is less than half what we saw in the baseline (200MB versus ~500MB). This is good news and we shall work to optimize this figure even more.
 
 ## Optimizations
 
@@ -286,7 +286,7 @@ Some striking observations.
 - `triangles` count is high- 90% of the original 8M. This implies that most of the intricate geometry is in the fittings.
 - `memory` is down to a whopping 6% of the original 500. **We can account for 90% of the triangles using only 6% of the original memory.**
 
-These are fanstastic results, but we're not out of the woods. Let's Batch the remaining non unique geometry to keep our draw calls low. While perusing through the `BatchedMesh` [documentation](https://threejs.org/docs/#BatchedMesh), it appears that this object supports instancing natively. In this case, we can simply incorporate our individual geometries into a single `BatchedMesh` object instead of `InstancedMesh`.
+These are fanstastic results, but we're not out of the woods. Let's Batch the remaining non unique geometry to keep our draw calls low. While perusing through the `BatchedMesh` [documentation](https://threejs.org/docs/#BatchedMesh), it appears that this object actually supports instancing natively. In this case, we can simply incorporate our individual geometries into a single `BatchedMesh` object instead of `InstancedMesh`.
 
 We tweak our loader loop as follows.
 
@@ -363,7 +363,7 @@ loader_instance.load('sixty5-mep.glb', (gltf) => {
 })
 ```
 
-The code is mostly same, with a few differences. BatchedMesh requires that we [track the total number of vertices, indices and instaces](batched-mesh.md), so we have created variables for them. In our traversal loop, we assign the geometry and matrix to our `uuid_map` as before, but we now also add the number of vertices and indices in the mesh, per unique geometry. This step is only added if the geometry is unique (i.e. it does not already exist in the Map). In both cases, we need to keep track of the total number of objects that will be in our scene (`totalInstanceCount`).
+The code is mostly same, with a few differences. BatchedMesh requires that we [track the total number of vertices, indices and instances](batched-mesh.md), so we have created variables for them. In our traversal loop, we assign the geometry and matrix to our `uuid_map` as before, but we now also add the number of vertices and indices in the mesh, per unique geometry. This step is only added if the geometry is unique (i.e. it does not already exist in the Map). In both cases, we need to keep track of the total number of objects that will be in our scene (`totalInstanceCount`).
 
 We create our `batchedMesh` object based on these variables. Note, we are defining a default material here for ease. In later iterations, this will need to be split be the default material within the model.
 
@@ -373,7 +373,7 @@ Once loaded, these are the results we observe.
 
 ![Instancing Within BatchedMesh](img/instancing-within-batchedmesh.png)
 
-Not bad. Our draw calls are down to 2 (one for the BatchedMesh, one for the grid). The FPS figure is a lot higher than our baseline (173 versus ~130). The memory usage is down to 114 MB (from ~500). This appears to be a our happy optimum. Researching further shows that splitting the `InstancedMesh` and `BatchedMesh` may further improve memory usage but we will save that for another day.
+Not bad. Our draw calls are down to 2 (one for the BatchedMesh, one for the grid). The FPS figure is a lot higher than our baseline (173 versus ~130). The memory usage is down to 114 MB (from ~500). This appears to be a happy optimum. Researching further shows that splitting the `InstancedMesh` and `BatchedMesh` may further improve memory usage but we will save that for another day.
 
 As a last step, we split the materials out, to truly compare apples to apples.
 
