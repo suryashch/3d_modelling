@@ -7,6 +7,9 @@ A repo where I explore how 3D modelling works.
 
 ### Latest Research
 
+[Instancing Basics](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md)
+This document explores the concept of instancing, whereby objects that share the same geometry are saved to one InstancedMesh and referenced using their transformation matries. This allows for memory reduction in large scenes with lots of objects and works natively with BatchedMesh, to reduce the overall draw calls in the scene.
+
 [Reducing Draw Calls in Scenes](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/draw-calls-in-scenes.md)
 This document explains how draw calls are the true limiting factor in scenes with lots of individual objects. It shows how to reduce the total draw call count, reducing the bottleneck between CPU and GPU, and improving the overall FPS performance count of the scene.
 
@@ -15,9 +18,6 @@ This document explains how to set up "Level of Detail" (LOD) for individual obje
 
 [Understanding LOD Compression with Blender API (bpy)](https://github.com/suryashch/3d_modelling/blob/main/hosting-3d-model/bpy_with_lod.md)
 This document demonstrates how to use the Blender Python API (bpy) to automate the creation of multiple Level of Detail (LOD) versions of a 3D model. By scripting the decimation process, it allows for the consistent generation of high, medium, and low-resolution meshes that can be exported for use in web or game engines. This automated approach ensures that all LOD levels are correctly named and organized, significantly reducing the manual effort required to prepare assets for optimized real-time rendering.
-
-[Superposing Models of Different LOD in a Web Based Environment](https://github.com/suryashch/3d_modelling/blob/main/hosting-3d-model/analysis_superposing-models.md)
-This document explains how to put multiple 3D models on top of each other in a web browser using Three.js. It focuses on how to make sure the different models align correctly and stay in the right place even when you move the camera. The guide also covers how to keep the website running fast when using many models at once by managing the computer's memory and processing power efficiently.
 
 --------------------------------------------------------------------------
 
@@ -44,6 +44,11 @@ This document demonstrates how to use the Blender Python API (bpy) to automate t
 7) [Per Object LOD Control with ThreeJS](https://github.com/suryashch/3d_modelling/blob/main/hosting-3d-model/per-object-lod-control-with-threejs.md)
 This document explains how to set up "Level of Detail" (LOD) for individual objects in a 3D scene using Three.js. It shows how to make the computer switch to a simpler, faster version of an object when it is far away and a detailed version when it is close. This method helps the scene run smoothly by focusing the computer's power only on the things the viewer can see clearly.
 
+8) [Draw Calls in Scenes](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/draw-calls-in-scenes.md)
+The article examines performance optimization in Three.js scenes by addressing "draw calls," which are CPU-to-GPU instructions that frequently become bottlenecks in complex Building Information Modeling (BIM) projects. While high draw call counts significantly lower frame rates, merging all geometries into a single mesh is an inadequate solution because it disables frustum culling, breaks mesh instancing—leading to massive file sizes—and eliminates per-object interactivity. Instead, the article highlights the use of BatchedMesh as an effective optimization technique that groups objects by material into a single draw call while maintaining individual control and pre-allocating memory. This approach successfully reduces the CPU overhead and improves FPS, ultimately shifting the scene's performance ceiling from the CPU back to the GPU's triangle processing limits.
+
+9) [Improving Model Memory Usage and Performance with Instancing](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md)
+Instancing in Three.js reduces memory overhead by storing unique vertex data once and rendering duplicates through transformation matrices. This implementation targeting a 20,000-object BIM model identified duplicate geometry UUIDs to transition from standard BatchedMesh to an instanced-batch hybrid. Key results include an 80% memory reduction (from 500MB to 114MB) and a 33% FPS improvement. While highly effective for repetitive architectural elements like pipe fittings, the method fails if mesh decimation creates unique geometry variations. Performance remains ultimately bound by GPU triangle limits, necessitating the future integration of Level of Detail (LOD) controls.
 
 
 * Summaries provided by Gemini Flash
