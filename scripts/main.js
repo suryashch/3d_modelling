@@ -70,57 +70,143 @@ const perfMonitor = new PerformanceMonitor()
 //     scene.add(mesh);
 // })
 
+// const loader_instance = new GLTFLoader().setPath('models/bim-model/');
+// loader_instance.load('sixty5-mep.glb', (gltf) => {
+    
+//     let uuid_map = new Map();
+//     let totalVertexCount = 0;
+//     let totalIndexCount = 0;
+//     let totalInstanceCount = 0;
+
+//     const material = new THREE.MeshToonMaterial({
+//         color:"#270a77",
+//     });
+    
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh) {
+            
+//             const geom = child.geometry
+//             const geom_uuid = geom.uuid;
+//             const inst_matrix = child.matrixWorld;
+            
+//             if ( !uuid_map.has( geom_uuid )){
+//                 // If map does not have the uuid already, first create it
+                
+//                 uuid_map.set( geom_uuid, new Map() );
+
+//                 uuid_map.get( geom_uuid ).set( "geometry", geom );
+//                 uuid_map.get( geom_uuid ).set( "matrix", [] );
+
+//                 uuid_map.get( geom_uuid ).get( "matrix").push( inst_matrix );
+
+//                 totalVertexCount += geom.attributes.position.count;
+//                 totalIndexCount += geom.index.count;
+//                 totalInstanceCount += 1;
+            
+//             } else {
+//                 // Map contains the uuid hence only need to push transformation matrix
+
+//                 uuid_map.get( geom_uuid ).get( "matrix").push( inst_matrix );
+
+//                 totalInstanceCount += 1;
+
+//             };
+//         };
+//     });
+
+//     const batchedMesh = new THREE.BatchedMesh(
+//         totalInstanceCount,
+//         totalVertexCount,
+//         totalIndexCount,
+//         material
+//     );
+
+//     uuid_map.forEach((value, key) => {
+        
+//         const geometry = value.get("geometry");
+//         const matrices = value.get("matrix");
+        
+//         if (matrices.length > 0){
+//             const geom_id = batchedMesh.addGeometry( geometry );
+
+//             for ( let i=0; i < matrices.length; i++){
+//                 const instanceId = batchedMesh.addInstance(geom_id)
+//                 batchedMesh.setMatrixAt( instanceId, matrices[i] )
+//             };
+//         };
+//     });
+    
+//     batchedMesh.needsUpdate = true;
+//     scene.add(batchedMesh);
+
+// })
+
 const loader_instance = new GLTFLoader().setPath('models/bim-model/');
 loader_instance.load('sixty5-mep.glb', (gltf) => {
-    let uuid_map = new Map();
+    
+    let material_map = new Map();
     
     gltf.scene.traverse((child) => {
         if (child.isMesh) {
             
+            const material = child.material
             const geom = child.geometry
             const geom_uuid = geom.uuid;
             const inst_matrix = child.matrixWorld;
             
-            if ( !uuid_map.has( geom_uuid )){
-                // If map does not have the uuid already, first create it
-                
-                uuid_map.set( geom_uuid, new Map() );
-
-                uuid_map.get( geom_uuid ).set( "geometry", geom );
-                uuid_map.get( geom_uuid ).set( "matrix", [] );
-
-                uuid_map.get( geom_uuid ).get( "matrix").push( inst_matrix );
-            
-            } else {
-                // Map contains the uuid hence only need to push transformation matrix
-
-                uuid_map.get( geom_uuid ).get( "matrix").push( inst_matrix );
-            
+            if ( !material_map.has( material )){
+                material_map.set( material, {
+                    unique_geoms: new Map(),
+                    vCount: 0,
+                    iCount: 0,
+                    instCount: 1
+                });
             };
+            
+            const data = material_map.get( material )
+            data.instCount++;
+
+            if ( !data.unique_geoms.has( geom_uuid ) ) {
+                data.unique_geoms.set(geom_uuid, {
+                    geometry: geom,
+                    matrix: []
+                });
+
+                data.vCount += geom.attributes.position.count;
+                data.iCount += geom.index.count;
+            };
+            
+            data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
         };
     });
-    
-    uuid_map.forEach((value, key) => {
-        
-        const geometry = value.get("geometry");
-        const num_instances = value.get("matrix").length;
-        const matrices = value.get("matrix");
-        
-        const material = new THREE.MeshToonMaterial({
-            color:"#270a77",
-        });
-        if ( num_instances > 1 ){
-            const mesh = new THREE.InstancedMesh( geometry, material, num_instances );
-            scene.add( mesh );
 
-            for ( let i=0; i < matrices.length; i++){
-                mesh.setMatrixAt( i, matrices[i] )
+    material_map.forEach(( value,key ) => {
+        const batchedMesh = new THREE.BatchedMesh(
+            value.instCount,
+            value.vCount,
+            value.iCount,
+            key
+        );
+
+        value.unique_geoms.forEach((subvalue) => {
+        
+            const geometry = subvalue.geometry;
+            const matrices = subvalue.matrix;
+            
+            if (matrices.length > 0){
+                const geom_id = batchedMesh.addGeometry( geometry );
+
+                for ( let i=0; i < matrices.length; i++){
+                    const instanceId = batchedMesh.addInstance(geom_id)
+                    batchedMesh.setMatrixAt( instanceId, matrices[i] )
+                };
             };
-
-            mesh.needsUpdate = true;
-        }
+        });
+        
+        batchedMesh.needsUpdate = true;
+        scene.add(batchedMesh);
     });
-})
+});
 
 
 
