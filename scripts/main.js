@@ -58,17 +58,71 @@ scene.add( gridHelper );
 
 const perfMonitor = new PerformanceMonitor()
 
-// // Basic Loader
-const loader1 = new GLTFLoader().setPath('models/bim-model/');
-loader1.load('sixty5-mep.glb', (gltf) => { // 'piperacks_merged.glb
-    const mesh = gltf.scene;
-    console.log(gltf.scene);
-    mesh.position.set(0,0,0);
-    mesh.material = new THREE.MeshToonMaterial({
-        color:"#270a77",
+// // // Basic Loader
+// const loader1 = new GLTFLoader().setPath('models/bim-model/');
+// loader1.load('sixty5-mep.glb', (gltf) => { // 'piperacks_merged.glb
+//     const mesh = gltf.scene;
+//     console.log(gltf.scene);
+//     mesh.position.set(0,0,0);
+//     mesh.material = new THREE.MeshToonMaterial({
+//         color:"#270a77",
+//     });
+//     scene.add(mesh);
+// })
+
+const loader_instance = new GLTFLoader().setPath('models/bim-model/');
+loader_instance.load('sixty5-mep.glb', (gltf) => {
+    let uuid_map = new Map();
+    
+    gltf.scene.traverse((child) => {
+        if (child.isMesh) {
+            
+            const geom = child.geometry
+            const geom_uuid = geom.uuid;
+            const inst_matrix = child.matrixWorld;
+            
+            if ( !uuid_map.has( geom_uuid )){
+                // If map does not have the uuid already, first create it
+                
+                uuid_map.set( geom_uuid, new Map() );
+
+                uuid_map.get( geom_uuid ).set( "geometry", geom );
+                uuid_map.get( geom_uuid ).set( "matrix", [] );
+
+                uuid_map.get( geom_uuid ).get( "matrix").push( inst_matrix );
+            
+            } else {
+                // Map contains the uuid hence only need to push transformation matrix
+
+                uuid_map.get( geom_uuid ).get( "matrix").push( inst_matrix );
+            
+            };
+        };
     });
-    scene.add(mesh);
+    
+    uuid_map.forEach((value, key) => {
+        
+        const geometry = value.get("geometry");
+        const num_instances = value.get("matrix").length;
+        const matrices = value.get("matrix");
+        
+        const material = new THREE.MeshToonMaterial({
+            color:"#270a77",
+        });
+        if ( num_instances > 1 ){
+            const mesh = new THREE.InstancedMesh( geometry, material, num_instances );
+            scene.add( mesh );
+
+            for ( let i=0; i < matrices.length; i++){
+                mesh.setMatrixAt( i, matrices[i] )
+            };
+
+            mesh.needsUpdate = true;
+        }
+    });
 })
+
+
 
 // Batched Mesh Loader
 
