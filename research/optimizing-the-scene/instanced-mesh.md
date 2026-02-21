@@ -413,7 +413,7 @@ loader_instance.load('sixty5-mep.glb', (gltf) => {
                 data.iCount += geom.index.count;
             };
             
-            data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
+            data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix );
         };
     });
 
@@ -434,8 +434,8 @@ loader_instance.load('sixty5-mep.glb', (gltf) => {
                 const geom_id = batchedMesh.addGeometry( geometry );
 
                 for ( let i=0; i < matrices.length; i++){
-                    const instanceId = batchedMesh.addInstance(geom_id)
-                    batchedMesh.setMatrixAt( instanceId, matrices[i] )
+                    const instanceId = batchedMesh.addInstance(geom_id);
+                    batchedMesh.setMatrixAt( instanceId, matrices[i] );
                 };
             };
         });
