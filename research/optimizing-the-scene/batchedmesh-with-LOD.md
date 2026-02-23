@@ -45,6 +45,13 @@ import { performanceRangeLOD, simplifyGeometriesByErrorLOD } from '@three.ez/sim
 
 The first import is just the base three.js library. The next 4 are cosmetic and not necessarily related to the mechanism. What is important are the last 3- `three-mesh-bvh`, `@three.ez/batched-mesh-extensions` and `three.ez/simplify-geometry`.
 
+[`three-mesh-bvh`](https://github.com/gkjohnson/three-mesh-bvh) is a library used to create a Bounding Volume Hierarchy (BVH) of your scene. A BVH is similar to an octree, but rather than recursively divide by spatial coordinates, we divide by objects in the scene. More on this later.
+
+[`batched-mesh-extensions`](https://github.com/agargaro/batched-mesh-extensions/) is a library that adds functionality to the `batchedmesh` object in threejs. More on this later.
+
+And finally, [`simplify-geometry`](https://www.npmjs.com/package/@three.ez/simplify-geometry) appears to be a tool used to create multiple LOD's of a mesh. We shall also explore this later.
+
+
 
 
 ## Links
