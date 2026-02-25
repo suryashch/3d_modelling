@@ -266,7 +266,74 @@ A key thing to keep in mind here is that we need to load these models within an 
 
 Anywway, back to the code. We nest our loader functions within an `Await` keyword, to pause the execution of the `init()` function until the loader object has successfully loaded our mesh. We had to implement this step since we were getting errors in the `batchedMesh` initialization due to the asynchronous nature of the JS functions.
 
-Our loader object is loading our 3 versions of the mesh geometries to variables `hi`, `med` and `low`. We create our `LODArray` as the 
+Our loader object is loading the 3 versions of the mesh geometries to variables `hi`, `med` and `low`. We create the array `LODArray` with the individual LODs assigned to it.
+
+We count the vertices and indices as normal.
+
+The next code block initiates the `BatchedMesh` object with our precalculated data as follows -->
+
+```js
+batchedMesh = new THREE.BatchedMesh( instanceCount, vCount, iCount, new THREE.MeshStandardMaterial());
+
+const geometryId = batchedMesh.addGeometry( LODArray[0], vCount, iCount );
+batchedMesh.addGeometryLOD( geometryId, LODArray[1], 5);
+batchedMesh.addGeometryLOD( geometryId, LODArray[2], 10);
+```
+
+The main geometry that is being used as the reference is that of LOD0. LOD's 1 and 2 are added to the batchedMesh object using the `addGeometryLOD()` method, as described in the example above.
+
+Lastly, we set the position of our objects at random.
+
+On load, this is what we are greeted with.
+
+![Batched Mesh with LOD control - Basic Example](img/batchedmesh-with-lod-base-example.gif)
+
+Our LOD function seems to be working well however, there seems to be some distortion at lower resolution LOD's. LOD0 (the full high resolution mesh) appears to be fine, but the other LOD's don't look the way they should. As a reminder, this is what we expect the lower LOD models to look like.
+
+![Foot Model LOD- expected](../hosting-3d-model/img/human-foot-LOD-versions-color.png)
+
+We see in the README of the [batched-mes-extensions repo](https://github.com/agargaro/batched-mesh-extensions/), that for the LOD control mechanism to work, the geometries need to share the same vertex buffer. This is likely why we see distortions at our lower resolution LOD's. The way I understand it, when we [decimate](../reducing-mesh-density/analysis_decimate.md) our mesh in Blender, we create a new list of vertex ID's for our new mesh. Vertex ID number 10 in our original mesh may not correspond to the same vertex in our lower quality one.
+
+As a result, our `batchedMesh` is creating the lower LOD while referencing the vertex indices of the LOD0 mesh. Hence, we see this distorted, exploded look.
+
+This is why the example above was using the `SimplifyGeometry` method. This method applies the Decimation in place, while preserving the original vertex structure. In our case, this is not ideal, since this also increases the upfront runtime cost (for each unique geometry in the scene, we now need to apply a decimation step at runtime).
+
+This is a problem, but one which I will tackle later. For now, I would like to measure some performance metrics.
+
+## Performance of the Basic Scene
+
+With only 20 instances of our foot in the scene, a high FPS count here is nothing to write home about. Let's increase our instance count and see how the performance varies.
+
+To start off with, lets find some base results. Our highest quality mesh contains 1,586 triangles, medium res contains 634, and low res contains 158. From high to low res, we see a 0.1x compression.
+
+This means, on average we should expect to see a 10x improvement in GPU performance for batched LOD objects.
+
+Here are the results of different number of instances in our objects.
+
+| n_instances | triangles | expected_triangles | draw_calls | memory | fps |
+| ----------- | --------- | ------------------ | ---------- | ------ | --- |
+| 1 | 158  | 1,586 | 1 | 6 MB | 240 |
+| 10 | 1,580 | 15,860 | 1 | 6 MB | 240 |
+| 100 | 15,800 | 156,000 | 1 | 6 MB | 240 |
+| 1,000 | 158,000 | 1,586,000 | 1 | 7 MB | 230 |
+| 5,000 | 790,000 | 7,930,000 | 1 | 10 MB | 150 |
+| 10,000 | 1,580,000 | 15,860,000 | 1 | 20 MB | 95 |
+| 100,000 | 15,800,000 | 158,600,000 | 1 | 40 MB | 10 |
+
+About the data:
+- n_instances: The number of instances in the batchedMesh.
+- triangles: The number of triangles in the scene.
+- expected_triangles: The number of triangles that there would be, if we only had LOD0 (the highest quality mesh) active.
+- draw_calls: The number of draw calls in the scene. Since we're working with batched mesh with one material, this will be 1 by default.
+- memory: The memory being used by the webpage.
+- fps: The overall frames being rendered per second. 60 FPS and above is generally gold standard.
+
+There is a lot to unpack here. Firstly, the power of instancing is not lost on me. Even with 100,000 instances of the same object, our scene is only consuming 40 MB of memory!
+
+Secondly, the LOD system is doing a lot of heavy lifting here. At 10,000 instances, we see that our GPU would have had to rrender 15M triangles to the scene. Our MEP BIM model, used in the BatchedMesh experiment had ~8M triangles, so this is already double our MEP model. At 100,000 instances, the total number of theoretical triangles would be astronomical. The LOD system is only rendering the lowest quality mesh except for objects that are within the specified distance from the camera. As a result, our 10,000 instance model has only 790k trianlges, [roughly half of the Interior Kitchen model](draw-calls-in-scenes.md), but with 7,000 more individual objects.
+
+The performance results I'm most excited about are at n=10,000, where we see that the `expected_triangles` count is ~15M. This count was reduced down to 1.5M, and so the scene rendered at 95FPS. 15M triangles is a lot (double that of the MEP model), so I would expect that with our batching and LOD technique, we see some drastic performance improvements over our [current best](instanced-mesh.md).
+
 
 
 
@@ -298,3 +365,5 @@ Our loader object is loading our 3 versions of the mesh geometries to variables 
 [base `batchedMesh` methods](https://threejs.org/docs/#BatchedMesh)
 
 [Promises in JS](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises)
+
+[decimate](../reducing-mesh-density/analysis_decimate.md)
