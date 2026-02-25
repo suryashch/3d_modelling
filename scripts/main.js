@@ -213,7 +213,7 @@ extendBatchedMeshPrototype();
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BatchedMesh.prototype.computeBoundsTree = computeBatchedBoundsTree;
 
-const instanceCount = 100000;
+const instanceCount = 10000;
 
 let batchedMesh;
 
