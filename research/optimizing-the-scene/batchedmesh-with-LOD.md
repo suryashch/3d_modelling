@@ -260,7 +260,13 @@ async function init() {
 init();
 ```
 
+This code follows almost the same format as our previous `BatchedMesh` implementations, with a few key differences. Firstly, since we only have one mesh in our scene, we do not need a traversal loop. Instead, we load our three meshes as objects `hi`, `med` and `low`.
 
+A key thing to keep in mind here is that we need to load these models within an async function. Async functions in js are a fundamental base JS concept that allow you to conduct operations out of sync. This means that functions can be loaded in the background while others are still running. A key concept here is that of a `Promise`, which essentially can be though of as a placeholder return value from a function. The promise enables the asynchronous nature of these functions, as we no longer need to wait for the function to run entirely, just for the Promise to be created. Further information about promises [can be found here](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises).
+
+Anywway, back to the code. We nest our loader functions within an `Await` keyword, to pause the execution of the `init()` function until the loader object has successfully loaded our mesh. We had to implement this step since we were getting errors in the `batchedMesh` initialization due to the asynchronous nature of the JS functions.
+
+Our loader object is loading our 3 versions of the mesh geometries to variables `hi`, `med` and `low`. We create our `LODArray` as the 
 
 
 
@@ -290,3 +296,5 @@ init();
 [`LOD.ts`](https://github.com/agargaro/batched-mesh-extensions/blob/master/src/core/feature/LOD.ts)
 
 [base `batchedMesh` methods](https://threejs.org/docs/#BatchedMesh)
+
+[Promises in JS](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises)
