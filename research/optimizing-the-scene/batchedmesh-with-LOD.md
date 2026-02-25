@@ -312,7 +312,7 @@ Here are the results of different number of instances in our objects.
 
 | n_instances | triangles | expected_triangles | draw_calls | memory | fps |
 | ----------- | --------- | ------------------ | ---------- | ------ | --- |
-| 1 | 158  | 1,586 | 1 | 6 MB | 240 |
+| 1 | 158 | 1,586 | 1 | 6 MB | 240 |
 | 10 | 1,580 | 15,860 | 1 | 6 MB | 240 |
 | 100 | 15,800 | 156,000 | 1 | 6 MB | 240 |
 | 1,000 | 158,000 | 1,586,000 | 1 | 7 MB | 230 |
@@ -330,11 +330,13 @@ About the data:
 
 There is a lot to unpack here. Firstly, the power of instancing is not lost on me. Even with 100,000 instances of the same object, our scene is only consuming 40 MB of memory!
 
-Secondly, the LOD system is doing a lot of heavy lifting here. At 10,000 instances, we see that our GPU would have had to rrender 15M triangles to the scene. Our MEP BIM model, used in the BatchedMesh experiment had ~8M triangles, so this is already double our MEP model. At 100,000 instances, the total number of theoretical triangles would be astronomical. The LOD system is only rendering the lowest quality mesh except for objects that are within the specified distance from the camera. As a result, our 10,000 instance model has only 790k trianlges, [roughly half of the Interior Kitchen model](draw-calls-in-scenes.md), but with 7,000 more individual objects.
+Secondly, the LOD system is doing a lot of heavy lifting here. At 10,000 instances, we see that our GPU would have had to render 15M `expected_triangles` to the scene. Our MEP BIM model, used in the [BatchedMesh experiment](instanced-mesh.md) had ~8M triangles, so this is already double our MEP model. At 100,000 instances, the total number of theoretical triangles would be astronomical. The LOD system is only rendering the lowest quality mesh except for objects that are within the specified distance from the camera. As a result, our 10,000 instance model has only 790k trianlges, [roughly half of the Interior Kitchen model](draw-calls-in-scenes.md), but with 7,000 more individual objects.
 
 The performance results I'm most excited about are at n=10,000, where we see that the `expected_triangles` count is ~15M. This count was reduced down to 1.5M, and so the scene rendered at 95FPS. 15M triangles is a lot (double that of the MEP model), so I would expect that with our batching and LOD technique, we see some drastic performance improvements over our [current best](instanced-mesh.md).
 
+A happy side effect I noticed as well- as we zoom into an object and the LOD changes, we observe a fleeting increase in the total number of triangles being rendered to the screen, but that number very quickly drops back down as we continue zooming in. This is because of a method called `Frustum Culling`- objects that are outside of the immediate view of the camera are not rendered to the screen. `Frustum Culling` is enabled by default in three.js. What this means is, even if we have a high concentration of intricately modelled items in an area, our total triangle count will still be balanced because the objects off-screen will not be rendered.
 
+![Frustum Culling Example - source Anatoliy Gerlits](img/frustum-culling-example.png)
 
 
 
