@@ -131,13 +131,13 @@ for ( let i = 0; i < geometriesLODArray.length; i ++ ) {
 }
 ```
 
-Let's break this down. The array geometriesLODArrayis an array of arrays. The first level of this array contains a reference to the specific geometry in the scene (specifically here it refers to our 10 different `TorusKnowGeometries` defined earlier). The second level of the list contains the geometry associated with our different LOD's. Researching a little more on [`SimplifyGeometry`](https://www.npmjs.com/package/@three.ez/simplify-geometry), we see that index 0 corresponds to the highest detailed mesh. We save the vairable `geometrylOD` to be the ith index of this array, so effectively we are looping through our different object instances.
+Let's break this down. The array `geometriesLODArray` is an array of arrays. The first level of this array contains a reference to the specific geometry in the scene (specifically here it refers to our 10 different `TorusKnowGeometries` defined earlier). The second level of the list contains the geometry associated with our different LOD's. Researching a little more on [`SimplifyGeometry`](https://www.npmjs.com/package/@three.ez/simplify-geometry), we see that index 0 corresponds to the highest detailed mesh. We save the variable `geometrylOD` to be the ith index of this array, so effectively we are looping through our different object instances.
 
 The `geometryID` is returned after adding the geometry of our object to the `batchedMesh`. `batchedMesh.addGeometry()` is in the base three.js library and is a default method in batchedMesh. This method returns the specific ID of our geometry, which we can use later for instancing. Within the `addGeometry()` method, we are passing the specific geometry itself (in this case, geometryLOD[ 0 ], corresponding to the highest detailed mesh here). The next two parameters correspond to `reservedVertexCount`, and `reservedIndexCount`. -1 signifies the default value, and we pass in the exact count of the number of instances we would like in the scene through the `LODIndexCount`, returned by the function `getBatchedMeshLODCount`.
 
 We are then introduced to a new method, `.addGeometryLOD()`. This is a new method from the [`batched-mesh-extensions` library](https://github.com/agargaro/batched-mesh-extensions/) specifically under the [`LOD.ts`](https://github.com/agargaro/batched-mesh-extensions/blob/master/src/core/feature/LOD.ts) file. The parameters are the ID of the geometry (from the previous paragraph), the geometry of the LOD itself, from the `geometryLOD` array, and the distance at which the switch occurs. Each of the 4 LODs are added at the distances specified.
 
-That was an absolute mouthful. Essentially, we create a nested array geometryLOD, that contains at level 1, the basic geometries that exist in our model. Level 2 of the array contains the specific LODs for that object. Calling geometriesLODArray[0] will give us all the LOD's of the object in index 0. For each item in our for loop, we save the geometry of the object to our `BatchedMesh`, and then add the individual LOD's via the `addGeometryLOD()` method.
+That was an absolute mouthful. Essentially, we create a nested array `geometryLOD`, that contains at level 1, the basic geometries that exist in our model. Level 2 of the array contains the specific LODs for that object. Calling geometriesLODArray[0] will give us all the LOD's of the object in index 0. For each item in our for loop, we save the geometry of the object to our `BatchedMesh`, and then add the individual LOD's via the `addGeometryLOD()` method.
 
 The next step in our code is to add the postitions of each of our instances. The code in our sample scene here adds these positions at random and places each instace on a 2x2 grid.
 
@@ -188,6 +188,78 @@ I think we're armed with sufficient information to recreate this concept with ou
 ## Basic Implementation
 
 We shall try to recreate the above example using our Human Foot model. The first thing we need to do is split it out into its corresponding LOD's.
+
+We proceed with this basic code structure.
+
+```js
+extendBatchedMeshPrototype();
+
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+THREE.BatchedMesh.prototype.computeBoundsTree = computeBatchedBoundsTree;
+
+const instanceCount = 20;
+
+let batchedMesh;
+
+async function init() {
+    const loader_batchLOD = new GLTFLoader().setPath('models/foot/');
+    
+    const [ hi, med, low ] = await Promise.all([
+        loader_batchLOD.loadAsync('human-foot-hires.glb'),
+        loader_batchLOD.loadAsync('human-foot-medres.glb'),
+        loader_batchLOD.loadAsync('human-foot-lowres.glb')
+    ]);
+    
+    const lod0 = hi.scene.children[0].geometry;
+    const lod1 = med.scene.children[0].geometry;
+    const lod2 = low.scene.children[0].geometry;
+
+    const LODArray = [ 
+        lod0,
+        lod1,
+        lod2
+    ];
+    
+    const vCount = (lod0.attributes.position.count + 
+                        lod1.attributes.position.count + 
+                        lod2.attributes.position.count);
+    
+    const iCount = (lod0.index.count + 
+                        lod1.index.count + 
+                        lod2.index.count);
+
+    const lod0_iCount = lod0.index.count;
+
+    console.log( LODArray );
+
+    const dummy = new THREE.Object3D();
+
+    batchedMesh = new THREE.BatchedMesh( instanceCount, vCount, iCount, new THREE.MeshStandardMaterial());
+
+    const geometryId = batchedMesh.addGeometry( LODArray[0], vCount, iCount );
+    batchedMesh.addGeometryLOD( geometryId, LODArray[1], 5);
+    batchedMesh.addGeometryLOD( geometryId, LODArray[2], 10);
+
+    for (let i = 0; i < instanceCount; i++ ){
+        const id = batchedMesh.addInstance( geometryId );
+        
+        dummy.position.set(
+            Math.round( Math.random() * 10 ),
+            Math.round( Math.random() * 10 ),
+            Math.round( Math.random() * 10 )
+        );
+
+        dummy.updateMatrix();
+        batchedMesh.setMatrixAt( id, dummy.matrix );
+        batchedMesh.needsUpdate = true;
+    };
+
+    scene.add(batchedMesh);
+}
+
+init();
+```
+
 
 
 
