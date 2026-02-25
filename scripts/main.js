@@ -3,6 +3,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PerformanceMonitor } from './performance_monitor.js'
 
+import { acceleratedRaycast, computeBatchedBoundsTree } from 'three-mesh-bvh';
+
+import { createRadixSort, extendBatchedMeshPrototype, getBatchedMeshLODCount } from '@three.ez/batched-mesh-extensions';
+
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
@@ -41,26 +45,14 @@ const light_2 = new THREE.DirectionalLight(0xffffff, 0.25);
 light_2.position.set(10,10,10)
 scene.add(light_2);
 
-// const light_3 = new THREE.DirectionalLight(0xffffff, 0.25);
-// light_3.position.set(-10,-10,10)
-// scene.add(light_3);
-
-// const light_4 = new THREE.DirectionalLight(0xffffff, 0.25);
-// light_4.position.set(10,-10,10)
-// scene.add(light_4);
-
-// const light_5 = new THREE.DirectionalLight(0xffffff, 0.25);
-// light_5.position.set(-10,10,10)
-// scene.add(light_5);
-
 const gridHelper = new THREE.GridHelper( 100, 50 ); // ( size, divisions )
 scene.add( gridHelper );
 
 const perfMonitor = new PerformanceMonitor()
 
 // // // Basic Loader
-// const loader1 = new GLTFLoader().setPath('models/bim-model/');
-// loader1.load('sixty5-mep.glb', (gltf) => { // 'piperacks_merged.glb
+// const loader1 = new GLTFLoader().setPath('models/foot/');
+// loader1.load('human-foot-medres.glb', (gltf) => { // 'piperacks_merged.glb
 //     const mesh = gltf.scene;
 //     console.log(gltf.scene);
 //     mesh.position.set(0,0,0);
@@ -141,72 +133,148 @@ const perfMonitor = new PerformanceMonitor()
 
 // })
 
-const loader_instance = new GLTFLoader().setPath('models/bim-model/');
-loader_instance.load('sixty5-mep.glb', (gltf) => {
+
+
+
+
+
+// const loader_instance = new GLTFLoader().setPath('models/bim-model/');
+// loader_instance.load('sixty5-mep.glb', (gltf) => {
     
-    let material_map = new Map();
+//     let material_map = new Map();
     
-    gltf.scene.traverse((child) => {
-        if (child.isMesh) {
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh) {
             
-            const material = child.material
-            const geom = child.geometry
-            const geom_uuid = geom.uuid;
-            const inst_matrix = child.matrixWorld;
+//             const material = child.material
+//             const geom = child.geometry
+//             const geom_uuid = geom.uuid;
+//             const inst_matrix = child.matrixWorld;
             
-            if ( !material_map.has( material )){
-                material_map.set( material, {
-                    unique_geoms: new Map(),
-                    vCount: 0,
-                    iCount: 0,
-                    instCount: 1
-                });
-            };
+//             if ( !material_map.has( material )){
+//                 material_map.set( material, {
+//                     unique_geoms: new Map(),
+//                     vCount: 0,
+//                     iCount: 0,
+//                     instCount: 1
+//                 });
+//             };
             
-            const data = material_map.get( material )
-            data.instCount++;
+//             const data = material_map.get( material )
+//             data.instCount++;
 
-            if ( !data.unique_geoms.has( geom_uuid ) ) {
-                data.unique_geoms.set(geom_uuid, {
-                    geometry: geom,
-                    matrix: []
-                });
+//             if ( !data.unique_geoms.has( geom_uuid ) ) {
+//                 data.unique_geoms.set(geom_uuid, {
+//                     geometry: geom,
+//                     matrix: []
+//                 });
 
-                data.vCount += geom.attributes.position.count;
-                data.iCount += geom.index.count;
-            };
+//                 data.vCount += geom.attributes.position.count;
+//                 data.iCount += geom.index.count;
+//             };
             
-            data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
-        };
-    });
+//             data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
+//         };
+//     });
 
-    material_map.forEach(( value,key ) => {
-        const batchedMesh = new THREE.BatchedMesh(
-            value.instCount,
-            value.vCount,
-            value.iCount,
-            key
+//     material_map.forEach(( value,key ) => {
+//         const batchedMesh = new THREE.BatchedMesh(
+//             value.instCount,
+//             value.vCount,
+//             value.iCount,
+//             key
+//         );
+
+//         value.unique_geoms.forEach((subvalue) => {
+        
+//             const geometry = subvalue.geometry;
+//             const matrices = subvalue.matrix;
+            
+//             if (matrices.length > 0){
+//                 const geom_id = batchedMesh.addGeometry( geometry );
+
+//                 for ( let i=0; i < matrices.length; i++){
+//                     const instanceId = batchedMesh.addInstance(geom_id)
+//                     batchedMesh.setMatrixAt( instanceId, matrices[i] )
+//                 };
+//             };
+//         });
+        
+//         batchedMesh.needsUpdate = true;
+//         scene.add(batchedMesh);
+//     });
+// });
+
+
+
+// BatchedMesh with LOD
+extendBatchedMeshPrototype();
+
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+THREE.BatchedMesh.prototype.computeBoundsTree = computeBatchedBoundsTree;
+
+const instanceCount = 2000;
+
+let batchedMesh;
+
+async function init() {
+    const loader_batchLOD = new GLTFLoader().setPath('models/foot/');
+    
+    const [ hi, med, low ] = await Promise.all([
+        loader_batchLOD.loadAsync('human-foot-hires.glb'),
+        loader_batchLOD.loadAsync('human-foot-medres.glb'),
+        loader_batchLOD.loadAsync('human-foot-lowres.glb')
+    ]);
+    
+    const lod0 = hi.scene.children[0].geometry;
+    const lod1 = med.scene.children[0].geometry;
+    const lod2 = low.scene.children[0].geometry;
+
+    const LODArray = [ 
+        lod0,
+        lod1,
+        lod2
+    ];
+    
+    const vCount = (lod0.attributes.position.count + 
+                        lod1.attributes.position.count + 
+                        lod2.attributes.position.count);
+    
+    const iCount = (lod0.index.count + 
+                        lod1.index.count + 
+                        lod2.index.count);
+
+    const lod0_iCount = lod0.index.count;
+
+    console.log( LODArray );
+
+    const dummy = new THREE.Object3D();
+
+    batchedMesh = new THREE.BatchedMesh( instanceCount, vCount, iCount, new THREE.MeshStandardMaterial());
+
+    const geometryId = batchedMesh.addGeometry( LODArray[0], vCount, iCount );
+    batchedMesh.addGeometryLOD( geometryId, LODArray[1], 5);
+    batchedMesh.addGeometryLOD( geometryId, LODArray[2], 10);
+
+    for (let i = 0; i < instanceCount; i++ ){
+        const id = batchedMesh.addInstance( geometryId );
+        
+        dummy.position.set(
+            Math.round( Math.random() * 20 ),
+            Math.round( Math.random() * 20 ),
+            Math.round( Math.random() * 20 )
         );
 
-        value.unique_geoms.forEach((subvalue) => {
-        
-            const geometry = subvalue.geometry;
-            const matrices = subvalue.matrix;
-            
-            if (matrices.length > 0){
-                const geom_id = batchedMesh.addGeometry( geometry );
-
-                for ( let i=0; i < matrices.length; i++){
-                    const instanceId = batchedMesh.addInstance(geom_id)
-                    batchedMesh.setMatrixAt( instanceId, matrices[i] )
-                };
-            };
-        });
-        
+        dummy.updateMatrix();
+        batchedMesh.setMatrixAt( id, dummy.matrix );
         batchedMesh.needsUpdate = true;
-        scene.add(batchedMesh);
-    });
-});
+    };
+
+    scene.add(batchedMesh);
+}
+
+init();
+
 
 
 
