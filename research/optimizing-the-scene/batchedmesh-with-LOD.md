@@ -177,6 +177,22 @@ The TLAS can be thought of as a broad phase algorithm. It starts at the top leve
 
 For the time being, we are more intersted in the TLAS, although the BLAS will be very useful too.
 
+Finally, the batchedMesh is loaded to the scene. 
+
+```js
+scene.add( batchedMesh );
+```
+
+I think we're armed with sufficient information to recreate this concept with our own internal models.
+
+## Basic Implementation
+
+We shall try to recreate the above example using our Human Foot model. The first thing we need to do is split it out into its corresponding LOD's.
+
+
+
+
+
 ## Links
 
 [instancing](instanced-mesh.md)
