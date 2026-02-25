@@ -330,7 +330,21 @@ About the data:
 
 There is a lot to unpack here. Firstly, the power of instancing is not lost on me. Even with 100,000 instances of the same object, our scene is only consuming 40 MB of memory!
 
-Secondly, the LOD system is doing a lot of heavy lifting here. At 10,000 instances, we see that our GPU would have had to render 15M `expected_triangles` to the scene. Our MEP BIM model, used in the [BatchedMesh experiment](instanced-mesh.md) had ~8M triangles, so this is already double our MEP model. At 100,000 instances, the total number of theoretical triangles would be astronomical. The LOD system is only rendering the lowest quality mesh except for objects that are within the specified distance from the camera. As a result, our 10,000 instance model has only 790k trianlges, [roughly half of the Interior Kitchen model](draw-calls-in-scenes.md), but with 7,000 more individual objects.
+Secondly, the LOD system is doing a lot of heavy lifting here. At 10,000 instances, we see that our GPU would have had to render 15M `expected_triangles` to the scene. Our MEP BIM model, used in the [InstancedMesh experiment](instanced-mesh.md) had ~8M triangles, so this is already double our MEP model. At 100,000 instances, the total number of theoretical triangles would be astronomical. The LOD system is only rendering the lowest quality mesh except for objects that are within the specified distance from the camera. As a result, our 10,000 instance model has only 790k trianlges, [roughly half of the Interior Kitchen model](draw-calls-in-scenes.md), but with 7,000 more individual objects.
+
+At n=100,000 we see that our FPS count has reduced drastically. This is understandable since the GPU is rendering 15M triangles even after LOD compression. However, we load a new model layer from our original BIM model - `W-installatie` (yes, I'm aware the names are in Dutch, what can you do). This layer of the model is enormous, clocking in at 15M triangles. This level of triangle count can only mean one thing- we're dealing with a *really* large piping model. Sure enough, here is what the intricate details look like.
+
+![W-Installatie Model Intricate Details](img/W-installatie-intricate%20details.png)
+
+This model has internally got 15M triangles, which seems to align with our n=100,000 instance. However, loading this model to my scene and activating my NVIDIA GPU (extreme performance GPU), these are the results we get.
+
+![BatchedMesh with W-Installatie Model Results](img/W-installatie-batchedmesh.png)
+
+These results are far better. 136 FPS without even breaking a sweat. The BatchedMesh with LOD model however, fares worse.
+
+![BatchedMesh with LOD on our Foot Model](img/batchedmesh-lod-100000-instances.png)
+
+Since our triangle count is the same in both cases, I suspect this may again have to do with CPU bottlenecks rather than GPU throughput. We can see that our NVIDIA GPU can handle 15M triangles easily, yet struggles with our BatchedMesh LOD scene. This may have to do with the distance calculations being conducted by our LOD engine. Luckily, we are provided with some techniques to address this, namely the BVH mentioned above.
 
 The performance results I'm most excited about are at n=10,000, where we see that the `expected_triangles` count is ~15M. This count was reduced down to 1.5M, and so the scene rendered at 95FPS. 15M triangles is a lot (double that of the MEP model), so I would expect that with our batching and LOD technique, we see some drastic performance improvements over our [current best](instanced-mesh.md).
 
@@ -338,6 +352,15 @@ A happy side effect I noticed as well- as we zoom into an object and the LOD cha
 
 ![Frustum Culling Example - source Anatoliy Gerlits](img/frustum-culling-example.png)
 
+## Applying to MEP Model
+
+
+
+
+
+## Simplify Geometry Problem
+
+We need to address the simplify geometry issue. Our batchedMesh system does not work unless our LOD's share the same vertex array. A fix provided 
 
 
 ## Links
