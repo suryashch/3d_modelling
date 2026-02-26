@@ -1,6 +1,6 @@
 # BatchedMesh with LOD
 
-We have established that [instancing](instanced-mesh.md) and [batching](batched-mesh.md) are techniques which can be used to improve the performance of the scene. Both these methods tackle the issue of multiple draw calls dominating the resources of our scene. In those examples, we worked with a scene containing ~20k objects and proved that by batching and instancing, we were able to increase FPS count, as well as reduce memory usage. However, we established that this does not relate to GPU performance at all, and in intricately modelled scenes (as in the case with our MEP model), we will still be throttled by the performance of the GPU.
+We have established that [instancing](instanced-mesh.md) and [batching](batched-mesh.md) are techniques which can be used to improve the performance of the scene. Both these methods tackle the issue of multiple [draw calls](draw-calls-in-scenes.md) dominating the resources of our scene. In those examples, we worked with a scene containing ~20k objects and proved that by batching and instancing, we were able to increase FPS count, as well as reduce memory usage. However, we established that this does not relate to GPU performance at all, and in intricately modelled scenes (as in the case with our MEP model), we will still be throttled by the performance of the GPU.
 
 
 
@@ -12,7 +12,7 @@ We draw inspiration for this project from [this example](https://threejs.org/exa
 
 ## Problem Statement
 
-[In prior research]((../hosting-3d-model/per-object-lod-control-with-threejs.md)), we implemented LOD control to our scene using the [three.LOD()](https://threejs.org/docs/#LOD) class. This tool worked best when we had individual objects being loaded in a standard fashion.
+[In prior research](../hosting-3d-model/per-object-lod-control-with-threejs.md), we implemented LOD control to our scene using the [three.LOD()](https://threejs.org/docs/#LOD) class. This tool worked best when we had individual objects being loaded in a standard fashion.
 
 ![LOD control using three.LOD()](../hosting-3d-model/img/first-working-lod-model.gif)
 
@@ -28,14 +28,14 @@ This problem requires three logical parts that all need to come together and wor
 
 The example scene from gkjohnson provides us with a good starting point. [Here is the code behind it](https://github.com/mrdoob/three.js/blob/master/examples/webgl_batch_lod_bvh.html). The main code section we're interested in the </script> tag. There is a lot of code here, so I won't paste it unless it is important, but feel free to open and follow along if you so wish.
 
-Before we peer into the code, I would like to list out the main questions I'd like to have answered-->
+Before we peer into the code, I list out the main questions I'd like to have answered-->
 
 1) How are the LOD's of the geometry being created?
 2) How is the LOD added to the `BatchedMesh`?
 3) How does the engine know which instances of the mesh are closest to the camera?
 4) What sort of acceleration structure is being used to conduct our distance checks for determining active LODs?
 
-We will keep these questins in mind as we move through the code.
+We will keep these questions in mind as we move through the code.
 
 Things kick off at the top with the imports. There are a few new ones that have not been seen before.
 
@@ -131,7 +131,7 @@ for ( let i = 0; i < geometriesLODArray.length; i ++ ) {
 }
 ```
 
-Let's break this down. The array `geometriesLODArray` is an array of arrays. The first level of this array contains a reference to the specific geometry in the scene (specifically here it refers to our 10 different `TorusKnowGeometries` defined earlier). The second level of the list contains the geometry associated with our different LOD's. Researching a little more on [`SimplifyGeometry`](https://www.npmjs.com/package/@three.ez/simplify-geometry), we see that index 0 corresponds to the highest detailed mesh. We save the variable `geometrylOD` to be the ith index of this array, so effectively we are looping through our different object instances.
+Let's break this down. The array `geometriesLODArray` is an array of arrays. The first level of this array contains a reference to the specific geometry in the scene (specifically here it refers to our 10 different `TorusKnotGeometries` defined earlier). The second level of the list contains the geometry associated with our different LOD's. Researching a little more on [`SimplifyGeometry`](https://www.npmjs.com/package/@three.ez/simplify-geometry), we see that index 0 corresponds to the highest detailed mesh. We save the variable `geometrylOD` to be the ith index of this array, so effectively we are looping through our different object instances.
 
 The `geometryID` is returned after adding the geometry of our object to the `batchedMesh`. `batchedMesh.addGeometry()` is in the base three.js library and is a default method in batchedMesh. This method returns the specific ID of our geometry, which we can use later for instancing. Within the `addGeometry()` method, we are passing the specific geometry itself (in this case, geometryLOD[ 0 ], corresponding to the highest detailed mesh here). The next two parameters correspond to `reservedVertexCount`, and `reservedIndexCount`. -1 signifies the default value, and we pass in the exact count of the number of instances we would like in the scene through the `LODIndexCount`, returned by the function `getBatchedMeshLODCount`.
 
@@ -159,7 +159,7 @@ for ( let i = 0; i < instancesCount; i ++ ) {
 }
 ```
 
-We won't go through this code in detail since our positions will be predefined in our scene. However, the key methods beind called here are `.addInstance()`, `setMatrixAt` and `setColorAt`, all of which are [base `batchedMesh` methods](https://threejs.org/docs/#BatchedMesh).
+We won't go through this code in detail since our positions will be predefined in our scene. However, the key methods being called here are `.addInstance()`, `setMatrixAt` and `setColorAt`, all of which are [base `batchedMesh` methods](https://threejs.org/docs/#BatchedMesh).
 
 Moving on, the next 2 code lines relate to our acceleration structures.
 
@@ -171,13 +171,13 @@ batchedMesh.computeBoundsTree();
 batchedMesh.computeBVH( THREE.WebGLCoordinateSystem );
 ```
 
-Researching further into the mechanisms of TLAS (Top Level Acceleration Structure) and BLAS (Bottom Level Acceleration Structure), we see that both improve the performance of raycasting. Both methods relate to the BVH (Bounding Volume Hierarchy) that is a [similar concept to an octree](https://github.com/suryashch/octree). 
+Researching further into the mechanisms of TLAS (Top Level Acceleration Structure) and BLAS (Bottom Level Acceleration Structure), we see that both improve the performance of raycasting. Both methods relate to the BVH (Bounding Volume Hierarchy) that is a [similar concept to an octree](https://github.com/suryashch/octree).
 
 The TLAS can be thought of as a broad phase algorithm. It starts at the top level of the scene and works its way down, checking constantly to see if our camera view intersects with a leaf node. The BLAS initiates after the TLAS is completed and iterates only through the results provided by the TLAS algorithm. The BLAS is more precise and goes down to the triangle level, to see if the raycast intersects with an object.
 
 For the time being, we are more intersted in the TLAS, although the BLAS will be very useful too.
 
-Finally, the batchedMesh is loaded to the scene. 
+Finally, the batchedMesh is loaded to the scene.
 
 ```js
 scene.add( batchedMesh );
@@ -262,7 +262,7 @@ init();
 
 This code follows almost the same format as our previous `BatchedMesh` implementations, with a few key differences. Firstly, since we only have one mesh in our scene, we do not need a traversal loop. Instead, we load our three meshes as objects `hi`, `med` and `low`.
 
-A key thing to keep in mind here is that we need to load these models within an async function. Async functions in js are a fundamental base JS concept that allow you to conduct operations out of sync. This means that functions can be loaded in the background while others are still running. A key concept here is that of a `Promise`, which essentially can be though of as a placeholder return value from a function. The promise enables the asynchronous nature of these functions, as we no longer need to wait for the function to run entirely, just for the Promise to be created. Further information about promises [can be found here](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises).
+A key thing to keep in mind here is that we need to load these models within an async function. Async functions in js are a fundamental base JS concept that allow you to conduct operations out of sync. This means that functions can be loaded in the background while others are still running. A key concept here is that of a `Promise`, which essentially can be thought of as a placeholder return value from a function. The promise enables the asynchronous nature of these functions, as we no longer need to wait for the function to run entirely, just for the Promise to be created. Further information about promises [can be found here](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises).
 
 Anywway, back to the code. We nest our loader functions within an `Await` keyword, to pause the execution of the `init()` function until the loader object has successfully loaded our mesh. We had to implement this step since we were getting errors in the `batchedMesh` initialization due to the asynchronous nature of the JS functions.
 
@@ -320,7 +320,7 @@ Here are the results of different number of instances in our objects.
 | 10,000 | 1,580,000 | 15,860,000 | 1 | 20 MB | 95 |
 | 100,000 | 15,800,000 | 158,600,000 | 1 | 40 MB | 10 |
 
-About the data:
+About the table:
 - n_instances: The number of instances in the batchedMesh.
 - triangles: The number of triangles in the scene.
 - expected_triangles: The number of triangles that there would be, if we only had LOD0 (the highest quality mesh) active.
@@ -368,6 +368,8 @@ We need to address the simplify geometry issue. Our batchedMesh system does not 
 [instancing](instanced-mesh.md)
 
 [batching](batched-mesh.md)
+
+[draw calls](draw-calls-in-scenes.md)
 
 [this example](https://threejs.org/examples/webgl_batch_lod_bvh.html)
 
