@@ -354,6 +354,12 @@ A happy side effect I noticed as well- as we zoom into an object and the LOD cha
 
 ## Applying to MEP Model
 
+Let's apply this concept to the MEP model. We have both low and hi res versions of this model. Some additional work will need to be done in order to make it useable. Firstly, we need to ensure that the objects across our two LOD models share the same properties. [In previous work](../hosting-3d-model/per-object-lod-control-with-threejs.md), we combined the lowres and hires versions of the models in the same file and used identifiers at the end of the file name ";lowres" and ";hires" to identify the specific objects. This will not be feasible here since our base model file is already so large. We need to keep these separate.
+
+Another issue, after running the decimation script and exporting to gltf format, we observe that our original `uuid` has been overwritten. As a result, the two files now have completely different identifiers. Using the name won't work either, as we see there are some duplicated object names in the file.
+
+An avenue I'd like to explore is using the `position` attributes of the object. In theory, each object in the scene should have a unique `position` vector, which should be the same regardless of the transformations applied by decimation. Let's observe.
+
 
 
 
@@ -394,3 +400,5 @@ We need to address the simplify geometry issue. Our batchedMesh system does not 
 [Promises in JS](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises)
 
 [decimate](../reducing-mesh-density/analysis_decimate.md)
+
+[In previous work](../hosting-3d-model/per-object-lod-control-with-threejs.md)
