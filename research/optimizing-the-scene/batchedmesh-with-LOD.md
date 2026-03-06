@@ -352,6 +352,12 @@ A happy side effect I noticed as well- as we zoom into an object and the LOD cha
 
 ![Frustum Culling Example - source Anatoliy Gerlits](img/frustum-culling-example.png)
 
+## Simplify Geometry Problem
+
+We need to address the simplify geometry issue. Our batchedMesh system does not work unless our LOD's share the same vertex array. A fix provided in the example code above suggests that we create our LOD's at runtime using the function `simplifyGeometriesByErrorLOD()`. This is not ideal, but for testing purposes lets see how it performs. This function exists within the library `three.ez/simplify-geometry`.
+
+
+
 ## Applying to MEP Model
 
 Let's apply this concept to the MEP model. We have both low and hi res versions of this model. Some additional work will need to be done in order to make it useable. Firstly, we need to ensure that the objects across our two LOD models share the same properties. [In previous work](../hosting-3d-model/per-object-lod-control-with-threejs.md), we combined the lowres and hires versions of the models in the same file and used identifiers at the end of the file name ";lowres" and ";hires" to identify the specific objects. This will not be feasible here since our base model file is already so large. We need to keep these separate.
@@ -363,10 +369,6 @@ An avenue I'd like to explore is using the `position` attributes of the object. 
 
 
 
-
-## Simplify Geometry Problem
-
-We need to address the simplify geometry issue. Our batchedMesh system does not work unless our LOD's share the same vertex array. A fix provided 
 
 
 ## Links

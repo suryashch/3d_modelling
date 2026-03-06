@@ -6,6 +6,7 @@ import { PerformanceMonitor } from './performance_monitor.js'
 import { acceleratedRaycast, computeBatchedBoundsTree } from 'three-mesh-bvh';
 
 import { createRadixSort, extendBatchedMeshPrototype, getBatchedMeshLODCount } from '@three.ez/batched-mesh-extensions';
+import { performanceRangeLOD, simplifyGeometriesByErrorLOD } from '@three.ez/simplify-geometry';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -52,7 +53,7 @@ const perfMonitor = new PerformanceMonitor()
 
 // // // Basic Loader
 // const loader1 = new GLTFLoader().setPath('models/bim-model/');
-// loader1.load('sixty5-structural.glb', (gltf) => { // 'piperacks_merged.glb
+// loader1.load('sixty5-mep-lowres.glb', (gltf) => { // 'piperacks_merged.glb
 //     const mesh = gltf.scene;
 //     console.log(gltf.scene);
 //     mesh.position.set(0,0,0);
@@ -274,6 +275,232 @@ async function init() {
 }
 
 init();
+
+
+// // // BatchedMesh with LOD for Pipe Loader
+// const loader1 = new GLTFLoader().setPath('models/bim-model/');
+// loader1.load('sixty5-mep.glb', (gltf) => { // 'piperacks_merged.glb
+//     // console.log(gltf.scene);
+//     let testVec = new THREE.Vector3(0, 52.5, 0)
+
+//     const namesArray = [ "IfcFlowSegmentPipe_TypesDYKA_PE_Binnenriolering_PE2320927",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PE_Binnenriolering_PE2320953",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1443",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1444",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1446",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PE_Binnenriolering_PE3065586",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1447",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1448",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PE_Binnenriolering_PE3066494",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1450",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PE_Binnenriolering_PE3065588",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1451",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1452",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1453",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1454",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1455",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1456",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1457",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1458",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1459",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1460",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1461",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1462",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1463",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1464",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1465",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1466",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1467",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1468",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1469",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1470",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PE_Binnenriolering_PE3069802",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1471",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1472",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1473",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1474",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1475",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1476",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1477",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1478",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1479",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1480",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1481",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1482",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1483",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1484",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1485",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1486",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1487",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PE_Binnenriolering_PE3071984",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1488",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1489",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1490",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1491",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1492",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1493",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1494",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1495",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1496",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1497",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1498",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1499",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1500",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1501",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1502",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1503",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PE_Binnenriolering_PE3072976",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1504",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1505",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1506",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1507",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1508",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1509",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PE_Binnenriolering_PE3074666",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1510",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1511",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1512",
+//                     "IfcFlowSegmentPipe_TypesGeberit_PE_Binnenriolering_PE_5m3081",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1513",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PE_Binnenriolering_PE3074897",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu1514",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_50m3641108",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3646764",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3646337",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3646772",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3646803",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3646374",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3646813",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3647207",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3647240",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3647219",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648024",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648331",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648006",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648070",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3647250",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648104",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648036",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648367",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648058",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648341",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648762",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648781",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3648375",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3649150",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3649140",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3649361",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3655320",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3655547",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3655488",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3655733",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3655739",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3655563",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656216",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656138",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3655970",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656264",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656247",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3655976",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656297",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656470",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656386",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656104",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656506",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656370",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656551",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656668",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3657351",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3657433",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3657187",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3656949",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3657458",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3657508",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3657111",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3657449",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3657521",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663499",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663490",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663494",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663501",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663503",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663510",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663505",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663512",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663514",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663516",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663524",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663530",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663532",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663549",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663528",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663543",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663534",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663545",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663536",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663560",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663558",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663551",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663565",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663576",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663567",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663574",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663584",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663579",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663588",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663590",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663570",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663612",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663618",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663626",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663603",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663623",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663647",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663631",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663652",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663642",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663684",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663637",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663679",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663689",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663668",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663674",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663597",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663657",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3665923",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3666706",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3666596",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3666828",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_50m3666809",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_50m3666754",
+//                     "IfcFlowSegmentPipe_TypesUponor_MLCP_Leiding_wit_100m3663608",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu2082",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu2083",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu2085",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu2086",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu2088",
+//                     "IfcFlowSegmentPipe_TypesDYKA_PP_Binnenriolering_Afvoerbu2090"
+//             ];
+
+//     let drawObj = [];
+    
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh) {
+//             const isClose = testVec.distanceToSquared(child.position) < 0.0001; 
+//             if (namesArray.includes(child.name)){
+//                 drawObj.push(child)
+//                 console.log(child)
+//             }
+//         }
+//         // console.log(child.position)
+//     })
+//     // console.log(drawObj)
+
+//     drawObj.forEach((obj) => {
+//         scene.attach(obj)
+//     })
+//     // scene.add(mesh);
+// })
 
 
 
