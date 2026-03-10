@@ -310,11 +310,13 @@ This means, on average we should expect to see a 10x improvement in GPU performa
 
 Here are the results of different number of instances in our objects.
 
+### Table 1 - Performance Results BatchedMesh with LOD
+
 | n_instances | triangles | expected_triangles | draw_calls | memory | fps |
 | ----------- | --------- | ------------------ | ---------- | ------ | --- |
 | 1 | 158 | 1,586 | 1 | 6 MB | 240 |
 | 10 | 1,580 | 15,860 | 1 | 6 MB | 240 |
-| 100 | 15,800 | 156,000 | 1 | 6 MB | 240 |
+| 100 | 15,800 | 158,600 | 1 | 6 MB | 240 |
 | 1,000 | 158,000 | 1,586,000 | 1 | 7 MB | 230 |
 | 5,000 | 790,000 | 7,930,000 | 1 | 10 MB | 150 |
 | 10,000 | 1,580,000 | 15,860,000 | 1 | 20 MB | 95 |
@@ -344,7 +346,7 @@ These results are far better. 136 FPS without even breaking a sweat. The Batched
 
 ![BatchedMesh with LOD on our Foot Model](img/batchedmesh-lod-100000-instances.png)
 
-Since our triangle count is the same in both cases, I suspect this may again have to do with CPU bottlenecks rather than GPU throughput. We can see that our NVIDIA GPU can handle 15M triangles easily, yet struggles with our BatchedMesh LOD scene. This may have to do with the distance calculations being conducted by our LOD engine. Luckily, we are provided with some techniques to address this, namely the BVH mentioned above.
+Since our triangle count is the same in both cases, I suspect this may again have to do with CPU bottlenecks rather than GPU throughput. We can see that our NVIDIA GPU can handle 15M triangles easily, yet struggles with our BatchedMesh LOD scene. This may have to do with the distance calculations being conducted by our LOD engine. Luckily, we are provided with some techniques to address this, namely the BVH mentioned above. This is addressed in the Multiple Querying Problem below.
 
 The performance results I'm most excited about are at n=10,000, where we see that the `expected_triangles` count is ~15M. This count was reduced down to 1.5M, and so the scene rendered at 95FPS. 15M triangles is a lot (double that of the MEP model), so I would expect that with our batching and LOD technique, we see some drastic performance improvements over our [current best](instanced-mesh.md).
 
@@ -354,7 +356,86 @@ A happy side effect I noticed as well- as we zoom into an object and the LOD cha
 
 ## Simplify Geometry Problem
 
-We need to address the simplify geometry issue. Our batchedMesh system does not work unless our LOD's share the same vertex array. A fix provided in the example code above suggests that we create our LOD's at runtime using the function `simplifyGeometriesByErrorLOD()`. This is not ideal, but for testing purposes lets see how it performs. This function exists within the library `three.ez/simplify-geometry`.
+We need to address the simplify geometry issue. Our batchedMesh system does not work unless our LOD's share the same vertex array. A fix provided in the example code above suggests that we create our LOD's at runtime using the function `simplifyGeometriesByErrorLOD()`. This is not ideal, but for testing purposes lets see how it performs. This function exists within the library [three.ez/simplify-geometry](three.ez/simplify-geometry). After some trial and error, this is how we were able to make it work.
+
+```js
+const instanceCount = 10000;
+
+let batchedMesh;
+let geometryId;
+const dummy = new THREE.Object3D();
+
+async function init() {
+    const loader_batchLOD = new GLTFLoader().setPath('models/foot/');
+    const mesh = await loader_batchLOD.loadAsync('human-foot-hires.glb');
+    const geom = [ mesh.scene.children[0].geometry ];
+
+    const geometriesLODArray = await simplifyGeometriesByErrorLOD( geom, 3, performanceRangeLOD )
+    
+    const { vertexCount, indexCount, LODIndexCount } = getBatchedMeshLODCount( geometriesLODArray );
+	batchedMesh = new THREE.BatchedMesh( instanceCount, vertexCount, indexCount, new THREE.MeshStandardMaterial() );
+
+    for ( let i=0; i < geometriesLODArray.length; i++ ){
+        const geometryLOD = geometriesLODArray[ i ];
+		geometryId = batchedMesh.addGeometry( geometryLOD[ 0 ], - 1, LODIndexCount[ i ] );
+        batchedMesh.addGeometryLOD( geometryId, geometryLOD[ 1 ], 5 );
+		batchedMesh.addGeometryLOD( geometryId, geometryLOD[ 2 ], 10 );
+		batchedMesh.addGeometryLOD( geometryId, geometryLOD[ 3 ], 15 );
+    };
+
+    for ( let i = 0; i < instanceCount; i++ ){
+        const id = batchedMesh.addInstance( geometryId );
+        
+        dummy.position.set(
+            Math.round( Math.random() * 50 ),
+            Math.round( Math.random() * 50 ),
+            Math.round( Math.random() * 50 )
+        );
+
+        dummy.updateMatrix();
+        batchedMesh.setMatrixAt( id, dummy.matrix );
+        batchedMesh.needsUpdate = true;
+    };
+
+    scene.add(batchedMesh);
+}
+
+init();
+```
+
+A lot of the code has been adopted from the original example from gkjohnson above. At a high level, we load our foot model to our loader object and then call the function `simplifyGeometriesByErrorLOD()` to generate our LOD's- 3 to be exact. There is very little info on the documentation behind how it works, but my best guess is that it is using the [edge collapse](https://graphics.stanford.edu/courses/cs468-10-fall/LectureSlides/08_Simplification.pdf) method of mesh decimation.
+
+On running this function, we get these results.
+
+![BatchedMesh with LOD at 10,000 isntances using `SimplifyGeometry`](img/batchedmesh-lod-10000-instances-simplifygeom.png)
+
+These results are even better than before. Referencing the table from our original batchedMesh with LOD implementation, we see that at 10,000 instances we had ~1.5M triangles in the scene. Using this method, we are halving that number even more - 770,000 triangles. As a result, the `FPS` metric has increased too. We repeat our experiment in [table 1](#table-1---performance-results-batchedmesh-with-lod) using the new `simplifyGeometry` method and observe these results -->
+
+### Table 2 - Performance Results BatchedMesh with LOD - simplifyGeometry
+
+| n_instances | triangles | expected_triangles | draw_calls | memory | fps |
+| ----------- | --------- | ------------------ | ---------- | ------ | --- |
+| 1 | 77 | 1,586 | 1 | 6 MB | 240 |
+| 10 | 770 | 15,860 | 1 | 6 MB | 240 |
+| 100 | 7,700 | 158,600 | 1 | 8 MB | 240 |
+| 1,000 | 77,000 | 1,586,000 | 1 | 8 MB | 240 |
+| 5,000 | 385,000 | 7,930,000 | 1 | 10 MB | 220 |
+| 10,000 | 770,000 | 15,860,000 | 1 | 15 MB | 140 |
+| 100,000 | 7,700,000 | 158,600,000 | 1 | 40 MB | 10 |
+
+These are even more impressive results. Most importantly, we see a sharp increase in the FPS count for `n_instances` = 5,000 (150 -> 220 FPS) and 10,000 (95 -> 140 FPS), both extremely promising for our MEP model which falls into this range.
+
+Although this method yields promising results, we note here that our `simplifyGeometry` algorithm is compiling on load with only one object in our scene. Since our MEP model will have multiple unique geometries, it won't be feasible in the long term to compress our larger models.
+
+We proceed with this information.
+
+## Multiple Querying Problem
+
+From the results in Table 1 and 2, we observe a sharp drop off in performance when we increase the number of instances in our `BatchedMesh` object to 100,000. While its obvious that 100,000 is a singificantly larger number of objects compared to 10,000, it is suspicious that the drop-off is so sharp. In this case, I believe the issue has to do with the number of distance calculations being done by the CPU. A tool we can use to combat this bottleneck is an [octree](notebooks/octree-querying.ipynb). This limits the number of distance calculations which need to be conducted by the engine and reduces the time complexity of this problem from O(n) to O(log n). This is elaborated further, [in this report on Octree Basics](https://github.com/suryashch/octree/blob/main/reports/octree.md).
+
+We shall be working with a special flavour of octree here called a Bounding Volume Hierarchy (BVH) tree system. This system is considered a Top Level Acceleration Structure (TLAS) since it creates the tree levels based bounding boxes of the objects in the scene, rather than generic cubes in space. The de facto library in three.js for this tree is maintained by gkjohnson, (the author of our test script above) [and can be found here](https://github.com/gkjohnson/three-mesh-bvh). Let's implement this method using our code for the foot model.
+
+
 
 
 
@@ -362,14 +443,20 @@ We need to address the simplify geometry issue. Our batchedMesh system does not 
 
 Let's apply this concept to the MEP model. We have both low and hi res versions of this model. Some additional work will need to be done in order to make it useable. Firstly, we need to ensure that the objects across our two LOD models share the same properties. [In previous work](../hosting-3d-model/per-object-lod-control-with-threejs.md), we combined the lowres and hires versions of the models in the same file and used identifiers at the end of the file name ";lowres" and ";hires" to identify the specific objects. This will not be feasible here since our base model file is already so large. We need to keep these separate.
 
-Another issue, after running the decimation script and exporting to gltf format, we observe that our original `uuid` has been overwritten. As a result, the two files now have completely different identifiers. Using the name won't work either, as we see there are some duplicated object names in the file.
-
-An avenue I'd like to explore is using the `position` attributes of the object. In theory, each object in the scene should have a unique `position` vector, which should be the same regardless of the transformations applied by decimation. Let's observe.
+For testing purposes, we shall utilize the same script from above in the [Simplify Geometry Problem](#simplify-geometry-problem).
 
 
 
 
+Unfortunately the `simplifyGeometry` script appears to be extremely particular about the type and quality of data it can work with, and we seem to be continuously running into errors. At this point, I believe I might have better luck by using python- not only will it help with a potentially wider array of objects, we can run this script once and save the results such that our viewing script only needs to read data, not perform any calculations.
 
+We shall revisit this when we acquire more information.
+
+
+
+## Conclusion
+
+We were able to establish that batching a scene with LOD control is possible. Current limitations of this approach include inconsistencies with the type and quality of geometry, runtime computational costs, and limitations due to search querying algorithms slowing down CPU-GPU bandwidth (as seen in the 100,000 instance example).
 
 ## Links
 
@@ -404,3 +491,11 @@ An avenue I'd like to explore is using the `position` attributes of the object. 
 [decimate](../reducing-mesh-density/analysis_decimate.md)
 
 [In previous work](../hosting-3d-model/per-object-lod-control-with-threejs.md)
+
+[three.ez/simplify-geometry](three.ez/simplify-geometry)
+
+[edge collapse](https://graphics.stanford.edu/courses/cs468-10-fall/LectureSlides/08_Simplification.pdf)
+
+[Octree Basics](https://github.com/suryashch/octree/blob/main/reports/octree.md)
+
+[three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh)
