@@ -431,7 +431,36 @@ We proceed with this information.
 
 ## Multiple Querying Problem
 
-From the results in Table 1 and 2, we observe a sharp drop off in performance when we increase the number of instances in our `BatchedMesh` object to 100,000. While its obvious that 100,000 is a singificantly larger number of objects compared to 10,000, it is suspicious that the drop-off is so sharp. In this case, I believe the issue has to do with the number of distance calculations being done by the CPU. A tool we can use to combat this bottleneck is an [octree](notebooks/octree-querying.ipynb). This limits the number of distance calculations which need to be conducted by the engine and reduces the time complexity of this problem from O(n) to O(log n). This is elaborated further, [in this report on Octree Basics](https://github.com/suryashch/octree/blob/main/reports/octree.md).
+From the results in Table 1 and 2, we observe a sharp drop off in performance when we increase the number of instances in our `BatchedMesh` object to 100,000. While its obvious that 100,000 is a singificantly larger number of objects compared to 10,000, it is suspicious that the drop-off is so sharp. In this case, I believe the issue has to do with two main issues- the number of distance calculations being done by the CPU, and the sheer number of individual instances being saved to our `batchedMesh` object.
+
+We can solve the instance number issue by converting to [`instancedMesh`](instanced-mesh.md). This object is known to hold higher numbers of instances. Sure enough, when we swap the `batchedMesh` to an `instancedMesh`, we get 90 FPS even with 100,000 instances.
+
+```js
+// Basic Instancing with instancedMesh
+const geometry = new THREE.BoxGeometry(1,1,1);
+const material = new THREE.MeshBasicMaterial();
+const instanceCount = 50000;
+
+const instancedMesh = new THREE.InstancedMesh( geometry, material, instanceCount )
+
+const dummy = new THREE.Object3D()
+
+for ( let i=0; i < instanceCount; i++ ){
+
+    dummy.position.set(
+        Math.round( (Math.random() - 0.5) * 50 ),
+        Math.round( (Math.random() - 0.5) * 50 ),
+        Math.round( (Math.random() - 0.5) * 50 )
+    );
+
+    dummy.updateMatrix();
+    instancedMesh.setMatrixAt( i, dummy.matrix );
+}
+
+scene.add( instancedMesh )
+```
+
+To solve the CPU bottleneck problem, a tool we can use is an [octree](notebooks/octree-querying.ipynb). This limits the number of distance calculations which need to be conducted by the engine and reduces the time complexity of this problem from O(n) to O(log n). This is elaborated further, [in this report on Octree Basics](https://github.com/suryashch/octree/blob/main/reports/octree.md).
 
 We shall be working with a special flavour of octree here called a Bounding Volume Hierarchy (BVH) tree system. This system is considered a Top Level Acceleration Structure (TLAS) since it creates the tree levels based bounding boxes of the objects in the scene, rather than generic cubes in space. The de facto library in three.js for this tree is maintained by gkjohnson, (the author of our test script above) [and can be found here](https://github.com/gkjohnson/three-mesh-bvh). Let's implement this method using our code for the foot model.
 
@@ -447,10 +476,11 @@ For testing purposes, we shall utilize the same script from above in the [Simpli
 
 
 
-
 Unfortunately the `simplifyGeometry` script appears to be extremely particular about the type and quality of data it can work with, and we seem to be continuously running into errors. At this point, I believe I might have better luck by using python- not only will it help with a potentially wider array of objects, we can run this script once and save the results such that our viewing script only needs to read data, not perform any calculations.
 
 We shall revisit this when we acquire more information.
+
+For the time being, lets just use our premade LOD model and hope the distortion effect we observed in [the basic implementation](#basic-implementation) is not too harsh.
 
 
 
