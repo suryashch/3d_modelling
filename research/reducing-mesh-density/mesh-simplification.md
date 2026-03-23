@@ -31,12 +31,26 @@ This is in essence, the problem statement, and we shall explore various methods 
 
 ## Mesh Decimation Algorithms
 
+We saw in the example above that the default Edge Collapse algorithm fails to achieve our intended purpose since it created new vertices. That said, there is an option in the original algorithm choices that may help improve our results- "Optimal Position of Simplified Vertices".
+
+[Option to Keep the Optimal Position of Simplified Vertices](img/edge-collapse-optimal-position.png)
+
+By default, this option is checked since this controls the final error between the original mesh and compressed mesh. However, when unchecked we see that the algorithm will collapse the edges into the original vertices, thereby effectively acting as a sampler for the mesh.
+
+Here are the results of this algorithm with the option unchecked.
+
+![Edge Collapse algorithm with Optimal Position of Vertices Option Unchecked](img/edge-collapse-optimal-position-results.png)
+
+If we overlay this mesh on top of the original, we see that it is indeed a subset of the original.
+
+![Optimal Edge Collapse Algorithm Overlayed with Original Mesh](img/edge-collapse-optimal-position-results-overlay.png)
+
 
 
 
 ## Sampling and Reconstruction
 
-A theory I would like to test out is that of sampling and reconstruction from the mesh. We treat our mesh as a point cloud, where each vertex corresponds to a point. We run a sampling algorithm (here, we use Poisson Disk Sampling) to choose a number of vertices from our original mesh as a resample. Then, we reconstruct our triangles from the subsample, to ideally, create a low-resolution representation of our mesh.
+A theory I would like to test out is that of sampling and reconstruction from the mesh. We treat our mesh as a point cloud, where each vertex corresponds to a point. We run a sampling algorithm (here, we use Poisson Disk Sampling) to choose a predefined number of vertices from our original mesh as a sub-sample. Then, we reconstruct our triangles from the subsample, to ideally, create a low-resolution representation of our mesh.
 
 Here is our original mesh.
 
