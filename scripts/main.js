@@ -53,7 +53,7 @@ const perfMonitor = new PerformanceMonitor()
 
 // Basic Loader
 const loader1 = new GLTFLoader().setPath('models/bim-model/');
-loader1.load('sixty5-mep-lowres-LOD50.glb', (gltf) => { // 'piperacks_merged.glb
+loader1.load('sixty5_mep_lowres_rev3.glb', (gltf) => { // 'piperacks_merged.glb
     // const meshes = []
 
     // gltf.scene.traverse((child) => {
