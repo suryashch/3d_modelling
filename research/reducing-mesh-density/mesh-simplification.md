@@ -29,7 +29,58 @@ Before compression, our mesh in the center was composed of vertices indexed at (
 
 This is in essence, the problem statement, and we shall explore various methods of compression which preserve the original vertex indices.
 
+## Mesh Decimation Algorithms
 
+
+
+
+## Sampling and Reconstruction
+
+A theory I would like to test out is that of sampling and reconstruction from the mesh. We treat our mesh as a point cloud, where each vertex corresponds to a point. We run a sampling algorithm (here, we use Poisson Disk Sampling) to choose a number of vertices from our original mesh as a resample. Then, we reconstruct our triangles from the subsample, to ideally, create a low-resolution representation of our mesh.
+
+Here is our original mesh.
+
+![Initial Load of Piperacks Valve Model File](img/piperacks-valve-vertex-count.png)
+
+We resample our vertices from this mesh using the Poisson Disk Resample filter that is available to us in MeshLab -->
+
+![Poisson Disk Sampling Filter Options](img/poisson-disk-sampling.png)
+
+We maintain the default options here, except for checking the box "Base Mesh Subsampling", which implies that our base set of points to sample from will be our original mesh's vertices. We would like our compressed mesh representation to include data from the original, so this makes sense for why we would need it. Here are the results of this sampling.
+
+The points chosen by our sampling algorithm:
+
+![Poisson Sampling Results](img/poisson-sampling-prelim-results.png)
+
+Overlayed with the original mesh, we see that the sampling algorithm has indeed chosen the vertices from our original mesh.
+
+![Poisson Sampling Results Overlayed with Original Mesh](img/poisson-sampling-prelim-results-overlay.png)
+
+In the figure above, we see recolor our sampled points from the Poisson Sampling Algorithm in red. Overlayed with the original mesh, we are able to quickly observe that the red points completely overlay on top of the original vertices (identified by the stars).
+
+This is good news and promising.
+
+Now, we reconstruct our triangles using this information. 
+
+There are multiple options for reconstruction. We shall attempt these 2 --> Ball-Pivot Method and Screened Poisson.
+
+We observe the following mesh reconstruction using the default parameters of this method.
+
+![Results from Prelimiary Reconstruction](img/reconstruction-results-preliminary.png)
+
+Ball-Pivot appears to have captured better information about the handle of the valve while Screened-Poisson has worked well to maintain closed-form surfaces. We observe that the Ball-Pivot method has created non-manifold geometry in this process- specifically, in the spokes of the handle we see no depth, some vertices are only connected by a line. This is not ideal, but perhaps might be fixed with better sampling.
+
+We observe that neither model was able to consolidate our points into one mesh.
+
+Let's try increasing our sample size. We do so by increasing the parameter `Number of Samples` from 1000 to 2000. Here are the results.
+
+![Results from Reconstruction with n_sammples=2000](img/reconstruction-results-nsamples2000.png)
+
+As expected, both methods now have a more accurate reconstruction of the original mesh. The Ball-Pivot method was able to identify our geometry in the handle with increased precision, and the Screened Poisson method was able to identify a closed loop surface for the handle of our valve.
+
+We notice however, that the Ball Pivot method has completely missed the back half of our mesh, instead only reconstructing the front where all the dense vertices are. Observing the original mesh, we see a long distance between the bulk of the valve and the back. This could likely be improved by increasing our clustering distance.
+
+As well, even though we have a high concentration of points in the handle of our valve, the Screened Poisson method was unable to create the surface topology of the handle. We could likely control this, again, with the clustering distance.
 
 
 
