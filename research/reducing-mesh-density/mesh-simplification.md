@@ -6,7 +6,6 @@ In this research we explore the basics of Mesh Simplification. In prior work we 
 
 For the purpose of this work, we shall be working with an open source program known as [MeshLab](https://www.meshlab.net/). This software provides in depth tools for working with meshes and includes a Python based API, [PyMeshLab](https://pymeshlab.readthedocs.io/en/latest/).
 
-
 ## Problem Statement
 
 Here, we load a simple model of a valve handle derived from the original [piperacks.glb](../hosting-3d-model/analysis_threejs.md) model file. Opening this with MeshLab shows the following statistics and image.
@@ -45,11 +44,11 @@ If we overlay this mesh on top of the original, we see that it is indeed a subse
 
 ![Optimal Edge Collapse Algorithm Overlayed with Original Mesh](img/edge-collapse-optimal-position-results-overlay.png)
 
-While this is promising, we note that our algorithm still has not maintained the indices of our original mesh.
+While this is promising, we note that our algorithm still has not maintained the indices of our original mesh. In the figure below, both vertices highlighted with the star are the same geometrically. However in the original mesh it maintains index 920 while in the decimated mesh, it is labelled as 746.
 
 ![Optimal Edge Collapse Algorithm still does not maintain the vertex indices](img/edge-collapse-optimal-position-indices-not-maintained.png)
 
-
+Its easy to see why this is occuring, since indices are assigned chronologically. It is yet to be seen if this can be fixed, or if it even requires to be. More on this later.
 
 
 ## Sampling and Reconstruction
@@ -99,6 +98,8 @@ As expected, both methods now have a more accurate reconstruction of the origina
 We notice however, that the Ball Pivot method has completely missed the back half of our mesh, instead only reconstructing the front where all the dense vertices are. Observing the original mesh, we see a long distance between the bulk of the valve and the back. This could likely be improved by increasing our clustering distance.
 
 As well, even though we have a high concentration of points in the handle of our valve, the Screened Poisson method was unable to create the surface topology of the handle. We could likely control this, again, with the clustering distance.
+
+
 
 
 
