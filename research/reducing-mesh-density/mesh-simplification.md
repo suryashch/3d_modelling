@@ -41,9 +41,13 @@ Here are the results of this algorithm with the option unchecked.
 
 ![Edge Collapse algorithm with Optimal Position of Vertices Option Unchecked](img/edge-collapse-optimal-position-results.png)
 
-If we overlay this mesh on top of the original, we see that it is indeed a subset of the original.
+If we overlay this mesh on top of the original, we see that it is indeed a subset of the original. In the figure below, the large RED points are from our decimated mesh.
 
 ![Optimal Edge Collapse Algorithm Overlayed with Original Mesh](img/edge-collapse-optimal-position-results-overlay.png)
+
+While this is promising, we note that our algorithm still has not maintained the indices of our original mesh.
+
+![Optimal Edge Collapse Algorithm still does not maintain the vertex indices](img/edge-collapse-optimal-position-indices-not-maintained.png)
 
 
 
