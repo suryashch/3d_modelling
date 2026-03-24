@@ -475,13 +475,17 @@ Let's apply this concept to the MEP model. We have both low and hi res versions 
 For testing purposes, we shall utilize the same script from above in the [Simplify Geometry Problem](#simplify-geometry-problem).
 
 
+Before we even start, we observe a few roadblocks that will need addressing.
+
+1) As mentioned before, the geometries in the LOD need to share the same vertex array. This means, our LOD object will need to contain the same set of base vertices. This is not currently feasible since our original `Decimate` script used in Blender will create new vertices in the process.
+2) The `simplifyGeometry` script from above appears to have strict requirements for manifold geometry (closed loop, topologically complete geometry). A lot of our pipes have open edges and incomplete loops at their ends, which is likely what is causing issues with the model
+3) Another issue we notice is that our `Decimated` file from Blender is of larger file size than the original. We explored this idea when we explored [draw calls in scenes](draw-calls-in-scenes.md), and relates to the fact that glb files compress the model down to only unique geometries. The original file likely had 90 degree elbows or valves that shared the same geometry and so were compressed in the glb conversion. However, since decimation is applied at random on each of our objects, there's a high chance that most of objects do not share the same geometry structure at all.
 
 Unfortunately the `simplifyGeometry` script appears to be extremely particular about the type and quality of data it can work with, and we seem to be continuously running into errors. At this point, I believe I might have better luck by using python- not only will it help with a potentially wider array of objects, we can run this script once and save the results such that our viewing script only needs to read data, not perform any calculations.
 
 We shall revisit this when we acquire more information.
 
 For the time being, lets just use our premade LOD model and hope the distortion effect we observed in [the basic implementation](#basic-implementation) is not too harsh.
-
 
 
 ## Conclusion
