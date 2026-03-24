@@ -100,6 +100,12 @@ We notice however, that the Ball Pivot method has completely missed the back hal
 As well, even though we have a high concentration of points in the handle of our valve, the Screened Poisson method was unable to create the surface topology of the handle. We could likely control this, again, with the clustering distance.
 
 
+## Maintaining Index Order
+
+A point which we brushed over is why do we need to maintain the index order? A key requirement which we stumbled upon when implementing [BatchedMesh with LOD Control](../optimizing-the-scene/batchedmesh-with-LOD.md) was that our LOD containers could only store one array of vertices. This means the LODs must all share the same geometry elements. The vertices are sampled from one vertex buffer and loaded to the screen dynamically.
+
+A 
+
 
 
 
