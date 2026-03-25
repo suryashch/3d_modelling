@@ -2,6 +2,10 @@
 
 In this research we explore the basics of Mesh Simplification. In prior work we have explored the usage of the [edge collapse](analysis_decimate.md) algorithm in `Blender`. While powerful, the algorithm has certain drawbacks, namely that the orginal vertex structure is decimeted in the process and our compressed mesh is essentially treated as a completely new object, and not a subset representation of the original, as intended. As seen in the [batched-mesh-with-LOD](../optimizing-the-scene/batchedmesh-with-LOD.md) example, we require this object to be a subset of the original and so shall explore various techniques to achieve the same.
 
+Here is our objective statement.
+
+*"We would like to implement a mesh simplification algorithm that maintains the original coordinates and positions of our vertices, such that when they are loaded to a scene, they can share the same vertex buffer"*
+
 ## Introduction to MeshLab
 
 For the purpose of this work, we shall be working with an open source program known as [MeshLab](https://www.meshlab.net/). This software provides in depth tools for working with meshes and includes a Python based API, [PyMeshLab](https://pymeshlab.readthedocs.io/en/latest/).
@@ -49,7 +53,6 @@ While this is promising, we note that our algorithm still has not maintained the
 ![Optimal Edge Collapse Algorithm still does not maintain the vertex indices](img/edge-collapse-optimal-position-indices-not-maintained.png)
 
 Its easy to see why this is occuring, since indices are assigned chronologically. It is yet to be seen if this can be fixed, or if it even requires to be. More on this later.
-
 
 ## Sampling and Reconstruction
 
@@ -99,12 +102,15 @@ We notice however, that the Ball Pivot method has completely missed the back hal
 
 As well, even though we have a high concentration of points in the handle of our valve, the Screened Poisson method was unable to create the surface topology of the handle. We could likely control this, again, with the clustering distance.
 
-
 ## Maintaining Index Order
 
 A point which we brushed over is why do we need to maintain the index order? A key requirement which we stumbled upon when implementing [BatchedMesh with LOD Control](../optimizing-the-scene/batchedmesh-with-LOD.md) was that our LOD containers could only store one array of vertices. This means the LODs must all share the same geometry elements. The vertices are sampled from one vertex buffer and loaded to the screen dynamically.
 
-A 
+This is beneficial since it also provides massive memory savings. In [prior LOD implementations](../hosting-3d-model/per-object-lod-control-with-threejs.md), we observed that the overall file size of our scene increased with the addition of LODs. This makes sense- we're essentially tracking an entire duplicate of our model. While not exactly "doubling" our file size, the entire set of vertices was essentially being counted twice.
+
+
+
+The above sampling and decimation techniques appear to be a good starting point and we shall explore this further in a python environment.
 
 
 
