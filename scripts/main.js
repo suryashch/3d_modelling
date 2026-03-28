@@ -520,67 +520,67 @@ const perfMonitor = new PerformanceMonitor()
 
 
 
-// // BatchedMesh with LOD
-// extendBatchedMeshPrototype();
+// BatchedMesh with LOD
+extendBatchedMeshPrototype();
 
-// THREE.Mesh.prototype.raycast = acceleratedRaycast;
-// THREE.BatchedMesh.prototype.computeBoundsTree = computeBatchedBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+THREE.BatchedMesh.prototype.computeBoundsTree = computeBatchedBoundsTree;
 
-// const instanceCount = 10000;
+const instanceCount = 20000;
 
-// let batchedMesh;
+let batchedMesh;
 
-// async function init() {
-//     const loader_batchLOD = new GLTFLoader().setPath('models/piperack/');
+async function init() {
+    const loader_batchLOD = new GLTFLoader().setPath('models/foot/');
     
-//     const [ hi, low ] = await Promise.all([
-//         loader_batchLOD.loadAsync('piperacks_valve_only.glb'),
-//         loader_batchLOD.loadAsync('piperacks_valve_only_decimate.glb')
-//     ]);
+    const [ hi, low ] = await Promise.all([
+        loader_batchLOD.loadAsync('foot_base_mesh_reorder_original.glb'),
+        loader_batchLOD.loadAsync('foot_base_mesh_reorder_decimate.glb')
+    ]);
     
-//     const lod0 = hi.scene.children[0].geometry;
-//     const lod2 = low.scene.children[0].geometry;
+    const lod0 = hi.scene.children[0].geometry;
+    const lod2 = low.scene.children[0].geometry;
 
-//     const LODArray = [ 
-//         lod0,
-//         lod2
-//     ];
+    const LODArray = [ 
+        lod0,
+        lod2
+    ];
     
-//     const vCount = (lod0.attributes.position.count + 
-//                         lod2.attributes.position.count);
+    const vCount = (lod0.attributes.position.count + 
+                        lod2.attributes.position.count);
     
-//     const iCount = (lod0.index.count + 
-//                         lod2.index.count);
+    const iCount = (lod0.index.count + 
+                        lod2.index.count);
 
-//     const lod0_iCount = lod0.index.count;
+    const lod0_iCount = lod0.index.count;
 
-//     console.log( LODArray );
+    console.log( LODArray );
 
-//     const dummy = new THREE.Object3D();
+    const dummy = new THREE.Object3D();
 
-//     batchedMesh = new THREE.BatchedMesh( instanceCount, vCount, iCount, new THREE.MeshStandardMaterial());
+    batchedMesh = new THREE.BatchedMesh( instanceCount, vCount, iCount, new THREE.MeshStandardMaterial());
 
-//     const geometryId = batchedMesh.addGeometry( LODArray[0], vCount, iCount );
-//     batchedMesh.addGeometryLOD( geometryId, LODArray[1], 5);
+    const geometryId = batchedMesh.addGeometry( LODArray[0], vCount, iCount );
+    batchedMesh.addGeometryLOD( geometryId, LODArray[1], 5);
 
-//     for (let i = 0; i < instanceCount; i++ ){
-//         const id = batchedMesh.addInstance( geometryId );
+    for (let i = 0; i < instanceCount; i++ ){
+        const id = batchedMesh.addInstance( geometryId );
         
-//         dummy.position.set(
-//             Math.round( Math.random() * 50 ),
-//             Math.round( Math.random() * 50 ),
-//             Math.round( Math.random() * 50 )
-//         );
+        dummy.position.set(
+            Math.round( Math.random() * 50 ),
+            Math.round( Math.random() * 50 ),
+            Math.round( Math.random() * 50 )
+        );
 
-//         dummy.updateMatrix();
-//         batchedMesh.setMatrixAt( id, dummy.matrix );
-//         batchedMesh.needsUpdate = true;
-//     };
+        dummy.updateMatrix();
+        batchedMesh.setMatrixAt( id, dummy.matrix );
+        batchedMesh.needsUpdate = true;
+    };
 
-//     scene.add(batchedMesh);
-// }
+    scene.add(batchedMesh);
+}
 
-// init();
+init();
 
 
 
