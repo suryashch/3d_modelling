@@ -572,6 +572,12 @@ async function init() {
             Math.round( Math.random() * 50 )
         );
 
+        dummy.rotation.set(
+            THREE.MathUtils.degToRad(30), // X-axis
+            THREE.MathUtils.degToRad(-120), // Y-axis
+            THREE.MathUtils.degToRad(90)  // Z-axis
+        );
+
         dummy.updateMatrix();
         batchedMesh.setMatrixAt( id, dummy.matrix );
         batchedMesh.needsUpdate = true;
