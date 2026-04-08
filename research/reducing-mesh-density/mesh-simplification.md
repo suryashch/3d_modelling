@@ -80,7 +80,7 @@ In the figure above, we see recolor our sampled points from the Poisson Sampling
 
 This is good news and promising.
 
-Now, we reconstruct our triangles using this information. 
+Now, we reconstruct our triangles using this information.
 
 There are multiple options for reconstruction. We shall attempt these 2 --> Ball-Pivot Method and Screened Poisson.
 
@@ -102,8 +102,9 @@ We notice however, that the Ball Pivot method has completely missed the back hal
 
 As well, even though we have a high concentration of points in the handle of our valve, the Screened Poisson method was unable to create the surface topology of the handle. We could likely control this, again, with the clustering distance.
 
-The above sampling and decimation techniques appear to be a good starting point and we shall explore this further in a python environment.
+While these sampling methods appear to be fruitful, for the purposes of this endeavour we shall be sticking to decimation algorithms.
 
+The above sampling and decimation techniques appear to be a good starting point and we shall explore this further in a python environment.
 
 ## Maintaining Index Order
 
@@ -117,7 +118,7 @@ By constructing our LOD's from the original vertex buffer, we now only need one 
 
 [Diagram showing the benefits of a shared vertex structure in the new LOD appriach](img/mesh-simplification-new-lod-approach.png)
 
-In the diagrams above, note the MB metric is for representation only. Is highly unliely that a single vertex is 1MB in file size.
+In the diagrams above, note the 20MB metric is for representation only. Is highly unliely that a single vertex is 1MB in file size.
 
 It's important to note that the faces being constructed using these vertices may be different across our 2 LOD's. This implies that the index buffer will still need to be different across our 2 meshes- but this should not increase our file size by too much.
 
@@ -130,7 +131,6 @@ The crux of the issue is that MeshLab and other 3D modelling tools create vertex
 ![OBJ File Internal Structure](img/obj-file-structure.png)
 
 While the vertices follow an order, there is no index applied to them. Hence, when we decimate the mesh, the index structure is created from scratch and there is no guarantee that a vertex in the decimated mesh will share the same index in the original one.
-
 
 ### Applying Decimation
 
@@ -179,14 +179,13 @@ v_matrix_decimate = m.vertex_matrix()
 f_matrix_decimate = m.face_matrix()
 ```
 
-The length of v_matrix_decimate confirms that we have indeed reduced the density of this mesh- 403 vertices versus the original 800.
-
+The length of `v_matrix_decimate` confirms that we have indeed reduced the density of this mesh- 403 vertices versus the original 800.
 
 ### Reindexing
 
 Great, so now we have completed exactly the same steps as we had explored in the section above. However, we still need to address the indexing problem. One solution that popped into my head was to reindex the original mesh based on the index of the decimated one. Let me explain.
 
-Since we can guarantee that the vertex coordinates will be the same across our meshes, we can use this data point as a unique key across the tables. We convert the `X`, `Y` and `Z` columns into a unique tuple for each table.
+Since we can guarantee that the vertex coordinates will be the same across our meshes, we can use the coordinates as a unique key across the tables. We convert the `X`, `Y` and `Z` columns into a unique tuple for each table.
 
 ```py
 vertex_df['coords'] = vertex_df[["X", "Y", "Z"]].apply(tuple, axis=1)
@@ -210,15 +209,9 @@ merged_df_vertex.head()
 
 Here we see the power of this approach. The vertex in row 1 has coordinates (-0.224832, 0.030038, 0.526462). In the original vertex array it had an index of 645. In the decimated vertex array it has an index of 325. We have essentially created a map that tracks the index of a vertex before decimation and after.
 
-
-
-Since the vertices of the decimated mesh with be an exact subset of the original mesh, we can essentially reorder the original mesh's vertices to follow the same structure as the decimated one. In this case, our decimated mesh has 403 vertices- so the first 403 vertices in our original mesh will follow the same index structure. The remaining 397 (800 - 403) will follow the updated indexing.
-
-
+Since the vertices of the decimated mesh with be an exact subset of the original mesh, we can reorder the original mesh's vertices to follow the same structure as the decimated one. In this case, our decimated mesh has 403 vertices- so the first 403 vertices in our original mesh will follow the same index structure. The remaining 397 (800 - 403) will follow the updated indexing.
 
 Now this means our 2 meshes share the same vertex structure, and we can use the vertex array strictly from our original mesh to construct the decimated one.
-
-
 
 To clarify, the overall process looks like this ->
 
@@ -227,7 +220,19 @@ To clarify, the overall process looks like this ->
 3) reorder the original vertex array using the index structure from the decimated mesh.
 4) reconstruct the faces with this updated index.
 
-The [python notebook](notebooks/mesh-simplification.ipynb) provides additional details on this reconstruction. For now, this compact modularized code performs the required function.
+Here is a diagram showing the overall shuffling around of vertices.
+
+![Flow Diagram of Mesh Simplification Process](img/mesh-simplification-overall-diagram.png)
+
+This is what the comparison between the Original Mesh and Reconstructed Mesh looks like. Note the reordering of vertices (indicated by their color).
+
+![Comparison of Original and Reconstructed Mesh](img/mesh-simplification-original-reconstructed.png)
+
+And here is a comparison between the Decimated Mesh and Reconstructed one. Note here how the decimated mesh and reconstructed mesh follow the same ordering of vertices up to index 403 (the length of the decimated mesh)
+
+![Comparison of Decimated and Reconstructed Mesh](img/mesh-simplification-decimated-reconstructed.png)
+
+The [python notebook](notebooks/mesh-simplification.ipynb) provides additional details on this reconstruction. For now, this compact modularized code performs the required operation, through numpy arrays.
 
 ```py
 def decimate_mesh(obj_path, perc_red=0.0):
@@ -260,7 +265,7 @@ def decimate_mesh(obj_path, perc_red=0.0):
     return v_org_rmp, f_org_rmp, v_dm, f_dm
 ```
 
-This function is certainly not optimal, as we need to iterate completely through 2 arrays and also sort, resulting in a time complexity of O(N + M + log(N)). However, it does the job. If we struggle for time down the line, we shall revisit this.
+This function is certainly not optimal, as we need to iterate completely through 2 arrays and also sort one of them, resulting in a time complexity of O(N + M + log(N)). However, it does the job. If we struggle for time down the line, we shall revisit this.
 
 The last step is to convert our newly created meshes back into OBJ files. We do this by passing the vertex and face arrays to the function `pymeshlab.Mesh()`.
 
