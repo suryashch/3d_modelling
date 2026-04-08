@@ -16,7 +16,7 @@ Here, we load a simple model of a valve handle derived from the original [pipera
 
 ![Initial Load of Piperacks Valve Model File](img/piperacks-valve-vertex-count.png)
 
-From the statistics, we see that the mesh has 3,606 vertices and 7,088 faces. The main handle of the valve hsas some extremely intricate geometry, which will be likely where we see the most decimation and edge compression. An important consideration here is that this model file is a closed-form manifold mesh. This means there are no gaps or open edges. This is likely a best case scenario, since our piping files will likely have open ends or "holes", where they connect to other pipes. We shall also address this form of geometry later.
+From the statistics, we see that the mesh has 3,606 vertices and 7,088 faces. The main handle of the valve has some extremely intricate geometry, which will be likely where we see the most decimation and edge compression. An important consideration here is that this model file is a closed-form manifold mesh. This means there are no gaps or open edges. This is likely a best case scenario, since our piping files will likely have open ends or "holes", where they connect to other pipes. We shall also address this form of geometry later.
 
 For the time being, let's apply a simple decimation filter on our mesh. Here, we are using the simple Edge-Collapse with decimate filter, with a ratio of 0.4. These are the results -->
 
@@ -28,7 +28,7 @@ Here, we track the face right in the center of our mesh before and after compres
 
 ![Pre and Post Decimate Face and Edge results](img/piperacks-valve-vertex-comparison.png)
 
-Before compression, our mesh in the center was composed of vertices indexed at (895, 926, 910). After compression, this face is now deformed and composed of the vertices (633, 643, 638). Our algorithm has essentially created a new mesh with different vertex indices.
+Before compression, our face in the center was composed of vertices indexed at (895, 926, 910). After compression, this face is now deformed and composed of the vertices (633, 643, 638). Our algorithm has essentially created a new mesh with different vertex indices.
 
 This is in essence, the problem statement, and we shall explore various methods of compression which preserve the original vertex indices.
 
@@ -36,7 +36,7 @@ This is in essence, the problem statement, and we shall explore various methods 
 
 We saw in the example above that the default Edge Collapse algorithm fails to achieve our intended purpose since it created new vertices. That said, there is an option in the original algorithm choices that may help improve our results- "Optimal Position of Simplified Vertices".
 
-[Option to Keep the Optimal Position of Simplified Vertices](img/edge-collapse-optimal-position.png)
+![Option to Keep the Optimal Position of Simplified Vertices](img/edge-collapse-optimal-position.png)
 
 By default, this option is checked since this controls the final error between the original mesh and compressed mesh. However, when unchecked we see that the algorithm will collapse the edges into the original vertices, thereby effectively acting as a sampler for the mesh.
 
@@ -76,7 +76,7 @@ Overlayed with the original mesh, we see that the sampling algorithm has indeed 
 
 ![Poisson Sampling Results Overlayed with Original Mesh](img/poisson-sampling-prelim-results-overlay.png)
 
-In the figure above, we see recolor our sampled points from the Poisson Sampling Algorithm in red. Overlayed with the original mesh, we are able to quickly observe that the red points completely overlay on top of the original vertices (identified by the stars).
+In the figure above, we recolor our sampled points from the Poisson Sampling Algorithm in red. Overlayed with the original mesh, we are able to quickly observe that the red points completely overlap on top of the original vertices (identified by the stars).
 
 This is good news and promising.
 
@@ -116,9 +116,9 @@ This is beneficial since it also provides massive memory savings. In [prior LOD 
 
 By constructing our LOD's from the original vertex buffer, we now only need one set of vertex buffers across our 2 LOD's, resulting in a high degree of computational savings.
 
-[Diagram showing the benefits of a shared vertex structure in the new LOD appriach](img/mesh-simplification-new-lod-approach.png)
+![Diagram showing the benefits of a shared vertex structure in the new LOD appriach](img/mesh-simplification-new-lod-approach.png)
 
-In the diagrams above, note the 20MB metric is for representation only. Is highly unliely that a single vertex is 1MB in file size.
+In the diagrams above, note the 20MB metric is for representation only. Is highly unlikely that a single vertex is 1MB in file size.
 
 It's important to note that the faces being constructed using these vertices may be different across our 2 LOD's. This implies that the index buffer will still need to be different across our 2 meshes- but this should not increase our file size by too much.
 
@@ -228,7 +228,7 @@ This is what the comparison between the Original Mesh and Reconstructed Mesh loo
 
 ![Comparison of Original and Reconstructed Mesh](img/mesh-simplification-original-reconstructed.png)
 
-And here is a comparison between the Decimated Mesh and Reconstructed one. Note here how the decimated mesh and reconstructed mesh follow the same ordering of vertices up to index 403 (the length of the decimated mesh)
+And here is a comparison between the Decimated Mesh and Reconstructed one. Note here how the decimated mesh and reconstructed mesh follow the same ordering of vertices up to index 403 (the length of the decimated mesh). The rest are numbered chronologically.
 
 ![Comparison of Decimated and Reconstructed Mesh](img/mesh-simplification-decimated-reconstructed.png)
 
@@ -296,13 +296,13 @@ Here is a gif showing the specific areas that were targetted by the decimation a
 
 We can see that the highly detailed modelling in the toenails has been reduced in the decimated gif, but most importantly, we see that both meshes share the same set of vertices.
 
-And the vertices across both? Let's load the 2 meshes into meshlab.
+To test this, let's load the 2 meshes into meshlab.
 
 ![Vertex Indices match across meshes in MeshLab](img/same-vertex-index-after-decimation.png)
 
 We see that vertex number 174 now shares the same index and location across both our meshes.
 
-Converting both these files to glb and loadinf it to our [BatchedMesh with LOD](../optimizing-the-scene/batchedmesh-with-LOD.md) scene, this is what we're greeted with.
+Converting both these files to glb and loading it to our [BatchedMesh with LOD](../optimizing-the-scene/batchedmesh-with-LOD.md) scene, this is what we're greeted with. As a reminder, we're loading 20,000 instances of the same object (in this case, our foot model) to the scene, while also dynamically applying LOD control.
 
 ![BatchedMesh Implementation with Foot model loaded to scene](img/foot-model-batched-lod.gif)
 
@@ -312,9 +312,9 @@ The LOD system now appears to be working as intended. If we zoom into these 2 fr
 
 ## Conclusion
 
-Through this endeavour, we established that tight control over the vertex structure in 2 meshes can help reduce memory usage in a scene, as well as enable strong LOD control. I was not able to find a one-stop solution for addressing this workflow, hence developing our current implementation into a reproducible package will be one of the next steps.
+Through this endeavour, we established that tight control over the vertex structure in 2 meshes can help reduce memory usage in a scene, as well as enable strong LOD optimization. I was not able to find a one-stop solution for addressing this workflow, hence developing our current implementation into a reproducible package will be one of the next steps.
 
-As well, we extend this knowledge out the the `sixty-5` BIM model being explored in [the batchedMesh with LOD](../optimizing-the-scene/batchedmesh-with-LOD.md) implementation. Successfully implementing this workflow will theoretically have discrete and measureable performance improvements over the original scene.
+As well, we extend this knowledge out the the `sixty-5` BIM model being explored in [the batchedMesh with LOD](../optimizing-the-scene/batchedmesh-with-LOD.md) implementation. Successfully implementing this workflow will theoretically have a definite and measureable performance improvement over the original scene.
 
 Lastly, we shall wrap this function within another script that can load a collection of meshes (as is traditionally the case with BIM 3D models), such that we can conduct this operation in bulk on every item in our scene.
 
