@@ -102,21 +102,223 @@ We notice however, that the Ball Pivot method has completely missed the back hal
 
 As well, even though we have a high concentration of points in the handle of our valve, the Screened Poisson method was unable to create the surface topology of the handle. We could likely control this, again, with the clustering distance.
 
+The above sampling and decimation techniques appear to be a good starting point and we shall explore this further in a python environment.
+
+
 ## Maintaining Index Order
 
 A point which we brushed over is why do we need to maintain the index order? A key requirement which we stumbled upon when implementing [BatchedMesh with LOD Control](../optimizing-the-scene/batchedmesh-with-LOD.md) was that our LOD containers could only store one array of vertices. This means the LODs must all share the same geometry elements. The vertices are sampled from one vertex buffer and loaded to the screen dynamically.
 
 This is beneficial since it also provides massive memory savings. In [prior LOD implementations](../hosting-3d-model/per-object-lod-control-with-threejs.md), we observed that the overall file size of our scene increased with the addition of LODs. This makes sense- we're essentially tracking an entire duplicate of our model. While not exactly "doubling" our file size, the entire set of vertices was essentially being counted twice.
 
+![Diagram showing the limitations of the original LOD approach](img/mesh-simplification-original-lod-approach.png)
+
+By constructing our LOD's from the original vertex buffer, we now only need one set of vertex buffers across our 2 LOD's, resulting in a high degree of computational savings.
+
+[Diagram showing the benefits of a shared vertex structure in the new LOD appriach](img/mesh-simplification-new-lod-approach.png)
+
+In the diagrams above, note the MB metric is for representation only. Is highly unliely that a single vertex is 1MB in file size.
+
+It's important to note that the faces being constructed using these vertices may be different across our 2 LOD's. This implies that the index buffer will still need to be different across our 2 meshes- but this should not increase our file size by too much.
+
+## Python Implementation
+
+We implemented the Mesh Decimation Algorithm listed above in a [python notebook](notebooks/mesh-simplification.ipynb). The process involved using the `pymeshlab` API to decimate our [human foot model](../../models/foot/human-foot-hires.glb), using the filter `meshing_decimation_quadric_edge_collapse` with the flag `optimalplacement` set to `False`. We determined that setting this flag to False ensured that the decimated mesh shared the same vertex coordinates as the original. However, we were unable to maintain the index order.
+
+The crux of the issue is that MeshLab and other 3D modelling tools create vertex indices on the fly. Looking at the internal format of a wavefront (.OBJ) file, we can see why.
+
+![OBJ File Internal Structure](img/obj-file-structure.png)
+
+While the vertices follow an order, there is no index applied to them. Hence, when we decimate the mesh, the index structure is created from scratch and there is no guarantee that a vertex in the decimated mesh will share the same index in the original one.
 
 
-The above sampling and decimation techniques appear to be a good starting point and we shall explore this further in a python environment.
+### Applying Decimation
+
+To solve this, we need to manually reindex our 2 meshes. First, let's load our human-foot mesh into `pymeshlab`.
+
+```py
+ms = pymeshlab.MeshSet()
+ms.load_new_mesh('../../../models/foot/human-foot.obj')
+```
+
+Extracting the array of vertices and faces can be done like so.
+
+```py
+m = ms.current_mesh()
+v_matrix = m.vertex_matrix()
+f_matrix = m.face_matrix()
+```
+
+The `v_matrix` and `f_matrix` are saved as numpy arrays. They can be converted to dataframe like this.
+
+```py
+vertex_df = pd.DataFrame(v_matrix, columns=["X", "Y", "Z"])
+vertex_df.head()
+```
+
+![Original mesh Vertex Matrix](img/vertex_array-original.png)
+
+Similarly, this is what the face array looks like when converted to dataframe.
+
+![Original mesh FAce Matrix](img/face_matrix-original.png)
+
+We see another potential issue here. The face matrix refers to how our triangles are constructed, and each cell refers to the index of the vertex used to create it. For example, Face0 (row 0 in the face matrix), is created by joining the vertices at index 715, 31 and 33. However, after decimation this order will be jumbled. We will need to keep track of both the original and decimated indices. More on that later.
+
+These 2 arrays are the basic information we need to create our 3D object. Let's apply a decimation filter on this mesh.
+
+```py
+ms.meshing_decimation_quadric_edge_collapse(optimalplacement=False)
+```
+
+Here, we are applying the filter `Decimation: Quadric Edge Collapse`, as seen in the MeshLab GUI above. An important flag that needs to be passed is the `optimalplacement=False` flag. This ensures that our new vertices occupy the same location as the original.
+
+With this decimated mesh now in memory, we extract the new vertex and face array as follows.
+
+```py
+v_matrix_decimate = m.vertex_matrix()
+f_matrix_decimate = m.face_matrix()
+```
+
+The length of v_matrix_decimate confirms that we have indeed reduced the density of this mesh- 403 vertices versus the original 800.
+
+
+### Reindexing
+
+Great, so now we have completed exactly the same steps as we had explored in the section above. However, we still need to address the indexing problem. One solution that popped into my head was to reindex the original mesh based on the index of the decimated one. Let me explain.
+
+Since we can guarantee that the vertex coordinates will be the same across our meshes, we can use this data point as a unique key across the tables. We convert the `X`, `Y` and `Z` columns into a unique tuple for each table.
+
+```py
+vertex_df['coords'] = vertex_df[["X", "Y", "Z"]].apply(tuple, axis=1)
+vertex_df_decimate['coords'] = vertex_df_decimate[["X", "Y", "Z"]].apply(tuple, axis=1)
+
+vertex_df.head()
+```
+
+![Vertex Coordinates With Tuple Applied to Coordinates](img/vertex_array-original-coords.png)
+
+The `coords` column will serve as the unique key across our 2 meshes. We can now compare the relative positioning of vertices across the 2 meshes. Calling `.reset_index()` on both dataframes will give us the current index structure of the vertices.
+
+We now perform a merge on the 2 datasets. Using the `coords` column as the matching key, we merge both tables using an outer join.
+
+```py
+merged_df_vertex = pd.merge(vertex_df, vertex_df_decimate, on="coords", how="outer")
+merged_df_vertex.head()
+```
+
+![Merged Dataframe of Vertices](img/vertex_array-merged.png)
+
+Here we see the power of this approach. The vertex in row 1 has coordinates (-0.224832, 0.030038, 0.526462). In the original vertex array it had an index of 645. In the decimated vertex array it has an index of 325. We have essentially created a map that tracks the index of a vertex before decimation and after.
 
 
 
+Since the vertices of the decimated mesh with be an exact subset of the original mesh, we can essentially reorder the original mesh's vertices to follow the same structure as the decimated one. In this case, our decimated mesh has 403 vertices- so the first 403 vertices in our original mesh will follow the same index structure. The remaining 397 (800 - 403) will follow the updated indexing.
+
+
+
+Now this means our 2 meshes share the same vertex structure, and we can use the vertex array strictly from our original mesh to construct the decimated one.
+
+
+
+To clarify, the overall process looks like this ->
+
+1) acquire original vertex and face arrays
+2) acquire decimated vertex and face arrays
+3) reorder the original vertex array using the index structure from the decimated mesh.
+4) reconstruct the faces with this updated index.
+
+The [python notebook](notebooks/mesh-simplification.ipynb) provides additional details on this reconstruction. For now, this compact modularized code performs the required function.
+
+```py
+def decimate_mesh(obj_path, perc_red=0.0):
+    # Load mesh into pymeshlab
+    ms.load_new_mesh(obj_path)
+    m = ms.current_mesh()
+    
+    # Extract Vertex and Face matrix from original mesh
+    v_org = m.vertex_matrix()
+    f_org = m.face_matrix()
+
+    # Apply decimation algorithm
+    ms.meshing_decimation_quadric_edge_collapse(targetperc=perc_red, optimalplacement=False)
+    m = ms.current_mesh()
+
+    # Extract Vertex and Face matrix from decimated mesh
+    v_dm = m.vertex_matrix()
+    f_dm = m.face_matrix()
+
+    # Create mapping dictionary
+    v_dict = { tuple(row): i for i, row in enumerate(v_dm) }
+
+    # Determine sort order based on orginal remapping
+    v_remapping = np.argsort(np.array([v_dict.get(tuple(row), np.inf) for row in v_org ]))
+
+    # Remap original vertex and face arrays
+    v_org_rmp = v_org[v_remapping]
+    f_org_rmp = v_remapping[f_org]
+
+    return v_org_rmp, f_org_rmp, v_dm, f_dm
+```
+
+This function is certainly not optimal, as we need to iterate completely through 2 arrays and also sort, resulting in a time complexity of O(N + M + log(N)). However, it does the job. If we struggle for time down the line, we shall revisit this.
+
+The last step is to convert our newly created meshes back into OBJ files. We do this by passing the vertex and face arrays to the function `pymeshlab.Mesh()`.
+
+```py
+m_rmp = pymeshlab.Mesh(v_org_rmp, f_org_rmp)
+m_dec = pymeshlab.Mesh(v_dm, f_dm)
+```
+
+And finally, export to OBJ file.
+
+```py
+ms.add_mesh(m_rmp, "OriginalMesh")
+ms.save_current_mesh("original_mesh.obj")
+
+ms.add_mesh(m_dec, "DecimatedMesh")
+ms.save_current_mesh("decimated_mesh.obj")
+```
+
+## Results
+
+Firstly, let's see the results of the decimation.
+
+![Results of the Reconstructed OBJ file](img/optimized-decimate-script-results.png)
+
+Here is a gif showing the specific areas that were targetted by the decimation algorithm. The vertices in `green` are from the original mesh and the ones in `red` are the ones shared across decimated and original.
+
+![Results of the Decimation Algorithm- overlayed](img/foot-model-decimated-results.gif)
+
+We can see that the highly detailed modelling in the toenails has been reduced in the decimated gif, but most importantly, we see that both meshes share the same set of vertices.
+
+And the vertices across both? Let's load the 2 meshes into meshlab.
+
+![Vertex Indices match across meshes in MeshLab](img/same-vertex-index-after-decimation.png)
+
+We see that vertex number 174 now shares the same index and location across both our meshes.
+
+Converting both these files to glb and loadinf it to our [BatchedMesh with LOD](../optimizing-the-scene/batchedmesh-with-LOD.md) scene, this is what we're greeted with.
+
+![BatchedMesh Implementation with Foot model loaded to scene](img/foot-model-batched-lod.gif)
+
+The LOD system now appears to be working as intended. If we zoom into these 2 frames specifically, we can see that the finer details of the toenails are only appearing when we zoom in past a point ->
+
+![BatchedMesh Implementation with Foot model loaded to scene- Isolated frame](img/foot-model-batched-lod-isolated-frame.gif)
+
+## Conclusion
+
+Through this endeavour, we established that tight control over the vertex structure in 2 meshes can help reduce memory usage in a scene, as well as enable strong LOD control. I was not able to find a one-stop solution for addressing this workflow, hence developing our current implementation into a reproducible package will be one of the next steps.
+
+As well, we extend this knowledge out the the `sixty-5` BIM model being explored in [the batchedMesh with LOD](../optimizing-the-scene/batchedmesh-with-LOD.md) implementation. Successfully implementing this workflow will theoretically have discrete and measureable performance improvements over the original scene.
+
+Lastly, we shall wrap this function within another script that can load a collection of meshes (as is traditionally the case with BIM 3D models), such that we can conduct this operation in bulk on every item in our scene.
 
 ## Links
 
 [MeshLab](https://www.meshlab.net/)
 
 [PyMeshLab](https://pymeshlab.readthedocs.io/en/latest/)
+
+[human foot model](../../models/foot/human-foot-hires.glb)
+
+[BatchedMesh with LOD](../optimizing-the-scene/batchedmesh-with-LOD.md)
