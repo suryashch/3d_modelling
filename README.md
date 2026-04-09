@@ -7,6 +7,9 @@ A repo where I explore how 3D modelling works.
 
 ### Latest Research
 
+[Mesh Simplification Algorithms](https://github.com/suryashch/3d_modelling/blob/main/research/reducing-mesh-density/mesh-simplification.md)
+The document explores the basics of mesh simplification and specifically addresses the issue whereby decimation scripts create new vertices, essentially duplicating the amount of memory required for LOD control. The article explains in depth how to maintain vertex indices before and after decimation, allowing for vastly improved memory savings and enabling LOD control within the `BatchedMesh` object in ThreeJS.
+
 [Instancing Basics](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md)
 This document explores the concept of instancing, whereby objects that share the same geometry are saved to one InstancedMesh and referenced using their transformation matrices. This allows for memory reduction in large scenes with lots of objects and works natively with BatchedMesh, to reduce the overall draw calls in the scene.
 
@@ -49,6 +52,9 @@ The article examines performance optimization in Three.js scenes by addressing "
 
 9) [Improving Model Memory Usage and Performance with Instancing](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md)
 Instancing in Three.js reduces memory overhead by storing unique vertex data once and rendering duplicates through transformation matrices. This implementation targeting a 20,000-object BIM model identified duplicate geometry UUIDs to transition from standard BatchedMesh to an instanced-batch hybrid. Key results include an 80% memory reduction (from 500MB to 114MB) and a 33% FPS improvement. While highly effective for repetitive architectural elements like pipe fittings, the method fails if mesh decimation creates unique geometry variations. Performance remains ultimately bound by GPU triangle limits, necessitating the future integration of Level of Detail (LOD) controls.
+
+10) [Mesh Simplification Techniques](https://github.com/suryashch/3d_modelling/blob/main/research/reducing-mesh-density/mesh-simplification.md)
+LOD Modelling has been proven to improve the performance of a 3D scene, by limiting the quality of distant meshes. However, most algorithms for mesh decimation treat each LOD as a unique object. This article explores various compression algorithms, most specifically- the "Quadric Edge Collapse algorithm", and highlights the key constraints which need to be considered when implementing. Creating LODs using existing vertex arrays improves performance of the scene by combining with the `BatchedMesh` class of objects in ThreeJS. As well, by sharing a vertex array, the final scene uses significantly less memory and opens the door for more elaborate LOD control in the scene.
 
 
 * Summaries provided by Gemini Flash
