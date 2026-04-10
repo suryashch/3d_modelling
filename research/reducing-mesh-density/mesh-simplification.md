@@ -310,6 +310,11 @@ The LOD system now appears to be working as intended. If we zoom into these 2 fr
 
 ![BatchedMesh Implementation with Foot model loaded to scene- Isolated frame](img/foot-model-batched-lod-isolated-frame.gif)
 
+## Scaling Up to Large GLTF Files
+
+
+
+
 ## Conclusion
 
 Through this endeavour, we established that tight control over the vertex structure in 2 meshes can help reduce memory usage in a scene, as well as enable strong LOD optimization. I was not able to find a one-stop solution for addressing this workflow, hence developing our current implementation into a reproducible package will be one of the next steps.
