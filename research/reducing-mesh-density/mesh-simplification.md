@@ -260,12 +260,14 @@ def decimate_mesh(obj_path, perc_red=0.0):
 
     # Remap original vertex and face arrays
     v_org_rmp = v_org[v_remapping]
-    f_org_rmp = v_remapping[f_org]
+
+    v_inv_mapping = np.argsort(v_remapping)
+    f_org_rmp = v_inv_mapping[f_org]
 
     return v_org_rmp, f_org_rmp, v_dm, f_dm
 ```
 
-This function is certainly not optimal, as we need to iterate completely through 2 arrays and also sort one of them, resulting in a time complexity of O(N + M + log(N)). However, it does the job. If we struggle for time down the line, we shall revisit this.
+This function is certainly not optimal, as we need to iterate completely through 2 arrays and also sort them twice, resulting in a time complexity of O(N + M + 2log(N)). However, it does the job. If we struggle for time down the line, we shall revisit this.
 
 The last step is to convert our newly created meshes back into OBJ files. We do this by passing the vertex and face arrays to the function `pymeshlab.Mesh()`.
 
