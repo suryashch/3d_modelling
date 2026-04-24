@@ -20,13 +20,77 @@ Normally, the ordering of the vertices and indices should not matter, and are of
 
 We explored how to manage this manual indexing in the section on [mesh-simplification algorithms](../reducing-mesh-density/mesh-simplification.md). However, the conversion to GLTF file requires another bit of manual intervention.
 
-Traditional GLTF file exporers will treat every individual object in the scene as unique. This means any scene with LOD objects with effectively "double" the file size- since each LOD is being considered its own object. We need to tweak the GLTF file creation process such that objects which share the same vertex array are treated the same.
+Traditional GLTF file exporers will treat every individual object in the scene as unique. This means any scene with LOD objects will effectively "double" the file size- since each LOD is being considered its own object. We need to tweak the GLTF file creation process such that objects which share the same vertex array are treated the same.
 
 
 
 Now, we explore how to achieve this manual GLTF file indexing and generation.
 
+## Main Structure of GLTF File
 
+GLTF uses a JSON style file format, with each object in the scene belonging to a hierarchy. The overall hierarchy of this file can be seen in the figure in this [reference manual](../../gltf20-reference-guide.pdf) from Khronos Group. Here we show a high level overview of the same.
+
+![GLTF file hierarchy](img/gltf-file-hierarchy.png)
+
+A lot of the items in this list are containers for data which we wont need. For example, our scene won't have any animation, so there's no need to understand how this works. For now, we will be looking at the following.
+
+- `scene`
+- `node`
+- `mesh`
+- `accessor`
+- `bufferView`
+- `buffer`
+
+At the highest level contains the `scene` container. This tree-like structure holds all the necessary data for rendering and serves the main entry point for all the objects within it. We have been using this `scene` object all through our past endeavors by referencing the function `scene.traverse()`.
+
+Next up, we have `nodes`. Nodes refer to groups of objects in the scene. For example, if we split our [BIM model](../optimizing-the-scene/draw-calls-in-scenes.md) by discipline (ex: piping, structure, electrical etc), each one of these layers will represent our nodes in the scene tree. Within the `nodes` data structure, we observe references to specific `meshes`, along with a specific index. This index number refers to the specific index of the `mesh` that is contained within it.
+
+The `mesh` object in the GLTF file saves metadata related to the actual objects in the scene. This includes the "name" of the mesh, as well as primitives for attributes and indices. The attributes save information about the POSITION and NORMAL of the object, while the index refers to the specific `accessor` that was used to create this information.
+
+`Accessors` store information about the object tranforms- position, rotation and scale, and also use integer indexing to reference a `bufferview`.
+
+`BufferViews` save information on how to slice the array saved in memory to get the correct data you need, and finally-
+
+`Buffers` reference the raw memory saved in the file.
+
+If we follow this hierarchy, we can trace a line all the way from the `scene` to the buffer. Take for example, this GLTF file of the model `piperacks_valve_only_decimate.gltf`. This was one of the files we used for testing the [decimation](../reducing-mesh-density/mesh-simplification.md) algorithm, and we know it contains only one object in the scene. Here is what the file format looks like when opened with a text editor, although note this is just the top half.
+
+![GLTF file in a text editor](img/piperacks-valve-only-gltf-format-text.png)
+
+We start at the root of the scene, which references index 0. As a reminder, the GLTF file format is linear- so we need to look in the container below, for the object in index 0.
+
+The container below is the "scenes" container, which wasn't mentioned above, but can be used if you have multiple scenes. We don't, so we see that the container in Index 0 here referes to the main scene in our tree.
+
+This scene object then further references the `nodes` container, with Index 0. If we had multiple containers like this one, they would show up here too.
+
+Within our "nodes" container, we see an index reference to the `mesh` (also 0 in this case).
+
+The `meshes` container would ideally contain more than one mesh in the scene, but in this case we only have 1. As also observe that a few datapoints in this container have index references- namely, the POSITION, NORMAL, and indices. These are all references to the container below it, which is the `accessors` container.
+
+The `accessors` container holds metadata associated with each mesh. Here we finally see more than one datapoint. We take a look at the `meshes` and `accessors` containers for a quick example.
+
+Mesh0 in our `meshes` container references accessor 0 for its POSITION data, accessor 1 for its NORMAL data and accessor 2 for its indices data. In the figure above, the accessor data is slightly cut off, so we fill it in along with the rest of the containers here.
+
+![GLTF file in a text editor -2](img/piperacks-valve-only-gltf-format-text_2.png)
+
+Now, we can see there are indeed 3 different children within our `accessors` container. The first (Index 0) corresponds to the POSITION data for our `mesh`, and it further references `bufferview` 0. Similarly, the second child in our `accessor` container (Index 1) corresponds to our NORMAL data for our mesh, which further references `BufferView` 1. Lastly, the third child (Index 2) corresponds to our "indices" data (the actual XYZ data for our mesh), and further references `BufferView` 2.
+
+As we make our way down to the `bufferviews`, things tend to get a little confusing. However, its important to just remember the rule that the index referencing is linear, and will always call reference to the container below it. `BufferViews` store data relating to the bytelength and byteoffset. This relates to how data is stored in memory and provides the program with discrete indices on how to slice the main array to get the info needed.
+
+For example, `bufferview 0` has a buffer of index 0, a bytelength of 115,548 and a byteoffset of 0. To a computer, this means "Look in Buffer 0, start at index 0, and continue for the next 115,548 bytes."
+
+Similarly, `bufferview 2` has a buffer of index 0, a bytelength of 21,264, and a byteoffset of 231,096. This can be interpretted as "Look in Buffer 0, start at index 231,096 and continue for the next 21,264 bytes."
+
+We also observe a variable called "target". This is a predefined number that determines what time of data is being saved. 34962 is a static reference to the ARRAY_BUFFER, which saves raw vertices, while 34963 references the ELEMENT_ARRAY_BUFFER which saves triangles.
+
+Finally, we make our way down to the buffer (of which we have only 1). The buffer references a `uri`, which is usually a file path to where the data is stored (usially in binary format).
+
+Now that we have a basic understanding about this structure, let's explore basics of how to edit it.
+
+
+## Working with GLTF Files
+
+The main package we shall be using for editing the GLTF files is [pygltflib](https://pypi.org/project/pygltflib/). This library gives us a comprehensive suite of tools necessary to edit the GLTF file structure.
 
 
 
@@ -37,3 +101,5 @@ Now, we explore how to achieve this manual GLTF file indexing and generation.
 [Batching](batched-mesh.md)
 
 [`vertices` and `faces`](../hosting-3d-model/analysis_threejs.md)
+
+[pygltflib](https://pypi.org/project/pygltflib/)
