@@ -213,9 +213,223 @@ If we open this file in Blender, this is what we observe.
 
 It is ultimately just a cube, but serves as a crucial workflow method for manual control over the structure of the gltf file.
 
+## Working With More Discrete Models
 
+Here we apply the same logic above to our human-foot model. We have previously been able to create low resolution LODs of this model through our EDA [defined here](../reducing-mesh-density/mesh-simplification.md). Here, we load this data to our environment.
 
+```py
+ms = pymeshlab.MeshSet()
 
+# Loading the full mesh
+ms.load_new_mesh('../../../models/foot/modelsoriginal_mesh.obj')
+
+m = ms.current_mesh()
+v_matrix_org = m.vertex_matrix()
+f_matrix_org = m.face_matrix()
+
+ms.load_new_mesh('../../../models/foot/modelsdecimated_mesh.obj')
+
+m = ms.current_mesh()
+v_matrix_dec = m.vertex_matrix()
+f_matrix_dec = m.face_matrix()
+```
+
+Essentially, we are loading our precalculated LOD's that have been saved as wavefront file format (.OBJ), and extract the vertex and face data from it. This array is in exactly the same format as is required to be passed to our GLTF file.
+
+```py
+v_matrix_org
+```
+```
+array([[ 0.059608,  0.383419, -0.047925],
+       [-0.030599, -0.01601 , -0.020009],
+       [ 0.052395,  0.402345,  0.102574],
+       ...,
+       [ 0.157481,  0.015595,  0.408668],
+       [ 0.163158,  0.035477,  0.397872],
+       [ 0.163247,  0.081139,  0.437404]], shape=(800, 3))
+```
+
+```py
+f_matrix_org
+```
+```
+array([[366,  28,  30],
+       [366,  30, 363],
+       [ 81,  15,  16],
+       ...,
+       [395,  89, 489],
+       [505, 490,  89],
+       [490, 463,  89]], shape=(1586, 3), dtype=int32)
+```
+
+As a reminder, the vertex array of our decimated mesh will be exactly the same as that of our original mesh, plus the original vertices from the main mesh. If that doesn't make sense, [take a read through this](../reducing-mesh-density/mesh-simplification.md).
+
+Now, our goal is to create a GLTF file that contains both these meshes (original and decimated), but only saves one vertex array for both. The decimated and original meshes will use the same vertex structure, but will have different bytelengths.
+
+After some trial and error, here is the edited code we used to create this file. 
+
+```py
+triangles_org_binary_blob = f_matrix_org.flatten().tobytes()
+triangles_dec_binary_blob = f_matrix_dec.flatten().tobytes()
+
+points_org_binary_blob = v_matrix_org.tobytes()
+points_dec_binary_blob = v_matrix_dec.tobytes()
+
+# print(points_org_binary_blob, "\n", points_dec_binary_blob)
+
+points_dec_byte_offset = v_matrix_dec.shape[0] # Here, instead of a binary blob for our decimated mesh, we subset from the original with a byte offset
+
+gltf_lod = pygltflib.GLTF2(
+    scene=0,
+    scenes=[pygltflib.Scene(nodes=[0, 1])],
+    nodes=[
+        pygltflib.Node(mesh=0),
+        pygltflib.Node(mesh=1)
+    ],
+    meshes=[
+        pygltflib.Mesh(
+            primitives=[
+                pygltflib.Primitive(
+                    attributes=pygltflib.Attributes(POSITION=2), indices=0
+                )
+            ]
+        ),
+        pygltflib.Mesh(
+            primitives=[
+                pygltflib.Primitive(
+                    attributes=pygltflib.Attributes(POSITION=3), indices=1
+                )
+            ]
+        )
+    ],
+    accessors=[
+        pygltflib.Accessor(  # accessor0: original mesh indices
+            bufferView=0,
+            componentType=5125,
+            count=f_matrix_org.size,
+            type=pygltflib.SCALAR
+            # max=[int(f_matrix_org.max())],
+            # min=[int(f_matrix_org.min())],
+        ),
+        pygltflib.Accessor(  # accessor1: decimated mesh indices
+            bufferView=1,
+            componentType=5125,
+            count=f_matrix_dec.size,
+            type=pygltflib.SCALAR
+            # max=[int(f_matrix_dec.max())],
+            # min=[int(f_matrix_dec.min())],
+        ),
+        pygltflib.Accessor(  # accessor2: original mesh vertex positions
+            bufferView=2,
+            componentType=pygltflib.FLOAT,
+            count=len(v_matrix_org),
+            type=pygltflib.VEC3,
+            max=v_matrix_org.max(axis=0).tolist(),
+            min=v_matrix_org.min(axis=0).tolist(),
+        ),
+        pygltflib.Accessor(  # accessor3: decimated mesh vertex positions
+            bufferView=3,
+            componentType=pygltflib.FLOAT,
+            count=len(v_matrix_dec),
+            type=pygltflib.VEC3,
+            max=v_matrix_dec.max(axis=0).tolist(),
+            min=v_matrix_dec.min(axis=0).tolist(),
+        )
+    ],
+    bufferViews=[
+        pygltflib.BufferView(  # bufferview0: original mesh indices
+            buffer=0,
+            byteLength=len(triangles_org_binary_blob),
+            target=pygltflib.ELEMENT_ARRAY_BUFFER,
+        ),
+        pygltflib.BufferView(  # bufferView1: decimated mesh indices
+            buffer=0,
+            byteOffset=len(triangles_org_binary_blob),
+            byteLength=len(triangles_dec_binary_blob),
+            target=pygltflib.ELEMENT_ARRAY_BUFFER,
+        ),
+        pygltflib.BufferView(  # bufferView2: original mesh vertices
+            buffer=0,
+            byteOffset=len(triangles_org_binary_blob)+len(triangles_dec_binary_blob),
+            byteLength=len(points_org_binary_blob),
+            target=pygltflib.ARRAY_BUFFER,
+        ),
+        pygltflib.BufferView(  # bufferView3: decimated mesh vertices
+            buffer=0,
+            byteOffset=len(triangles_org_binary_blob)+len(triangles_dec_binary_blob), # Notice here how we are using the same starting index as the previous bufferview
+            byteLength=len(points_dec_binary_blob),
+            target=pygltflib.ARRAY_BUFFER,
+        )
+    ],
+    buffers=[
+        pygltflib.Buffer(
+            byteLength=len(triangles_org_binary_blob) + len(triangles_dec_binary_blob) + len(points_org_binary_blob)
+        )
+    ],
+)
+gltf_lod.set_binary_blob(triangles_org_binary_blob + triangles_dec_binary_blob + points_org_binary_blob)
+```
+
+If you'd like a more detailed understanding of how this code block works, please follow along with the [accompanying notebook](notebooks/gltf-eda.ipynb).
+
+In general, the only edits we made here is to add a new `mesh` for our original and decimated mesh, added 2 new accessors (corresponding to the new mesh), and edited the bufferviews.
+
+Most of the changes occur in the `bufferView` section. The logic from earlier applies, essentially we're marking spacific sequences of memory which give us the data we need.
+
+```py
+bufferViews=[
+    pygltflib.BufferView(  # bufferview0: original mesh indices
+        buffer=0,
+        byteLength=len(triangles_org_binary_blob),
+        target=pygltflib.ELEMENT_ARRAY_BUFFER,
+    ),
+    pygltflib.BufferView(  # bufferView1: decimated mesh indices
+        buffer=0,
+        byteOffset=len(triangles_org_binary_blob),
+        byteLength=len(triangles_dec_binary_blob),
+        target=pygltflib.ELEMENT_ARRAY_BUFFER,
+    ),
+    pygltflib.BufferView(  # bufferView2: original mesh vertices
+        buffer=0,
+        byteOffset=len(triangles_org_binary_blob)+len(triangles_dec_binary_blob),
+        byteLength=len(points_org_binary_blob),
+        target=pygltflib.ARRAY_BUFFER,
+    ),
+    pygltflib.BufferView(  # bufferView3: decimated mesh vertices
+        buffer=0,
+        byteOffset=len(triangles_org_binary_blob)+len(triangles_dec_binary_blob), # Notice here how we are using the same starting index as the previous bufferview
+        byteLength=len(points_dec_binary_blob),
+        target=pygltflib.ARRAY_BUFFER,
+    )
+]
+```
+
+`BufferView 0` functions virtually the same as earlier, and stores the original mesh indices.
+
+`BufferView 1` has a byteoffset equal to the length of the previous bufferView, and stores data relating to the indices of the decimated mesh.
+
+`BufferView 2` saves the vertices related to the original mesh, and has a byteoffset of the length of `BufferView 0` + `BufferView1`.
+
+`BufferView 3` is where things get interesting. Instead of saving a completely new vertex array, we observe that we use the same byteoffset and as BufferView 2. This is because the decimated mesh vertices are an exact subset of the original mesh vertices. Hence, we reuse the same data, only with a different bytelength. Observe how the byteoffset for both BufferViews 2 and 3 are the same, but the bytelengths are different.
+
+Finally, when assigning to a contiguous blob of memory, we only pass the arguments `triangles_org_binary_blob`, `triangles_dec_binary_blob` and `points_org_binary_blob`. We have effectively compressed down our data, since we don't need to store `points_dec_binary_blob` to memory.
+
+Now, if we save this file and open it in Blender, here is what we observe.
+
+```py
+filename3 = "test_LOD.glb"
+gltf_lod.save(filename3)
+```
+
+![Output of manual GLTF conversion](img/gltf-output-results.png)
+
+Perfect results. The original mesh has been moved to the side to show the effect of the decimation, but in reality they are overlayed on top of one another.
+
+As well, if we open this file in MeshLab, we can verify that the vertex indices are aligned across our 2 meshes. In the figure below, blue vertices correspond to ones from the original mesh, which red vertices correspond to ones that are shared across the decimated and original meshes.
+
+![Comparison of vertices- color and location](../img/gltf-output-results-vertex-alignment.png)
+
+![Index alignment across both meshes](img/gltf-output-results-vertex-index-match.png)
 
 
 
