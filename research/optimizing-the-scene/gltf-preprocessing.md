@@ -92,6 +92,131 @@ Now that we have a basic understanding about this structure, let's explore basic
 
 The main package we shall be using for editing the GLTF files is [pygltflib](https://pypi.org/project/pygltflib/). This library gives us a comprehensive suite of tools necessary to edit the GLTF file structure.
 
+The "Hello World" of this file package involves creating and saving a cube to gltf file format, from a raw input of vertices and faces. From the [docs](https://pypi.org/project/pygltflib/), we implement the following code.
+
+First, we define our vertex array and triangles array as follows -->
+
+```py
+points = np.array(
+    [
+        [-0.5, -0.5, 0.5],
+        [0.5, -0.5, 0.5],
+        [-0.5, 0.5, 0.5],
+        [0.5, 0.5, 0.5],
+        [0.5, -0.5, -0.5],
+        [-0.5, -0.5, -0.5],
+        [0.5, 0.5, -0.5],
+        [-0.5, 0.5, -0.5],
+    ],
+    dtype="float32",
+)
+triangles = np.array(
+    [
+        [0, 1, 2],
+        [3, 2, 1],
+        [1, 0, 4],
+        [5, 4, 0],
+        [3, 1, 6],
+        [4, 6, 1],
+        [2, 3, 7],
+        [6, 7, 3],
+        [0, 2, 5],
+        [7, 5, 2],
+        [5, 7, 4],
+        [6, 4, 7],
+    ],
+    dtype="uint8",
+)
+```
+
+We explored how to create and work with these arrays in the [mesh decimation](../reducing-mesh-density/mesh-simplification.md) document.
+
+The next step is to manually create the format of our GLTF file using this information.
+
+```py
+triangles_binary_blob = triangles.flatten().tobytes()
+points_binary_blob = points.tobytes()
+
+gltf = pygltflib.GLTF2(
+    scene=0,
+    scenes=[pygltflib.Scene(nodes=[0])],
+    nodes=[pygltflib.Node(mesh=0)],
+    meshes=[
+        pygltflib.Mesh(
+            primitives=[
+                pygltflib.Primitive(
+                    attributes=pygltflib.Attributes(POSITION=1), indices=0
+                )
+            ]
+        )
+    ],
+    accessors=[
+        pygltflib.Accessor(
+            bufferView=0,
+            componentType=pygltflib.UNSIGNED_BYTE,
+            count=triangles.size,
+            type=pygltflib.SCALAR,
+            max=[int(triangles.max())],
+            min=[int(triangles.min())],
+        ),
+        pygltflib.Accessor(
+            bufferView=1,
+            componentType=pygltflib.FLOAT,
+            count=len(points),
+            type=pygltflib.VEC3,
+            max=points.max(axis=0).tolist(),
+            min=points.min(axis=0).tolist(),
+        ),
+    ],
+    bufferViews=[
+        pygltflib.BufferView(
+            buffer=0,
+            byteLength=len(triangles_binary_blob),
+            target=pygltflib.ELEMENT_ARRAY_BUFFER,
+        ),
+        pygltflib.BufferView(
+            buffer=0,
+            byteOffset=len(triangles_binary_blob),
+            byteLength=len(points_binary_blob),
+            target=pygltflib.ARRAY_BUFFER,
+        ),
+    ],
+    buffers=[
+        pygltflib.Buffer(
+            byteLength=len(triangles_binary_blob) + len(points_binary_blob)
+        )
+    ],
+)
+gltf.set_binary_blob(triangles_binary_blob + points_binary_blob)
+```
+
+While it seems like there is a lot of code above, all we're essentially doing is creating the structure of our GLTF file manually. We the the familiar scene, nodes, meshes data blocks. Since they all refer to one object, ther are all given the index 0.
+
+An important consideration is that both the `triangles` and `points` array need to be converted to binary format. This is done in the first step, `triangles.flatten().tobytes()`.
+
+The main part of the code we'll explore here is in the creation of the `bufferviews`. We note that the bytelength here corresponds to the overall length of our individual `blobs`, and the byteoffset is just the cumulative length of the previous child. 
+
+For example, bufferView index 1 (the second child) has a byteoffset of `len(triangles_binary_blob)`, which is the length of the previous child in memory. The bytelength of bufferview Index 1 corresponds to the length of `points_binary_blob`. If we had a bufferview at index 2, it would have a byteoffset of all the previous children (in this case, index 0 and 1) which would be `len(triangles_binary_blob)` + `len(points_binary_blob)`.
+
+Hopefully that makes sense.
+
+There is one last function call we need to make, and that is to save our GLTF file.
+
+```py
+filename2 = "test.glb"
+gltf.save(filename2)
+```
+
+If we open this file in Blender, this is what we observe.
+
+![Test GLB file in Blender](img/test-glb-in-blender.png)
+
+It is ultimately just a cube, but serves as a crucial workflow method for manual control over the structure of the gltf file.
+
+
+
+
+
 
 
 ## Links
@@ -103,3 +228,5 @@ The main package we shall be using for editing the GLTF files is [pygltflib](htt
 [`vertices` and `faces`](../hosting-3d-model/analysis_threejs.md)
 
 [pygltflib](https://pypi.org/project/pygltflib/)
+
+[decimation](../reducing-mesh-density/mesh-simplification.md)
