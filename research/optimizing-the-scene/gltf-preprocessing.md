@@ -433,6 +433,7 @@ As well, if we open this file in MeshLab, we can verify that the vertex indices 
 
 
 
+
 ## Links
 
 [LOD control](../hosting-3d-model/per-object-lod-control-with-threejs.md)
