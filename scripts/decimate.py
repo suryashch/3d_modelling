@@ -49,7 +49,7 @@ def decimate_mesh(v_mat, f_mat, perc_red=0.0):
         v_dm = m.vertex_matrix()
         f_dm = m.face_matrix()
 
-        v_dict = { tuple(row): i for i, row in enumerate(v_dm) }
+        v_dict = { tuple(np.round(row,6)): i for i, row in enumerate(v_dm) }
         v_remapping = np.argsort(np.array([v_dict.get(tuple(row), np.inf) for row in v_mat ]))
 
         v_org_rmp = v_mat[v_remapping]
