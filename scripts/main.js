@@ -223,7 +223,7 @@ async function init() {
     let uuid_map = new Map();
     
     const loader_instance = new GLTFLoader().setPath('models/bim-model/');
-    const gltf = await loader_instance.loadAsync('test-w-installatie.glb')
+    const gltf = await loader_instance.loadAsync('test-mep.glb')
     
     const meshes = [];
 
