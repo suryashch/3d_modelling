@@ -51,7 +51,9 @@ def decimate_mesh(obj_path, perc_red=0.0):
     v_remapping = np.argsort(np.array([v_dict.get(tuple(row), np.inf) for row in v_org ]))
 
     v_org_rmp = v_org[v_remapping]
-    f_org_rmp = v_remapping[f_org]
+
+    v_inv_mapping = np.argsort(v_remapping)
+    f_org_rmp = v_inv_mapping[f_org]
 
     assert v_org_rmp[:len(v_dm)].all() == v_dm.all()
 
