@@ -431,8 +431,445 @@ As well, if we open this file in MeshLab, we can verify that the vertex indices 
 
 ![Index alignment across both meshes](img/gltf-output-results-vertex-index-match.png)
 
+## Applying to Piperack Model
+
+The next step is to apply this manual reindexing to a file containing multiple meshes- for example our original piperacks model that we used in the [LOD control](../hosting-3d-model/per-object-lod-control-with-threejs.md) project.
+
+![Original Piperacks Model](img/performance-results-architectural-merged-mesh.gif)
+
+We begin by importing this file into our session.
+
+```py
+filename = "../../../models/piperack/piperacks_lod-100.glb"
+gltf = pygltflib.GLTF2().load(filename)
+```
+
+The next step is to acquire the binary blob associated with this file.
+
+```py
+piperack_binary_blob = gltf.binary_blob()
+```
+
+This binary blob serves as the main buffer for the scene and is where all the data is stored (in binary format).
+
+We then need to import our previously created `decimate_mesh()` function. For more info on how we created this, see the research on [Mesh Simplification](../reducing-mesh-density/mesh-simplification.md).
+
+```py
+from scripts.decimate import decimate_mesh
+```
+
+After a significant amount of trial and error, this is the main script we use to reindex our GLTF files.
+
+```py
+# Initialize empty GLTF container to store the newly created mesh objects.
+gltf_lod = pygltflib.GLTF2()
+gltf_lod.scenes.append(pygltflib.Scene(nodes=[]))
+gltf_lod.scene = 0
+
+# Empty array for appending binary blobs
+main_binary_blob = bytearray()
+
+# Variables for loop traversal
+byte_offset_ctr = 0
+bufferview_ctr = 0
+accessor_ctr = 0
+
+# Main loop
+for node_idx, original_node in enumerate(gltf.nodes):    
+    if original_node.mesh is None:
+        continue
+    
+    mesh_idx = original_node.mesh
+    primitive = gltf.meshes[mesh_idx].primitives[0]
+
+    # Step 1: Acquire the existing triangles and points array from the gltf file
+    triangles_accessor = gltf.accessors[primitive.indices]
+    triangles_buffer_view = gltf.bufferViews[triangles_accessor.bufferView]
+    triangles = np.frombuffer(
+        piperack_binary_blob[
+            triangles_buffer_view.byteOffset
+            + triangles_accessor.byteOffset : triangles_buffer_view.byteOffset
+            + triangles_buffer_view.byteLength
+        ],
+        dtype=GLTF_COMPONENT_TYPES[triangles_accessor.componentType],
+        count=triangles_accessor.count,
+    ).reshape((-1, 3))
+
+    points_accessor = gltf.accessors[primitive.attributes.POSITION]
+    points_buffer_view = gltf.bufferViews[points_accessor.bufferView]
+    points = np.frombuffer(
+        piperack_binary_blob[
+            points_buffer_view.byteOffset
+            + points_accessor.byteOffset : points_buffer_view.byteOffset
+            + points_buffer_view.byteLength
+        ],
+        dtype=GLTF_COMPONENT_TYPES[points_accessor.componentType],
+        count=points_accessor.count * 3,
+    ).reshape((-1, 3))
+
+    # Step 2: Apply the decimation and remapping function
+    points_rmp, triangles_rmp, points_dm, triangles_dm = decimate_mesh(points, triangles)
+
+    triangles_rmp = triangles_rmp.astype(np.uint32)
+    triangles_dm = triangles_dm.astype(np.uint32)
+
+    points_rmp = points_rmp.astype(np.float32)
+    points_dm = points_dm.astype(np.float32)
+
+    # Step 3: Convert the new arrays to binary and append to main binary blob
+    triangles_org_binary_blob = triangles_rmp.flatten().tobytes()
+    triangles_dec_binary_blob = triangles_dm.flatten().tobytes()
+
+    points_org_binary_blob = points_rmp.tobytes()
+    points_dec_binary_blob = points_dm.tobytes()
+
+    combined_byte_array = triangles_org_binary_blob + triangles_dec_binary_blob + points_org_binary_blob
+    main_binary_blob.extend(combined_byte_array) # Note we do not append the decimated mesh vertices
+
+    # Step 4: Format the GLTF file with the 2 new LODs
+    # Append the BufferViews
+    gltf_lod.bufferViews.extend([
+        pygltflib.BufferView(
+            buffer=0, 
+            byteOffset=byte_offset_ctr, 
+            byteLength=len(triangles_org_binary_blob), 
+            target=pygltflib.ELEMENT_ARRAY_BUFFER
+        ),
+        pygltflib.BufferView(
+            buffer=0, 
+            byteOffset=byte_offset_ctr + len(triangles_org_binary_blob), 
+            byteLength=len(triangles_dec_binary_blob), 
+            target=pygltflib.ELEMENT_ARRAY_BUFFER
+        ),
+        pygltflib.BufferView(
+            buffer=0, 
+            byteOffset=byte_offset_ctr + len(triangles_org_binary_blob) + len(triangles_dec_binary_blob), 
+            byteLength=len(points_org_binary_blob), 
+            target=pygltflib.ARRAY_BUFFER
+        ),
+        pygltflib.BufferView(
+            buffer=0, 
+            byteOffset=byte_offset_ctr + len(triangles_org_binary_blob) + len(triangles_dec_binary_blob), 
+            byteLength=len(points_dec_binary_blob), 
+            target=pygltflib.ARRAY_BUFFER
+        )
+    ])
+
+    # Append the Accessors
+    gltf_lod.accessors.extend([
+        pygltflib.Accessor(   # Original Mesh indices
+            bufferView=bufferview_ctr,
+            componentType=5125,
+            count=triangles_rmp.size,
+            type=pygltflib.SCALAR
+        ),
+        pygltflib.Accessor(   # Decimated Mesh indices
+            bufferView=bufferview_ctr+1,
+            componentType=5125,
+            count=triangles_dm.size,
+            type=pygltflib.SCALAR
+        ),
+        pygltflib.Accessor(    # Original mesh vertices
+            bufferView=bufferview_ctr+2,
+            componentType=pygltflib.FLOAT,
+            count=len(points_rmp),
+            type=pygltflib.VEC3,
+            max=points_rmp.max(axis=0).tolist(),
+            min=points_rmp.min(axis=0).tolist(),
+        ),
+        pygltflib.Accessor(    # Decimated mesh vertices
+            bufferView=bufferview_ctr+3,
+            componentType=pygltflib.FLOAT,
+            count=len(points_dm),
+            type=pygltflib.VEC3,
+            max=points_dm.max(axis=0).tolist(),
+            min=points_dm.min(axis=0).tolist(),
+        )
+    ])
+
+    # Append the Meshes
+    gltf_lod.meshes.extend([
+        pygltflib.Mesh(
+            primitives=[
+                pygltflib.Primitive(
+                    attributes=pygltflib.Attributes(POSITION=bufferview_ctr+2), indices=bufferview_ctr
+                )
+            ]
+        ),
+        pygltflib.Mesh(
+            primitives=[
+                pygltflib.Primitive(
+                    attributes=pygltflib.Attributes(POSITION=bufferview_ctr+3), indices=bufferview_ctr+1
+                )
+            ]
+        )
+    ])
+
+    # Append the Nodes
+    gltf_lod.nodes.extend([
+        pygltflib.Node(
+            mesh=accessor_ctr,
+            name=f"Mesh_{node_idx}-hires"
+        ),
+        pygltflib.Node(
+            mesh=accessor_ctr+1,
+            name=f"Mesh_{node_idx}-lowres"
+        )
+    ])
+
+    # Add to the existing scene
+    gltf_lod.scenes[0].nodes.extend([accessor_ctr, accessor_ctr+1])
+
+    # Step 6: Manually update the counters
+    byte_offset_ctr = byte_offset_ctr + len(triangles_org_binary_blob) + len(triangles_dec_binary_blob) + len(points_org_binary_blob)
+    bufferview_ctr = bufferview_ctr + 4
+    accessor_ctr = accessor_ctr + 2
+
+gltf_lod.buffers.append(pygltflib.Buffer(byteLength=len(main_binary_blob)))
+gltf_lod.set_binary_blob(main_binary_blob)
+
+filename4 = "test-piperacks.glb"
+gltf_lod.save(filename4)
+```
+
+While this may seem long and drawn out, a lot of the code is simply reused from the exercise in the previous section. As well, this is not intended to be a fully optimized script, just one that works. Let's walk through it.
+
+```py
+# Initialize empty GLTF container to store the newly created mesh objects.
+gltf_lod = pygltflib.GLTF2()
+gltf_lod.scenes.append(pygltflib.Scene(nodes=[]))
+gltf_lod.scene = 0
+```
+
+The first block of code deals with creating empty containers for our new reindexed GLTF file. Here we call `gltf_lod`, our object that we will append our reindexed object to. To this object, we append a single `scene`, and create an empty array of `nodes`. These nodes will be appeneded to later.
+
+We then assign an empty `bytearray` to store the final binary code for our reindexed mesh.
+
+```py
+main_binary_blob = bytearray()
+```
+
+Since our iterators for each of the accessor, bufferview and mesh will increment at different rates, we need to manually set these to 0 and update as necessary.
+
+```py
+byte_offset_ctr = 0
+bufferview_ctr = 0
+accessor_ctr = 0
+```
+
+At the end of the loop we manually update these values.
+
+Now for the main loop, we loop over nodes in the scene. For each node, we acquire the mesh (Note, for this scene we limited to one mesh per node, even though there may be multiple meshes to a node).
+
+```py
+for node_idx, original_node in enumerate(gltf.nodes):    
+    if original_node.mesh is None:
+        continue
+    
+    mesh_idx = original_node.mesh
+    primitive = gltf.meshes[mesh_idx].primitives[0]
+```
+
+We acquire the mesh index and the primitive associated with the mesh. We then get the vertex and triangle arrays from the mesh using the same code as described in the section above.
+
+```py
+# Step 1: Acquire the existing triangles and points array from the gltf file
+    triangles_accessor = gltf.accessors[primitive.indices]
+    triangles_buffer_view = gltf.bufferViews[triangles_accessor.bufferView]
+    triangles = np.frombuffer(
+        piperack_binary_blob[
+            triangles_buffer_view.byteOffset
+            + triangles_accessor.byteOffset : triangles_buffer_view.byteOffset
+            + triangles_buffer_view.byteLength
+        ],
+        dtype=GLTF_COMPONENT_TYPES[triangles_accessor.componentType],
+        count=triangles_accessor.count,
+    ).reshape((-1, 3))
+
+    points_accessor = gltf.accessors[primitive.attributes.POSITION]
+    points_buffer_view = gltf.bufferViews[points_accessor.bufferView]
+    points = np.frombuffer(
+        piperack_binary_blob[
+            points_buffer_view.byteOffset
+            + points_accessor.byteOffset : points_buffer_view.byteOffset
+            + points_buffer_view.byteLength
+        ],
+        dtype=GLTF_COMPONENT_TYPES[points_accessor.componentType],
+        count=points_accessor.count * 3,
+    ).reshape((-1, 3))
+```
+
+Nothing new here, just copying the same code from above.
+
+Once we have the points and triangles array, we can pass these in to our `decimate_mesh()` function. This function returns the remapped vertex and triangles array, as well as the decimated mesh vertex and triangles array.
+
+```py
+points_rmp, triangles_rmp, points_dm, triangles_dm = decimate_mesh(points, triangles)
+
+triangles_rmp = triangles_rmp.astype(np.uint32)
+triangles_dm = triangles_dm.astype(np.uint32)
+
+points_rmp = points_rmp.astype(np.float32)
+points_dm = points_dm.astype(np.float32)
+```
+
+We also convert each of the arrays explictly to be int32 and float32 for the indices (triangles) and vertices arrays respectively.
+
+After we have our remapped vertices and indices, we convert these to bytes and append to our existing bytearray, `main_binary_blob`.
+
+```py
+combined_byte_array = triangles_org_binary_blob + triangles_dec_binary_blob + points_org_binary_blob
+main_binary_blob.extend(combined_byte_array)
+```
+
+An important note here is that we only store the original remapped binary blob to memory- not the decimated binary blob. As highlighted multiple times in this research, the goal is to reuse the same array for both our meshes.
+
+Now, we assign our bytes to accessors. We work our way backwards from the bufferview, making sure we keep track of the order of our arrays. This code is essentially the same as the code above, except since we have multiple meshes, we need to account for the accessor, node, and mesh index number. Hence, this code looks like this.
+
+```py
+# Append the BufferViews
+gltf_lod.bufferViews.extend([
+    pygltflib.BufferView(
+        buffer=0, 
+        byteOffset=byte_offset_ctr, 
+        byteLength=len(triangles_org_binary_blob), 
+        target=pygltflib.ELEMENT_ARRAY_BUFFER
+    ),
+    pygltflib.BufferView(
+        buffer=0, 
+        byteOffset=byte_offset_ctr + len(triangles_org_binary_blob), 
+        byteLength=len(triangles_dec_binary_blob), 
+        target=pygltflib.ELEMENT_ARRAY_BUFFER
+    ),
+    pygltflib.BufferView(
+        buffer=0, 
+        byteOffset=byte_offset_ctr + len(triangles_org_binary_blob) + len(triangles_dec_binary_blob), 
+        byteLength=len(points_org_binary_blob), 
+        target=pygltflib.ARRAY_BUFFER
+    ),
+    pygltflib.BufferView(
+        buffer=0, 
+        byteOffset=byte_offset_ctr + len(triangles_org_binary_blob) + len(triangles_dec_binary_blob), 
+        byteLength=len(points_dec_binary_blob), 
+        target=pygltflib.ARRAY_BUFFER
+    )
+])
+
+# Append the Accessors
+gltf_lod.accessors.extend([
+    pygltflib.Accessor(   # Original Mesh indices
+        bufferView=bufferview_ctr,
+        componentType=5125,
+        count=triangles_rmp.size,
+        type=pygltflib.SCALAR
+    ),
+    pygltflib.Accessor(   # Decimated Mesh indices
+        bufferView=bufferview_ctr+1,
+        componentType=5125,
+        count=triangles_dm.size,
+        type=pygltflib.SCALAR
+    ),
+    pygltflib.Accessor(    # Original mesh vertices
+        bufferView=bufferview_ctr+2,
+        componentType=pygltflib.FLOAT,
+        count=len(points_rmp),
+        type=pygltflib.VEC3,
+        max=points_rmp.max(axis=0).tolist(),
+        min=points_rmp.min(axis=0).tolist(),
+    ),
+    pygltflib.Accessor(    # Decimated mesh vertices
+        bufferView=bufferview_ctr+3,
+        componentType=pygltflib.FLOAT,
+        count=len(points_dm),
+        type=pygltflib.VEC3,
+        max=points_dm.max(axis=0).tolist(),
+        min=points_dm.min(axis=0).tolist(),
+    )
+])
+
+# Append the Meshes
+gltf_lod.meshes.extend([
+    pygltflib.Mesh(
+        primitives=[
+            pygltflib.Primitive(
+                attributes=pygltflib.Attributes(POSITION=bufferview_ctr+2), indices=bufferview_ctr
+            )
+        ]
+    ),
+    pygltflib.Mesh(
+        primitives=[
+            pygltflib.Primitive(
+                attributes=pygltflib.Attributes(POSITION=bufferview_ctr+3), indices=bufferview_ctr+1
+            )
+        ]
+    )
+])
+
+# Append the Nodes
+gltf_lod.nodes.extend([
+    pygltflib.Node(
+        mesh=accessor_ctr,
+        name=f"Mesh_{node_idx}-hires"
+    ),
+    pygltflib.Node(
+        mesh=accessor_ctr+1,
+        name=f"Mesh_{node_idx}-lowres"
+    )
+])
+```
+
+We make sure to append the words "hires" and "lowres" to the name of our mesh to that we can identify these later.
+
+As a last step, we link these nodes to the existing scene object like so.
+
+```py
+# Add to the existing scene
+gltf_lod.scenes[0].nodes.extend([accessor_ctr, accessor_ctr+1])
+```
+
+And as a final final step, we neeed to manually update the individual counters.
+
+```py
+ # Step 6: Manually update the counters
+byte_offset_ctr = byte_offset_ctr + len(triangles_org_binary_blob) + len(triangles_dec_binary_blob) + len(points_org_binary_blob)
+bufferview_ctr = bufferview_ctr + 4
+accessor_ctr = accessor_ctr + 2
+```
+
+Now, we exit out of the loop and save our new binary array as the buffer for our new GLTF file.
+
+```py
+gltf_lod.buffers.append(pygltflib.Buffer(byteLength=len(main_binary_blob)))
+gltf_lod.set_binary_blob(main_binary_blob)
+```
+
+And we're done. Save the mesh to file and let's see what we get.
+
+```py
+filename4 = "test-piperacks.glb"
+gltf_lod.save(filename4)
+```
+
+Here is what the GLTF file looks like when opening in Blender
+
+![Initial Load of the Recreated GLTF file](img/gltf-remapped-initial%20load.png)
+
+Comparing the 2 meshes with each other, this is what we see.
+
+![Comparison of HighRes and LowRes LODs in GLTF file](../img/gltf-remapped-comparison.png)
+
+A high level of decimation, but definitely looks llike we have 2 different high and low resolutions of the mesh in the scene.
+
+This method seems to be working, now we need to confirm if, per our problem statement, we're able to load this object to a `BatchedMesh` and observe our LOD swapping mechanism come to life.
 
 
+
+
+## Conclusion
+
+While there are definitely improvements to be made, as a proof of concept we were able to verify that manual reindexing of the vertices in our GLTF file can help enable LOD control within a `BatchedMesh` object. Here, we described the basics of the structure of a GLTF file as well as tools to edit it succintly.
+
+In further research, I explore further optimizations which could be made (geometry consolidation, normal implementations, material management) within the GLTF file, as well as further scripting to open this door to other file types.
 
 ## Links
 
