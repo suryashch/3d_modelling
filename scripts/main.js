@@ -101,6 +101,8 @@ async function loadFiles( loader ) {
     ]);
 
     // Need to sequentially populate the mesh_map
+
+    console.log(gltf_1);
     const mesh_map = await initMap( gltf_1 );
     const final_map = await appendMap( gltf_2, mesh_map )
 
@@ -230,7 +232,7 @@ function queryNearInstances( cameraPos ) {
     bvh.shapecast({
 
         intersectsBounds : ( box ) => {
-            
+
             if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
 
             return INTERSECTED;
@@ -276,7 +278,7 @@ let frameCount = 0
 
 function animate() {
 
-    profiler.begin("LOD control")
+    // profiler.begin("LOD control")
 
     requestAnimationFrame(animate);
 
@@ -286,15 +288,15 @@ function animate() {
 
     perfMonitor.update(renderer, scene);
 
-    if (bvh && frameCount % 5 ==0) {
+    if (bvh && frameCount % 10 ==0) {
         
         // Every 5 frames update the LODs
         
         updateLODs(camera.position);
     }
-    profiler.end("LOD control")
+    // profiler.end("LOD control")
 
-    profiler.endFrame();
+    // profiler.endFrame();
 
     frameCount++;
 };
