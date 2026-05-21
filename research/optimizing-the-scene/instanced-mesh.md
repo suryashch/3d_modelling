@@ -1,8 +1,8 @@
 # Improving Model Memory Usage and Performance with Instancing
 
-The [Instanced Mesh](https://threejs.org/docs/#InstancedMesh) class of objects in ThreeJS allows for efficient renderings of the same geometry in different locations. Essentially this means that a scene which contains multiple different objects each with the same geometry can render using one 1 [draw call](draw-calls-in-scenes.md). An example of where this may be useful is in rendering of scenes that contain 
+The [Instanced Mesh](https://threejs.org/docs/#InstancedMesh) class of objects in ThreeJS allows for efficient renderings of the same geometry in different locations. Essentially this means that a scene which contains multiple different objects each with the same geometry can render using one 1 [draw call](draw-calls-in-scenes.md). An example of where this may be useful is in rendering of scenes that contain hundreds or thousands of the same object.
 
-Think blades of grass in a field, bolts in a steel beam, 90 degree elbows in a pipe- all have the same geometry, just loaded to different positions in the scene. From a memory perspective this grants us huge savings- we now only need to store the `edge` and `vertex` data of our object once. Everything else can be controlled by adjusting the position, rotation, and scale of the object. This is how video games can have scenes with millions of blades of grass, all which run at a comfortable 60 FPS.
+Think leaves on a tree, bolts in a steel beam, 90 degree elbows in a pipe- all have the same geometry, just loaded to different positions in the scene. From a memory perspective this grants us huge savings- we now only need to store the `edge` and `vertex` data of our object once. Everything else can be controlled by adjusting the position, rotation, and scale of the object. This is how video games can have scenes with millions of blades of grass, all which run at a comfortable 60 FPS.
 
 ![Instancing Example. Credit: Threejs](img/instancing-threejs-example.gif)
 

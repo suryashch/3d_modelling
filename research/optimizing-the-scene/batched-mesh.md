@@ -218,7 +218,7 @@ loader.load('sixty5-architectural.glb', (gltf) => {
 })
 ```
 
-The code functions virtually exactly the same as before, except we swap our `meshes` array for a `Map` object. Each key in the map will correspond to a material in our model. Each value in the `Map` will correspond to our original `meshes` array. The `BatchedMesh` object creation step is now wrapped within a for loop that loops over each key in our `materials` object. This means, we will create a new `BatchedMesh` for every object in the scene.
+The code functions virtually exactly the same as before, except we swap our `meshes` array for a `Map` object. Each key in the map will correspond to a material in our model. Each value in the `Map` will correspond to our original `meshes` array. The `BatchedMesh` object creation step is now wrapped within a for loop that loops over each key in our `materials` object. This means, we will create a new `BatchedMesh` for every material in the scene.
 
 With these tweaks in place, we load our model to scene and observe the following results.
 

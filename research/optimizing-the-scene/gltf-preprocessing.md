@@ -2,7 +2,7 @@
 
 We have proven that [LOD control](../hosting-3d-model/per-object-lod-control-with-threejs.md) improves GPU computational efficieny in densely populated scenes. We also saw that [Batching](batched-mesh.md) our scene improves CPU efficiency. However, combining the 2 requires a little bit of out-of-the box thinking. While LOD functionality does exist within our `BatchedMesh` object, implementing this accurately requires careful consideration of the underlying vertex and index array.
 
-In this work, I explain the basics of array structuring in GLTF files, optimizations which can be made for memory, as well as walking through the structure and rationale behind any scripts that we include. The [accompanying notebook](notebooks/gltf-eda.ipynb) provides additional insight and in depth analysis of code.
+In this work, I explain the basics of array structuring in [GLTF] files, optimizations which can be made for memory, as well as walking through the structure and rationale behind any scripts that we include. The [accompanying notebook](notebooks/gltf-eda.ipynb) provides additional insight and in depth analysis of code.
 
 ## Background
 
