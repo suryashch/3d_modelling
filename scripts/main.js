@@ -133,23 +133,75 @@ const profiler = new FrameProfiler(60);
 // testing with bvh
 
 let meshes = new Map();
+
 let totalVertexCount = 0;
 let totalIndexCount = 0;
 let totalInstanceCount = 0;
-let uuid_map = new Map();
-let batchedMesh;
+
+let hiresGeomIdFor = [];
+let lowresGeomIdFor = [];
+
+let batchedMesh_final;
 let bvh;
+
 
 const loader = new GLTFLoader().setPath('models/bim-model/');
 
-loader.load('sixty5-mep.glb', (gltf) => {
-    console.log(gltf);
+async function loadFiles(loader) {
+
+    const [gltf_1, gltf_2] = await Promise.all([
+        loader.loadAsync("sixty5-mep-test.glb"),
+        loader.loadAsync("sixty5-mep-lowres-test.glb")
+    ]);
+
+    const uuid_map = await initMap(gltf_1);
+    const final_map = await appendMap(gltf_2, uuid_map)
+
+    batchedMesh_final = await generateBatchedMesh(final_map)
+
+    bvh = new ObjectBVH( batchedMesh_final );
+
+    scene.add(batchedMesh_final);
+};
+
+function generateBatchedMesh(final_map) {
+    const batchedMesh = new THREE.BatchedMesh(totalInstanceCount, totalVertexCount, totalIndexCount, new THREE.MeshBasicMaterial());
     
+    final_map.forEach((value, key) => {
+        const hires_geometry = value.get("geometry_hires");
+        
+        const lowres_geometry = value.has("geometry_lowres") ? value.get("geometry_lowres") : value.get("geometry_hires");
+        
+        const matrices = value.get("matrix")
+
+        if (matrices.length > 0) {
+            const hires_geomId = batchedMesh.addGeometry(hires_geometry);
+            const lowres_geomId = batchedMesh.addGeometry(lowres_geometry);
+
+            for ( let i=0; i < matrices.length; i++){
+                const instanceId = batchedMesh.addInstance(lowres_geomId)
+                batchedMesh.setMatrixAt( instanceId, matrices[i] )
+
+                hiresGeomIdFor[instanceId] = hires_geomId;
+                lowresGeomIdFor[instanceId] = lowres_geomId;
+            };
+
+        }
+    });
+    
+    batchedMesh.needsUpdate = true;
+    return batchedMesh
+}
+
+function initMap(gltf) {
+
+    let uuid_map = new Map();
+
     gltf.scene.traverse((child) => {
         if (child.isMesh){
             
             const geom = child.geometry;
-            const geom_uuid = geom.uuid;
+            const geom_uuid = child.userData.mesh_id;
             const inst_matrix = child.matrixWorld;
 
             if ( !uuid_map.has( geom_uuid )) {
@@ -157,7 +209,7 @@ loader.load('sixty5-mep.glb', (gltf) => {
                 
                 uuid_map.set( geom_uuid, new Map() );
 
-                uuid_map.get( geom_uuid ).set( "geometry", geom );
+                uuid_map.get( geom_uuid ).set( "geometry_hires", geom );
                 uuid_map.get( geom_uuid ).set( "matrix", [] );
 
                 uuid_map.get( geom_uuid ).get( "matrix").push( inst_matrix );
@@ -174,43 +226,29 @@ loader.load('sixty5-mep.glb', (gltf) => {
                 totalInstanceCount += 1;
 
             };
-            
-            
-            
-            // totalVertexCount += child.geometry.attributes.position.count
-            // totalIndexCount += child.geometry.index.count
-            
-            // meshes.push(child)
         };
     });
 
-    batchedMesh =new THREE.BatchedMesh(totalInstanceCount * 2, totalVertexCount, totalIndexCount, new THREE.MeshBasicMaterial());
+    return uuid_map
+}
 
-    uuid_map.forEach((value, key) => {
-        const geometry = value.get("geometry");
-        const matrices = value.get("matrix")
+function appendMap(gltf, uuid_map) {
+    gltf.scene.traverse((child) => {
+        if ( child.isMesh && uuid_map.has( child.userData.mesh_id )){
+            const geom = child.geometry;
+            
+            uuid_map.get( child.userData.mesh_id ).set( "geometry_lowres", geom );
 
-        if (matrices.length > 1) {
-            const geomId = batchedMesh.addGeometry(geometry);
-            for ( let i=0; i < matrices.length; i++){
-                const instanceId = batchedMesh.addInstance(geomId)
-                batchedMesh.setMatrixAt( instanceId, matrices[i] )
-            };
-
+            totalVertexCount += geom.attributes.position.count;
+            totalIndexCount += geom.index.count;
+            totalInstanceCount += 1;
         }
-        
-        // const instId = batchedMesh.addInstance(geomId);
-
-        // m.updateMatrixWorld();
-        // batchedMesh.setMatrixAt(instId, m.matrixWorld);
     });
 
-    batchedMesh.needsUpdate = true;
+    return uuid_map
+}
 
-    bvh = new ObjectBVH( batchedMesh );
-
-    scene.add(batchedMesh);
-});
+loadFiles(loader)
 
 const querySphere = new THREE.Sphere();
 const SEARCH_RADIUS = 15;
@@ -246,15 +284,168 @@ function updateLODs(cameraPos) {
     const newNear = queryNearInstances(cameraPos);
 
     newNear.forEach((id) => {
-        if (!prevNear.has(id)) batchedMesh.setColorAt(id, highlightColor)
+        if (!prevNear.has(id)) {
+            batchedMesh_final.setGeometryIdAt(id, hiresGeomIdFor[id])
+            batchedMesh_final.setColorAt(id, highlightColor)
+        }
     });
 
     prevNear.forEach((id) =>{
-        if (!newNear.has(id)) batchedMesh.setColorAt(id, nonHighlightColor)
+        if (!newNear.has(id)) {
+            batchedMesh_final.setGeometryIdAt(id, lowresGeomIdFor[id])
+            batchedMesh_final.setColorAt(id, nonHighlightColor)
+        }
     });
 
     prevNear = newNear;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+// loader.load('sixty5-mep-test.glb', (gltf) => {
+//     // console.log(gltf);
+    
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh){
+            
+//             const geom = child.geometry;
+//             const geom_uuid = child.userData.mesh_id;
+//             const inst_matrix = child.matrixWorld;
+
+//             if ( !uuid_map.has( geom_uuid )) {
+//                 // If map does not have the uuid already, first create it
+                
+//                 uuid_map.set( geom_uuid, new Map() );
+
+//                 uuid_map.get( geom_uuid ).set( "geometry", geom );
+//                 uuid_map.get( geom_uuid ).set( "matrix", [] );
+
+//                 uuid_map.get( geom_uuid ).get( "matrix").push( inst_matrix );
+
+//                 totalVertexCount += geom.attributes.position.count;
+//                 totalIndexCount += geom.index.count;
+//                 totalInstanceCount += 1;
+            
+//             } else {
+//                 // Map contains the uuid hence only need to push transformation matrix
+
+//                 uuid_map.get( geom_uuid ).get( "matrix").push( inst_matrix );
+
+//                 totalInstanceCount += 1;
+
+//             };
+            
+            
+            
+//             // totalVertexCount += child.geometry.attributes.position.count
+//             // totalIndexCount += child.geometry.index.count
+            
+//             // meshes.push(child)
+//         };
+//     });
+
+//     batchedMesh = new THREE.BatchedMesh(totalInstanceCount * 2, totalVertexCount, totalIndexCount, new THREE.MeshBasicMaterial());
+
+//     uuid_map.forEach((value, key) => {
+//         const geometry = value.get("geometry");
+//         const matrices = value.get("matrix")
+
+//         if (matrices.length > 1) {
+//             const geomId = batchedMesh.addGeometry(geometry);
+//             for ( let i=0; i < matrices.length; i++){
+//                 const instanceId = batchedMesh.addInstance(geomId)
+//                 batchedMesh.setMatrixAt( instanceId, matrices[i] )
+//             };
+
+//         }
+        
+//         // const instId = batchedMesh.addInstance(geomId);
+
+//         // m.updateMatrixWorld();
+//         // batchedMesh.setMatrixAt(instId, m.matrixWorld);
+//     });
+
+//     batchedMesh.needsUpdate = true;
+
+//     bvh = new ObjectBVH( batchedMesh );
+
+//     scene.add(batchedMesh);
+// });
+
+// const querySphere = new THREE.Sphere();
+// const SEARCH_RADIUS = 15;
+// let prevNear = new Set();
+
+// const highlightColor = new THREE.Color( "#F600C1" );
+// const nonHighlightColor = new THREE.Color( "#d8d8d8" );
+
+// function queryNearInstances(cameraPos) {
+//     const nearIds = new Set();
+
+//     querySphere.center.copy(cameraPos);
+//     querySphere.radius = SEARCH_RADIUS;
+
+//     bvh.shapecast({
+//         intersectsBounds : (box) => {
+//             if (!querySphere.intersectsBox(box)) return NOT_INTERSECTED;
+
+//             return INTERSECTED;
+//         },
+//         intersectsObject : (object, instanceId) => {
+//             nearIds.add(instanceId);
+            
+//             return false;
+//         }
+
+//     });
+
+//     return nearIds;
+// };
+
+// function updateLODs(cameraPos) {
+//     const newNear = queryNearInstances(cameraPos);
+
+//     newNear.forEach((id) => {
+//         if (!prevNear.has(id)) batchedMesh.setColorAt(id, highlightColor)
+//     });
+
+//     prevNear.forEach((id) =>{
+//         if (!newNear.has(id)) batchedMesh.setColorAt(id, nonHighlightColor)
+//     });
+
+//     prevNear = newNear;
+// }
+
+// // Basic Loader
+// const loader1 = new GLTFLoader().setPath('models/bim-model/');
+// loader1.load('sixty5-mep-lowres-test.glb', (gltf) => {
+//     // console.log(gltf)
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh) {
+//             // console.log(child.userData.mesh_id)
+//             if (
+//                 uuid_map.has(child.position)
+//             ) {
+//                 console.log("Hurray")
+//             }
+//         };
+//     });
+// });
+
+// console.log(uuid_map)
+
+
+
+
 
 
 // // Batched Mesh Loader
