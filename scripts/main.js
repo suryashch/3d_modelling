@@ -110,7 +110,7 @@ class FrameProfiler {
     rows.sort((a, b) => b.avg_ms - a.avg_ms);
     console.table(rows);
   }
-}
+};
 
 const profiler = new FrameProfiler(60);
 
@@ -143,7 +143,6 @@ let lowresGeomIdFor = [];
 
 let batchedMesh_final;
 let bvh;
-
 
 const loader = new GLTFLoader().setPath('models/bim-model/');
 
@@ -191,7 +190,7 @@ function generateBatchedMesh(final_map) {
     
     batchedMesh.needsUpdate = true;
     return batchedMesh
-}
+};
 
 function initMap(gltf) {
 
@@ -230,7 +229,7 @@ function initMap(gltf) {
     });
 
     return uuid_map
-}
+};
 
 function appendMap(gltf, uuid_map) {
     gltf.scene.traverse((child) => {
@@ -246,9 +245,9 @@ function appendMap(gltf, uuid_map) {
     });
 
     return uuid_map
-}
+};
 
-loadFiles(loader)
+loadFiles(loader);
 
 const querySphere = new THREE.Sphere();
 const SEARCH_RADIUS = 15;
@@ -298,18 +297,7 @@ function updateLODs(cameraPos) {
     });
 
     prevNear = newNear;
-}
-
-
-
-
-
-
-
-
-
-
-
+};
 
 // loader.load('sixty5-mep-test.glb', (gltf) => {
 //     // console.log(gltf);
@@ -737,24 +725,19 @@ let frameCount = 0
 
 function animate() {
     requestAnimationFrame(animate);
-    // profiler.begin("controls");
     controls.update();
-    // profiler.end("controls");
 
-    // profiler.begin("renderer");
     renderer.render(scene, camera);
-    // profiler.end("renderer");
 
-    // profiler.begin("perfMonitor");
     perfMonitor.update(renderer, scene);
-    // profiler.end("perfMonitor");
 
+    profiler.begin("LOD control")
     if (bvh && frameCount % 2 ==0) {
         updateLODs(camera.position);
     }
-    
+    profiler.end("LOD control")
 
-    // profiler.endFrame();
+    profiler.endFrame();
 };
 
 animate();
