@@ -50,10 +50,12 @@ scene.add(ambientLight);
 const gridHelper = new THREE.GridHelper( 100, 50 ); // ( size, divisions )
 scene.add( gridHelper );
 
-const perfMonitor = new PerformanceMonitor()
+const perfMonitor = new PerformanceMonitor();
 const profiler = new FrameProfiler(60);
 
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
+const raycaster = new THREE.Raycaster();
+raycaster.firstHitOnly = true;
 
 
 // // Basic Loader
@@ -104,10 +106,10 @@ async function loadFiles( loader ) {
 
     console.log(gltf_1);
     const mesh_map = await initMap( gltf_1 );
-    const final_map = await appendMap( gltf_2, mesh_map )
+    const final_map = await appendMap( gltf_2, mesh_map );
 
     
-    batchedMesh = await generateBatchedMesh( final_map )
+    batchedMesh = await generateBatchedMesh( final_map );
 
     bvh = new ObjectBVH( batchedMesh );
 
@@ -128,7 +130,7 @@ function generateBatchedMesh(final_map) {
         const hires_geometry = value.get( "geometry_hires" );
         const lowres_geometry = value.has( "geometry_lowres" ) ? value.get( "geometry_lowres" ) : value.get( "geometry_hires" );
         
-        const matrices = value.get( "matrix" )
+        const matrices = value.get( "matrix" );
 
         if (matrices.length > 0) {
 
@@ -137,19 +139,19 @@ function generateBatchedMesh(final_map) {
 
             for ( let i=0; i < matrices.length; i++){
 
-                const instanceId = bm.addInstance( lowres_geomId )
+                const instanceId = bm.addInstance( lowres_geomId );
 
-                bm.setMatrixAt( instanceId, matrices[i] )
+                bm.setMatrixAt( instanceId, matrices[i] );
 
                 hiresGeomIdFor[ instanceId ] = hires_geomId;
                 lowresGeomIdFor[ instanceId ] = lowres_geomId;
             };
 
-        }
+        };
     });
     
     bm.needsUpdate = true;
-    return bm
+    return bm;
 };
 
 function initMap( gltf ) {
@@ -208,11 +210,12 @@ function appendMap( gltf, mesh_map ) {
             totalVertexCount += geom.attributes.position.count;
             totalIndexCount += geom.index.count;
             totalInstanceCount += 1;
-        }
+        };
     });
 
-    return mesh_map
+    return mesh_map;
 };
+
 
 
 const querySphere = new THREE.Sphere();
@@ -257,24 +260,24 @@ function updateLODs( cameraPos ) {
 
         if (!prevNear.has( id )) {
 
-            batchedMesh.setGeometryIdAt( id, hiresGeomIdFor[ id ] )
-            batchedMesh.setColorAt( id, highlightColor )
-        }
+            batchedMesh.setGeometryIdAt( id, hiresGeomIdFor[ id ] );
+            batchedMesh.setColorAt( id, highlightColor );
+        };
     });
 
     prevNear.forEach(( id ) =>{
 
         if (!newNear.has( id )) {
 
-            batchedMesh.setGeometryIdAt( id, lowresGeomIdFor[ id ] )
-            batchedMesh.setColorAt( id, nonHighlightColor )
-        }
+            batchedMesh.setGeometryIdAt( id, lowresGeomIdFor[ id ] );
+            batchedMesh.setColorAt( id, nonHighlightColor );
+        };
     });
 
     prevNear = newNear;
 };
 
-let frameCount = 0
+let frameCount = 0;
 
 function animate() {
 
@@ -290,7 +293,7 @@ function animate() {
 
     if (bvh && frameCount % 10 ==0) {
         
-        // Every 5 frames update the LODs
+        // Every 10 frames update the LODs
         
         updateLODs(camera.position);
     }
