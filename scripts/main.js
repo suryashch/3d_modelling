@@ -16,6 +16,7 @@ renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
+const mouse = new THREE.Vector2();
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
 camera.position.set(15,15,15);
@@ -53,14 +54,14 @@ scene.add( gridHelper );
 const perfMonitor = new PerformanceMonitor();
 const profiler = new FrameProfiler(60);
 
-THREE.Mesh.prototype.raycast = acceleratedRaycast;
 const raycaster = new THREE.Raycaster();
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
 raycaster.firstHitOnly = true;
 
 
 // // Basic Loader
 // const loader1 = new GLTFLoader().setPath('models/bim-model/');
-// loader1.load('sixty5-structural.glb', (gltf) => {
+// loader1.load('sixty5-mep.glb', (gltf) => {
 
 //     const mesh = gltf.scene
 //     mesh.position.set(0,0,0);
@@ -74,6 +75,77 @@ raycaster.firstHitOnly = true;
 //     mesh.material = material;
 //     scene.add(mesh);
 // });
+
+
+// Basic BatchedMesh
+const loader_instance = new GLTFLoader().setPath('models/bim-model/');
+loader_instance.load('sixty5-W-installatie-hires.glb', (gltf) => {
+    
+    let material_map = new Map();
+    
+    gltf.scene.traverse((child) => {
+        if (child.isMesh) {
+            
+            const material = child.material
+            const geom = child.geometry
+            const geom_uuid = geom.uuid;
+            const inst_matrix = child.matrixWorld;
+            
+            if ( !material_map.has( material )){
+                material_map.set( material, {
+                    unique_geoms: new Map(),
+                    vCount: 0,
+                    iCount: 0,
+                    instCount: 1
+                });
+            };
+            
+            const data = material_map.get( material )
+            data.instCount++;
+
+            if ( !data.unique_geoms.has( geom_uuid ) ) {
+                data.unique_geoms.set(geom_uuid, {
+                    geometry: geom,
+                    matrix: []
+                });
+
+                data.vCount += geom.attributes.position.count;
+                data.iCount += geom.index.count;
+            };
+            
+            data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
+        };
+    });
+
+    material_map.forEach(( value,key ) => {
+        const batchedMesh = new THREE.BatchedMesh(
+            value.instCount,
+            value.vCount,
+            value.iCount,
+            key
+        );
+
+        value.unique_geoms.forEach((subvalue) => {
+        
+            const geometry = subvalue.geometry;
+            const matrices = subvalue.matrix;
+            
+            if (matrices.length > 0){
+                const geom_id = batchedMesh.addGeometry( geometry );
+
+                for ( let i=0; i < matrices.length; i++){
+                    const instanceId = batchedMesh.addInstance(geom_id)
+                    batchedMesh.setMatrixAt( instanceId, matrices[i] )
+                };
+            };
+        });
+        
+        batchedMesh.needsUpdate = true;
+        scene.add(batchedMesh);
+    });
+});
+
+
 
 let meshes = new Map();
 
@@ -252,6 +324,16 @@ function queryNearInstances( cameraPos ) {
     return nearIds;
 };
 
+let lastCameraPos = camera.position.clone();
+const UPDATE_THRES = 4;
+
+function checkForUpdateLOD(camera_pos) {
+    if (camera_pos.distanceToSquared(lastCameraPos) > UPDATE_THRES) {
+        updateLODs(camera_pos);
+        lastCameraPos.copy(camera_pos);
+    };
+};
+
 function updateLODs( cameraPos ) {
 
     const newNear = queryNearInstances( cameraPos );
@@ -277,30 +359,71 @@ function updateLODs( cameraPos ) {
     prevNear = newNear;
 };
 
+
+// window.addEventListener('click', (event) => {
+//     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+//     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+//     raycaster.setFromCamera(mouse, camera);
+
+//     const intersects = raycaster.intersectObjects(bvh);
+
+//     console.log(intersects);
+
+//     if (intersects.length > 0) {
+//         // The exact intersection point in 3D world space
+//         const intersectionPoint = intersects[0].point;
+
+//         controls.target.copy(intersectionPoint);
+//         controls.update();
+//     };
+// });
+
+window.addEventListener('pointermove', () => {
+
+    controls.update();
+    renderer.render(scene, camera);
+    checkForUpdateLOD(camera.position);
+    
+});
+
+window.addEventListener('wheel', () => {
+
+
+    controls.update();
+    renderer.render(scene, camera);
+    checkForUpdateLOD(camera.position);
+
+});
+
+
+
 let frameCount = 0;
+
+// controls.update();
 
 function animate() {
 
-    // profiler.begin("LOD control")
-
+    profiler.begin("LOD control")
+    
     requestAnimationFrame(animate);
+    if (bvh && frameCount % 100 ==0) {
 
-    controls.update();
-
-    renderer.render(scene, camera);
-
-    perfMonitor.update(renderer, scene);
-
-    if (bvh && frameCount % 10 ==0) {
+        controls.update();
+        renderer.render(scene, camera);
+        checkForUpdateLOD(camera.position);
+        
+        
         
         // Every 10 frames update the LODs
         
-        updateLODs(camera.position);
+        
     }
-    // profiler.end("LOD control")
-
-    // profiler.endFrame();
-
+    perfMonitor.update(renderer, scene);
+    profiler.end("LOD control")
+    
+    profiler.endFrame();
+    
     frameCount++;
 };
 
