@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PerformanceMonitor } from './utils/performanceMonitor.js'
 import { FrameProfiler } from './utils/frameProfiler.js';
 
-import { ObjectBVH, acceleratedRaycast, INTERSECTED, NOT_INTERSECTED } from 'three-mesh-bvh';
+import { ObjectBVH, acceleratedRaycast, INTERSECTED, NOT_INTERSECTED, computeBatchedBoundsTree } from 'three-mesh-bvh';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -37,7 +37,7 @@ controls.maxPolarAngle=1.57;
 controls.autoRotate=false;
 controls.target = new THREE.Vector3(-15,0,-15);
 controls.rotateSpeed = 0.5;
-controls.zoomSpeed = 0.75;
+controls.zoomSpeed = 0.50;
 controls.panSpeed = 0.5;
 controls.update()
 
@@ -58,7 +58,6 @@ const raycaster = new THREE.Raycaster();
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 raycaster.firstHitOnly = true;
 
-
 // // Basic Loader
 // const loader1 = new GLTFLoader().setPath('models/bim-model/');
 // loader1.load('sixty5-mep.glb', (gltf) => {
@@ -77,73 +76,73 @@ raycaster.firstHitOnly = true;
 // });
 
 
-// Basic BatchedMesh
-const loader_instance = new GLTFLoader().setPath('models/bim-model/');
-loader_instance.load('sixty5-W-installatie-hires.glb', (gltf) => {
+// // Basic BatchedMesh
+// const loader_instance = new GLTFLoader().setPath('models/bim-model/');
+// loader_instance.load('sixty5-W-installatie-hires.glb', (gltf) => {
     
-    let material_map = new Map();
+//     let material_map = new Map();
     
-    gltf.scene.traverse((child) => {
-        if (child.isMesh) {
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh) {
             
-            const material = child.material
-            const geom = child.geometry
-            const geom_uuid = geom.uuid;
-            const inst_matrix = child.matrixWorld;
+//             const material = child.material
+//             const geom = child.geometry
+//             const geom_uuid = geom.uuid;
+//             const inst_matrix = child.matrixWorld;
             
-            if ( !material_map.has( material )){
-                material_map.set( material, {
-                    unique_geoms: new Map(),
-                    vCount: 0,
-                    iCount: 0,
-                    instCount: 1
-                });
-            };
+//             if ( !material_map.has( material )){
+//                 material_map.set( material, {
+//                     unique_geoms: new Map(),
+//                     vCount: 0,
+//                     iCount: 0,
+//                     instCount: 1
+//                 });
+//             };
             
-            const data = material_map.get( material )
-            data.instCount++;
+//             const data = material_map.get( material )
+//             data.instCount++;
 
-            if ( !data.unique_geoms.has( geom_uuid ) ) {
-                data.unique_geoms.set(geom_uuid, {
-                    geometry: geom,
-                    matrix: []
-                });
+//             if ( !data.unique_geoms.has( geom_uuid ) ) {
+//                 data.unique_geoms.set(geom_uuid, {
+//                     geometry: geom,
+//                     matrix: []
+//                 });
 
-                data.vCount += geom.attributes.position.count;
-                data.iCount += geom.index.count;
-            };
+//                 data.vCount += geom.attributes.position.count;
+//                 data.iCount += geom.index.count;
+//             };
             
-            data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
-        };
-    });
+//             data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
+//         };
+//     });
 
-    material_map.forEach(( value,key ) => {
-        const batchedMesh = new THREE.BatchedMesh(
-            value.instCount,
-            value.vCount,
-            value.iCount,
-            key
-        );
+//     material_map.forEach(( value,key ) => {
+//         const batchedMesh = new THREE.BatchedMesh(
+//             value.instCount,
+//             value.vCount,
+//             value.iCount,
+//             key
+//         );
 
-        value.unique_geoms.forEach((subvalue) => {
+//         value.unique_geoms.forEach((subvalue) => {
         
-            const geometry = subvalue.geometry;
-            const matrices = subvalue.matrix;
+//             const geometry = subvalue.geometry;
+//             const matrices = subvalue.matrix;
             
-            if (matrices.length > 0){
-                const geom_id = batchedMesh.addGeometry( geometry );
+//             if (matrices.length > 0){
+//                 const geom_id = batchedMesh.addGeometry( geometry );
 
-                for ( let i=0; i < matrices.length; i++){
-                    const instanceId = batchedMesh.addInstance(geom_id)
-                    batchedMesh.setMatrixAt( instanceId, matrices[i] )
-                };
-            };
-        });
+//                 for ( let i=0; i < matrices.length; i++){
+//                     const instanceId = batchedMesh.addInstance(geom_id)
+//                     batchedMesh.setMatrixAt( instanceId, matrices[i] )
+//                 };
+//             };
+//         });
         
-        batchedMesh.needsUpdate = true;
-        scene.add(batchedMesh);
-    });
-});
+//         batchedMesh.needsUpdate = true;
+//         scene.add(batchedMesh);
+//     });
+// });
 
 
 
@@ -176,7 +175,6 @@ async function loadFiles( loader ) {
 
     // Need to sequentially populate the mesh_map
 
-    console.log(gltf_1);
     const mesh_map = await initMap( gltf_1 );
     const final_map = await appendMap( gltf_2, mesh_map );
 
@@ -328,7 +326,7 @@ let lastCameraPos = camera.position.clone();
 const UPDATE_THRES = 4;
 
 function checkForUpdateLOD(camera_pos) {
-    if (camera_pos.distanceToSquared(lastCameraPos) > UPDATE_THRES) {
+    if (camera_pos != lastCameraPos) {
         updateLODs(camera_pos);
         lastCameraPos.copy(camera_pos);
     };
@@ -360,43 +358,55 @@ function updateLODs( cameraPos ) {
 };
 
 
-// window.addEventListener('click', (event) => {
-//     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-//     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+window.addEventListener('dblclick', (event) => {
+    
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-//     raycaster.setFromCamera(mouse, camera);
+    raycaster.setFromCamera(mouse, camera);
 
-//     const intersects = raycaster.intersectObjects(bvh);
+    const intersects = raycaster.intersectObjects( bvh.objects );
 
-//     console.log(intersects);
+    if (intersects.length > 0) {
+        
+        const intersectionPoint = intersects[0].point;
 
-//     if (intersects.length > 0) {
-//         // The exact intersection point in 3D world space
-//         const intersectionPoint = intersects[0].point;
+        controls.target.copy(intersectionPoint);
+        controls.update();
+    };
 
-//         controls.target.copy(intersectionPoint);
-//         controls.update();
-//     };
-// });
+});
+
+    
+
+function throttle(callback, limit) {
+  let waiting = false;
+  return function (...args) {
+    if (!waiting) {
+      callback.apply(this, args);
+      waiting = true;
+      setTimeout(() => {
+        waiting = false;
+      }, limit);
+    };
+  };
+}
+
+let updateScreen = false;
 
 window.addEventListener('pointermove', () => {
 
     controls.update();
     renderer.render(scene, camera);
-    checkForUpdateLOD(camera.position);
     
 });
 
 window.addEventListener('wheel', () => {
 
-
     controls.update();
     renderer.render(scene, camera);
     checkForUpdateLOD(camera.position);
-
 });
-
-
 
 let frameCount = 0;
 
@@ -404,25 +414,30 @@ let frameCount = 0;
 
 function animate() {
 
-    profiler.begin("LOD control")
-    
+    // profiler.begin("LOD control")
     requestAnimationFrame(animate);
-    if (bvh && frameCount % 100 ==0) {
-
-        controls.update();
-        renderer.render(scene, camera);
+    
+    
+    if (
+        bvh &&
+        frameCount % 100 ==0
+    ) {
+        
         checkForUpdateLOD(camera.position);
         
-        
-        
-        // Every 10 frames update the LODs
-        
-        
-    }
+    };
+
+    if ((frameCount + 50) % 100 ==0) {
+            
+            controls.update();
+            renderer.render(scene, camera);     
+            
+        }
+
     perfMonitor.update(renderer, scene);
-    profiler.end("LOD control")
     
-    profiler.endFrame();
+    // profiler.end("LOD control")
+    // profiler.endFrame();
     
     frameCount++;
 };
