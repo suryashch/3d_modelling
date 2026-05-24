@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PerformanceMonitor } from './utils/performanceMonitor.js'
 import { FrameProfiler } from './utils/frameProfiler.js';
 
-import { ObjectBVH, acceleratedRaycast, INTERSECTED, NOT_INTERSECTED } from 'three-mesh-bvh';
+import { ObjectBVH, acceleratedRaycast, INTERSECTED, NOT_INTERSECTED, computeBatchedBoundsTree } from 'three-mesh-bvh';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -16,6 +16,7 @@ renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
+const mouse = new THREE.Vector2();
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
 camera.position.set(15,15,15);
@@ -36,7 +37,7 @@ controls.maxPolarAngle=1.57;
 controls.autoRotate=false;
 controls.target = new THREE.Vector3(-15,0,-15);
 controls.rotateSpeed = 0.5;
-controls.zoomSpeed = 0.75;
+controls.zoomSpeed = 0.50;
 controls.panSpeed = 0.5;
 controls.update()
 
@@ -50,15 +51,16 @@ scene.add(ambientLight);
 const gridHelper = new THREE.GridHelper( 100, 50 ); // ( size, divisions )
 scene.add( gridHelper );
 
-const perfMonitor = new PerformanceMonitor()
+const perfMonitor = new PerformanceMonitor();
 const profiler = new FrameProfiler(60);
 
+const raycaster = new THREE.Raycaster();
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
-
+raycaster.firstHitOnly = true;
 
 // // Basic Loader
 // const loader1 = new GLTFLoader().setPath('models/bim-model/');
-// loader1.load('sixty5-structural.glb', (gltf) => {
+// loader1.load('sixty5-mep.glb', (gltf) => {
 
 //     const mesh = gltf.scene
 //     mesh.position.set(0,0,0);
@@ -72,6 +74,77 @@ THREE.Mesh.prototype.raycast = acceleratedRaycast;
 //     mesh.material = material;
 //     scene.add(mesh);
 // });
+
+
+// // Basic BatchedMesh
+// const loader_instance = new GLTFLoader().setPath('models/bim-model/');
+// loader_instance.load('sixty5-W-installatie-hires.glb', (gltf) => {
+    
+//     let material_map = new Map();
+    
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh) {
+            
+//             const material = child.material
+//             const geom = child.geometry
+//             const geom_uuid = geom.uuid;
+//             const inst_matrix = child.matrixWorld;
+            
+//             if ( !material_map.has( material )){
+//                 material_map.set( material, {
+//                     unique_geoms: new Map(),
+//                     vCount: 0,
+//                     iCount: 0,
+//                     instCount: 1
+//                 });
+//             };
+            
+//             const data = material_map.get( material )
+//             data.instCount++;
+
+//             if ( !data.unique_geoms.has( geom_uuid ) ) {
+//                 data.unique_geoms.set(geom_uuid, {
+//                     geometry: geom,
+//                     matrix: []
+//                 });
+
+//                 data.vCount += geom.attributes.position.count;
+//                 data.iCount += geom.index.count;
+//             };
+            
+//             data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
+//         };
+//     });
+
+//     material_map.forEach(( value,key ) => {
+//         const batchedMesh = new THREE.BatchedMesh(
+//             value.instCount,
+//             value.vCount,
+//             value.iCount,
+//             key
+//         );
+
+//         value.unique_geoms.forEach((subvalue) => {
+        
+//             const geometry = subvalue.geometry;
+//             const matrices = subvalue.matrix;
+            
+//             if (matrices.length > 0){
+//                 const geom_id = batchedMesh.addGeometry( geometry );
+
+//                 for ( let i=0; i < matrices.length; i++){
+//                     const instanceId = batchedMesh.addInstance(geom_id)
+//                     batchedMesh.setMatrixAt( instanceId, matrices[i] )
+//                 };
+//             };
+//         });
+        
+//         batchedMesh.needsUpdate = true;
+//         scene.add(batchedMesh);
+//     });
+// });
+
+
 
 let meshes = new Map();
 
@@ -102,12 +175,11 @@ async function loadFiles( loader ) {
 
     // Need to sequentially populate the mesh_map
 
-    console.log(gltf_1);
     const mesh_map = await initMap( gltf_1 );
-    const final_map = await appendMap( gltf_2, mesh_map )
+    const final_map = await appendMap( gltf_2, mesh_map );
 
     
-    batchedMesh = await generateBatchedMesh( final_map )
+    batchedMesh = await generateBatchedMesh( final_map );
 
     bvh = new ObjectBVH( batchedMesh );
 
@@ -128,7 +200,7 @@ function generateBatchedMesh(final_map) {
         const hires_geometry = value.get( "geometry_hires" );
         const lowres_geometry = value.has( "geometry_lowres" ) ? value.get( "geometry_lowres" ) : value.get( "geometry_hires" );
         
-        const matrices = value.get( "matrix" )
+        const matrices = value.get( "matrix" );
 
         if (matrices.length > 0) {
 
@@ -137,19 +209,19 @@ function generateBatchedMesh(final_map) {
 
             for ( let i=0; i < matrices.length; i++){
 
-                const instanceId = bm.addInstance( lowres_geomId )
+                const instanceId = bm.addInstance( lowres_geomId );
 
-                bm.setMatrixAt( instanceId, matrices[i] )
+                bm.setMatrixAt( instanceId, matrices[i] );
 
                 hiresGeomIdFor[ instanceId ] = hires_geomId;
                 lowresGeomIdFor[ instanceId ] = lowres_geomId;
             };
 
-        }
+        };
     });
     
     bm.needsUpdate = true;
-    return bm
+    return bm;
 };
 
 function initMap( gltf ) {
@@ -208,11 +280,12 @@ function appendMap( gltf, mesh_map ) {
             totalVertexCount += geom.attributes.position.count;
             totalIndexCount += geom.index.count;
             totalInstanceCount += 1;
-        }
+        };
     });
 
-    return mesh_map
+    return mesh_map;
 };
+
 
 
 const querySphere = new THREE.Sphere();
@@ -249,6 +322,16 @@ function queryNearInstances( cameraPos ) {
     return nearIds;
 };
 
+let lastCameraPos = camera.position.clone();
+const UPDATE_THRES = 4;
+
+function checkForUpdateLOD(camera_pos) {
+    if (camera_pos != lastCameraPos) {
+        updateLODs(camera_pos);
+        lastCameraPos.copy(camera_pos);
+    };
+};
+
 function updateLODs( cameraPos ) {
 
     const newNear = queryNearInstances( cameraPos );
@@ -257,47 +340,105 @@ function updateLODs( cameraPos ) {
 
         if (!prevNear.has( id )) {
 
-            batchedMesh.setGeometryIdAt( id, hiresGeomIdFor[ id ] )
-            batchedMesh.setColorAt( id, highlightColor )
-        }
+            batchedMesh.setGeometryIdAt( id, hiresGeomIdFor[ id ] );
+            batchedMesh.setColorAt( id, highlightColor );
+        };
     });
 
     prevNear.forEach(( id ) =>{
 
         if (!newNear.has( id )) {
 
-            batchedMesh.setGeometryIdAt( id, lowresGeomIdFor[ id ] )
-            batchedMesh.setColorAt( id, nonHighlightColor )
-        }
+            batchedMesh.setGeometryIdAt( id, lowresGeomIdFor[ id ] );
+            batchedMesh.setColorAt( id, nonHighlightColor );
+        };
     });
 
     prevNear = newNear;
 };
 
-let frameCount = 0
+
+window.addEventListener('dblclick', (event) => {
+    
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects( bvh.objects );
+
+    if (intersects.length > 0) {
+        
+        const intersectionPoint = intersects[0].point;
+
+        controls.target.copy(intersectionPoint);
+        controls.update();
+    };
+
+});
+
+    
+
+function throttle(callback, limit) {
+  let waiting = false;
+  return function (...args) {
+    if (!waiting) {
+      callback.apply(this, args);
+      waiting = true;
+      setTimeout(() => {
+        waiting = false;
+      }, limit);
+    };
+  };
+}
+
+let updateScreen = false;
+
+window.addEventListener('pointermove', () => {
+
+    controls.update();
+    renderer.render(scene, camera);
+    
+});
+
+window.addEventListener('wheel', () => {
+
+    controls.update();
+    renderer.render(scene, camera);
+    checkForUpdateLOD(camera.position);
+});
+
+let frameCount = 0;
+
+// controls.update();
 
 function animate() {
 
     // profiler.begin("LOD control")
-
     requestAnimationFrame(animate);
+    
+    
+    if (
+        bvh &&
+        frameCount % 100 ==0
+    ) {
+        
+        checkForUpdateLOD(camera.position);
+        
+    };
 
-    controls.update();
-
-    renderer.render(scene, camera);
+    if ((frameCount + 50) % 100 ==0) {
+            
+            controls.update();
+            renderer.render(scene, camera);     
+            
+        }
 
     perfMonitor.update(renderer, scene);
-
-    if (bvh && frameCount % 10 ==0) {
-        
-        // Every 5 frames update the LODs
-        
-        updateLODs(camera.position);
-    }
+    
     // profiler.end("LOD control")
-
     // profiler.endFrame();
-
+    
     frameCount++;
 };
 
