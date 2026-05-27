@@ -19,30 +19,23 @@ const scene = new THREE.Scene();
 const mouse = new THREE.Vector2();
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-camera.position.set(15,15,15);
-
-// const camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000 );
-// scene.add( camera );
-// camera.position.set(40,10,25);
-// camera.zoom = 10;
-// camera.updateProjectionMatrix();
+camera.position.set(-10,50,50);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-// controls.enableDamping = true;
 controls.enablePan = true;
 controls.minDistance=0.1;
 controls.maxDistance=100;
-controls.minPolarAngle=0.5;
-controls.maxPolarAngle=1.57;
+controls.minPolarAngle=0;
+controls.maxPolarAngle=3;
 controls.autoRotate=false;
 controls.target = new THREE.Vector3(-15,0,-15);
-controls.rotateSpeed = 0.5;
+controls.rotateSpeed = 0.15;
 controls.zoomSpeed = 0.50;
-controls.panSpeed = 0.5;
-controls.update()
+controls.panSpeed = 0.25;
+// controls.update();
 
-const light_2 = new THREE.DirectionalLight(0xffffff, 0.25);
-light_2.position.set(10,10,10)
+const light_2 = new THREE.DirectionalLight(0xffffff, 1);
+light_2.position.set( 10,10,10 )
 scene.add(light_2);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Color, Intensity
@@ -60,25 +53,42 @@ raycaster.firstHitOnly = true;
 
 // // Basic Loader
 // const loader1 = new GLTFLoader().setPath('models/bim-model/');
-// loader1.load('sixty5-mep.glb', (gltf) => {
 
-//     const mesh = gltf.scene
-//     mesh.position.set(0,0,0);
-//     const material = new THREE.MeshStandardMaterial({
-//         color:"#8a8a8a"
-//     });
-//     material.transparent = true;
-//     material.format=THREE.RGBAFormat
-//     material.opacity = 0.5;
+// let bvh_struct;
+// loader1.load('sixty5-interiors-kitchens.glb', (gltf) => {
 
-//     mesh.material = material;
-//     scene.add(mesh);
+//     gltf.scene.traverse((child) => {
+//         if (child.isMesh){
+//             const mesh = child;
+//             mesh.material =  new THREE.MeshStandardMaterial({
+//                 color:"#b6b6b6",
+//                 transparent: true,
+//                 opacity: 1
+//             });
+//             scene.add(mesh);
+//         }
+//     })
+
+
+    // const mesh = gltf.scene;
+    // mesh.position.set(0,0,0);
+    // const material = new THREE.MeshStandardMaterial({
+    //     color:"#c23434",
+    //     wireframe: true
+    // });
+    // // material.wireframe = true;
+    // // material.format=THREE.RGBAFormat
+    // // material.opacity = 0.5;
+
+    // mesh.material = material;
+
+    // scene.add(mesh);
 // });
 
 
 // // Basic BatchedMesh
 // const loader_instance = new GLTFLoader().setPath('models/bim-model/');
-// loader_instance.load('sixty5-W-installatie-hires.glb', (gltf) => {
+// loader_instance.load('sixty5-interiors-kitchens-hires.glb', (gltf) => {
     
 //     let material_map = new Map();
     
@@ -144,10 +154,6 @@ raycaster.firstHitOnly = true;
 //     });
 // });
 
-
-
-let meshes = new Map();
-
 let totalVertexCount = 0;
 let totalIndexCount = 0;
 let totalInstanceCount = 0;
@@ -160,30 +166,42 @@ let bvh;
 
 const loader = new GLTFLoader().setPath( 'models/bim-model/' );
 
-loadFiles( loader );
+init( loader );
 
+async function init( loader ) {
+    
+    const status = await loadFiles( loader );
+    requestRender();
+
+};
 
 async function loadFiles( loader ) {
 
-    // First need to load both models to scene completely
-    const [ gltf_1, gltf_2 ] = await Promise.all([
+    let final_map = new Map();
 
+    // First need to load all models to scene completely
+    const [ gltf_1_hi, gltf_1_low, gltf_2_hi, gltf_2_low ] = await Promise.all([  //
+
+        loader.loadAsync( "sixty5-W-installatie-hires_test.glb" ),
+        loader.loadAsync( "sixty5-W-installatie-lowres.glb" ),
         loader.loadAsync( "sixty5-mep-test.glb" ),
         loader.loadAsync( "sixty5-mep-lowres-test.glb" )
 
     ]);
-
+    
     // Need to sequentially populate the mesh_map
 
-    const mesh_map = await initMap( gltf_1 );
-    const final_map = await appendMap( gltf_2, mesh_map );
+    final_map = await initMap( gltf_1_hi, final_map );
+    final_map =  await initMap( gltf_2_hi, final_map );
+    final_map = await appendMap( gltf_1_low, final_map );
+    final_map = await appendMap( gltf_2_low, final_map );
 
     
     batchedMesh = await generateBatchedMesh( final_map );
-
     bvh = new ObjectBVH( batchedMesh );
-
     scene.add( batchedMesh );
+
+    return true;
 };
 
 function generateBatchedMesh(final_map) {
@@ -192,7 +210,7 @@ function generateBatchedMesh(final_map) {
         totalInstanceCount, 
         totalVertexCount, 
         totalIndexCount, 
-        new THREE.MeshBasicMaterial()
+        new THREE.MeshStandardMaterial()
     );
     
     final_map.forEach(( value, key ) => {
@@ -207,7 +225,7 @@ function generateBatchedMesh(final_map) {
             const hires_geomId = bm.addGeometry( hires_geometry );
             const lowres_geomId = bm.addGeometry( lowres_geometry );
 
-            for ( let i=0; i < matrices.length; i++){
+            for ( let i=0; i < matrices.length; i++ ){
 
                 const instanceId = bm.addInstance( lowres_geomId );
 
@@ -224,17 +242,16 @@ function generateBatchedMesh(final_map) {
     return bm;
 };
 
-function initMap( gltf ) {
-
-    let mesh_map = new Map();
+function initMap( gltf, mesh_map ) {
 
     gltf.scene.traverse(( child ) => {
 
-        if ( child.isMesh ){
-            
+        if ( child.isMesh ){ 
+
             const geom = child.geometry;
             const mesh_id = child.userData.mesh_id;
-            const inst_matrix = child.matrixWorld;
+            
+            const inst_matrix = child.matrixWorld.clone();
 
             if ( !mesh_map.has( mesh_id )) {
                 
@@ -256,21 +273,25 @@ function initMap( gltf ) {
                 // Map contains the uuid hence only need to push transformation matrix
 
                 mesh_map.get( mesh_id ).get( "matrix" ).push( inst_matrix );
-
                 totalInstanceCount += 1;
 
             };
         };
     });
 
-    return mesh_map
+    return mesh_map;
 };
 
 function appendMap( gltf, mesh_map ) {
 
+    let visited = new Set();
+
     gltf.scene.traverse(( child ) => {
 
-        if ( child.isMesh && mesh_map.has( child.userData.mesh_id )){
+        if ( 
+            child.isMesh && 
+            mesh_map.has( child.userData.mesh_id ) 
+        ) {
 
             const mesh_id = child.userData.mesh_id;
             const geom = child.geometry;
@@ -280,12 +301,13 @@ function appendMap( gltf, mesh_map ) {
             totalVertexCount += geom.attributes.position.count;
             totalIndexCount += geom.index.count;
             totalInstanceCount += 1;
+
+            visited.add( mesh_id );
         };
     });
 
     return mesh_map;
 };
-
 
 
 const querySphere = new THREE.Sphere();
@@ -320,16 +342,6 @@ function queryNearInstances( cameraPos ) {
     });
 
     return nearIds;
-};
-
-let lastCameraPos = camera.position.clone();
-const UPDATE_THRES = 4;
-
-function checkForUpdateLOD(camera_pos) {
-    if (camera_pos != lastCameraPos) {
-        updateLODs(camera_pos);
-        lastCameraPos.copy(camera_pos);
-    };
 };
 
 function updateLODs( cameraPos ) {
@@ -377,69 +389,45 @@ window.addEventListener('dblclick', (event) => {
 
 });
 
-    
+let lastCameraPos = camera.position.clone();
+let renderRequested = false;
 
-function throttle(callback, limit) {
-  let waiting = false;
-  return function (...args) {
-    if (!waiting) {
-      callback.apply(this, args);
-      waiting = true;
-      setTimeout(() => {
-        waiting = false;
-      }, limit);
-    };
-  };
+function render() {
+
+    renderRequested = false;
+    
+    renderer.render(scene, camera);
+    updateLODs(camera.position);
+
+    light_2.position.set( camera.position.clone() )
 }
 
-let updateScreen = false;
-
-window.addEventListener('pointermove', () => {
-
-    controls.update();
-    renderer.render(scene, camera);
+function requestRender() {
     
-});
+    if (
+        !renderRequested &&
+        camera.position != lastCameraPos
+    ) {
+        renderRequested = true;
+        requestAnimationFrame(render);
+    };
+}
 
-window.addEventListener('wheel', () => {
-
-    controls.update();
-    renderer.render(scene, camera);
-    checkForUpdateLOD(camera.position);
-});
+controls.addEventListener('change', requestRender );
+window.addEventListener('resize', requestRender );
 
 let frameCount = 0;
 
-// controls.update();
-
 function animate() {
-
-    // profiler.begin("LOD control")
     requestAnimationFrame(animate);
-    
-    
-    if (
-        bvh &&
-        frameCount % 100 ==0
-    ) {
-        
-        checkForUpdateLOD(camera.position);
-        
-    };
-
-    if ((frameCount + 50) % 100 ==0) {
-            
-            controls.update();
-            renderer.render(scene, camera);     
-            
-        }
 
     perfMonitor.update(renderer, scene);
     
-    // profiler.end("LOD control")
-    // profiler.endFrame();
+    if (frameCount % 10 === 0) {
+        requestRender();
+    }
     
     frameCount++;
-};
+}
 
-animate();
+animate()
