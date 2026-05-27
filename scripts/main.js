@@ -423,7 +423,7 @@ function animate() {
 
     perfMonitor.update(renderer, scene);
     
-    if (frameCount % 10 === 0) {
+    if (bvh && frameCount % 10 === 0) {
         requestRender();
     }
     
