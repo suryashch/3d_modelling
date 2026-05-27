@@ -1,8 +1,8 @@
 # A Game Dev Approach to BIM
 
-Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data management and 3D modelling. Implementation of this solution has been shown to consistently improve the delivery of large construction projects however, widespread adoption is lacking in North America. I believe one of the key hurdles is on the technology front- where often, existing tools price out local vendors, or are too slow to be used efficiently.
+Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data management and 3D modelling. Implementation of this solution has been shown to consistently improve the delivery of large construction projects. However, widespread adoption is lacking in North America. I believe one of the key hurdles is on the technology front- where often, existing tools price out local vendors, or are too slow to be used efficiently.
 
-Construction 3D models face unique challenges in the computer graphics space. They are large (high memory), dense (high GPU usage), and often bloated with unnecessary data (high CPU usage). All three of these problems compound to create a slow, buggy user experience that ultimately kills any motivation behind using it as a tool. In this paper, I highlight best practices, grounded in game development principles, to speed up the performance of these 3D models- all while remaining accessible to anyone with an internet connection.
+Construction 3D models face unique challenges in the computer graphics space. They are large (high memory), dense (high GPU usage), and often bloated with unnecessary data (high CPU usage). All three of these problems compound to create a slow, buggy user experience that ultimately kills any motivation behind using it as a tool. In this paper, I highlight best practices, grounded in game development principles, to speed up the performance of these 3D models- all while remaining accessible to *anyone* with an internet connection.
 
 
 
@@ -10,7 +10,7 @@ This research builds on [prior work](improving-3d-model-performance-with-LOD.md)
 
 ## Introduction to the Model
 
-In this project I am working with an open source BIM model courtesy of the [buildingsmart-community](https://github.com/buildingsmart-community). The model is of a real residential building in the Netherlands called [Sixty5](https://www.strijp-s.nl/en/building/sixty5), containing 5 layers, and a total of 60,479 objects.
+In this project I am working with an open source BIM model courtesy of the [buildingsmart-community](https://github.com/buildingsmart-community). The model is of a real residential building in the Netherlands called [Sixty5](https://www.strijp-s.nl/en/building/sixty5). The model consists of 60,479 objects spread across 5 different disiciplinary layers.
 
 Here are some screenshots showing what the model looks like.
 
@@ -31,7 +31,7 @@ The project is a significant scale-up from previous work, and should be reflecti
 
 ## Draw Calls
 
-A 3D mesh consists of points connected by lines (known as vertices and edges). 3 edges combine in a loop to form a `triangle`- the smallest unit of measure of GPU performance. The less triangles there are on the screen, the less strain there will be on the hardware of your computer.
+A 3D mesh consists of points connected by lines (known as vertices and edges). 3 edges combine in a loop to form a `triangle`- the smallest unit of work for a GPU. The less triangles there are on the screen, the less strain there will be on the hardware of your computer.
 
 ![Vertices, Edges, Triangles and Meshes](img/vertices-edges-triangles-mesh.png)
 
@@ -74,11 +74,11 @@ We conclude from this simple experiment that no matter how capable our GPU is, o
 
 The best analogy I can give for batching relates to public transport. Our CPU - GPU pipeline is the equivalent of a highway connecting 2 cities. How do we best move people (data) across this highway? Well, we could send everyone individually in their own cars one at a time. This is analogous to sending one `draw call` for each object in the scene. We can increase the number of lanes in the highway (CPU bandwidth) and improve the throughput. However, as we see in real life- inevitably the traffic clogs and bottlenecks emerge.
 
-
+![Draw Calls Explained - Non Optimized](img/draw-calls-nonoptimized.gif)
 
 A more efficient approach is to load multiple commuters on a bus and transport that bus across the highway. Now, instead of sending 50-60 individual cars, we send one bus containing 50-60 people. The bus utilizes the resources of one `draw call`, while moving moving the equivalent of 50-60 data points.
 
-
+![Draw Calls Explained - Optimized](img/draw-calls-optimized.gif)
 
 Batching our data allows for its efficient movement between the CPU and GPU.
 
@@ -206,7 +206,7 @@ And what do the results look like?
 
 ![InstancedMesh versus Baseline](../research/optimizing-the-scene/img/instancedmesh-versus-baseline.png)
 
-We see a definite improvement over the baseline however, we're not out of the woods yet. Looking at the `InstancedMesh` results, we see one glaringly obvious error- the draw calls are still ridiculously high. We have reduced the total number of individual draw calls, but without [Batching](#batching-the-scene), we will still end up running in circles.
+We see a definite improvement over the baseline however, we're not out of the woods yet. Looking at the `InstancedMesh` results, we see one glaringly obvious oversight- the draw calls are still ridiculously high. We have reduced the total number of individual draw calls, but without [Batching](#batching-the-scene), we will still end up running in circles.
 
 To truly optimize our scene, we need to combine the benefits of `instancing` as well as `batching`, and is explained more in the [instanced-mesh research write-up](../research/optimizing-the-scene/instanced-mesh.md). Once we instance AND batch our scene, these are the performance results we see.
 
@@ -310,19 +310,19 @@ We can speed things up by utilizing a data structure known as an `octree`. An `O
 
 The mechanics are best understood through a working example. We create a test 3D space populated with sample objects, shown in yellow. The red `X` represents our camera location in this space.
 
-
+![Octree Example - L0](img/octree-space-L0.png)
 
 Our goal here is to return all the objects that are within a specified radius from our camera. We start by dividing the space in 8 cubes. Now, instead of measuring the distance between our camera and every object, we measure the distance between our camera and each of these 8 cubes. If the cube is outside our search radius, we can **immediately discard all objects within that cube**.
 
-
+![Octree Example - L1](img/octree-space-L1.png)
 
 In one swoop, we have vastly reduced the number of sample objects. If a cube meets the distance critera, we divide it into a further 8 cubes and run another distance check at this lower level.
 
-
+![Octree Example - L2](img/octree-space-L2.png)
 
 Just through 16 calculations, we were already able to narrow down the number of sample objects to ~12.5% of the original. At this point, we could go further down into the `octree` or, if the number of subsetted objects is sufficiently low- just conduct a normal distance check function on this subset. In either case, we have achieved significant computational savings. In data science terms, we have successfully converted the function's time complexity from O(n) to O(log n).
 
-
+*placeholder table*
 
 In this project, I'm working with a special flavour of `octree` called a `Bounding Volume Hierarchy` (BVH). This data structure works the same way as an `octree` except, the cubes are drawn as bounding boxes around objects. It is best suited for scenes where objects are condensed in a small space. You can read more on it's workings [here].
 
