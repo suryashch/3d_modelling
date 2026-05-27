@@ -208,7 +208,7 @@ if ( !uuid_map.has( geom_uuid )){
 };
 ```
 
-Now, we loop through our dictionary and create a new `InstacedMesh` for each unique object geometry. We then set the individual instance transformations by iterating through the array `matrix` and setting the specific object instance to be that transformation.
+Now, we loop through our dictionary and create a new `InstancedMesh` for each unique object geometry. We then set the individual instance transformations by iterating through the array `matrix` and setting the specific object instance to be that transformation.
 
 ```js
 uuid_map.forEach((value, key) => {

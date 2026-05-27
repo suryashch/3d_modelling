@@ -517,7 +517,7 @@ The vertex in row 1 has coordinates (-0.224832, 0.030038, 0.526462).
 
 In the original mesh it had an index of 645. In the decimated mesh it has an index of 325. We have essentially created a map that tracks the index of a vertex before decimation and after.
 
-We can now reorder our original mesh to match the order in our decimated one. Now, the decimated mesh can simply be save to memory as a subset of the original (the first 403 rows, to be precise).
+We can now reorder our original mesh to match the order in our decimated one. Now, the decimated mesh can simply be saved to memory as a subset of the original (the first 403 rows, to be precise).
 
 Here is a condensed version of the modularized code which we used to make this work.
 
@@ -805,7 +805,7 @@ Now, when we boot up our scene in a web browser, this is what we're greeted with
 
 This is a promising start. Our LOD system is definitely working- zooming into objects in the scene causes them to render in high resolution. As well, we observe a far lower triangle count at a 50ft view- 5M triangles compared to the original 8M. We established earlier than the decimation amount we applied was low, so theoretically, this figure could be optimized even further. The draw calls are limited to ~3k, which is a lot lower than the 30k unique objects which exist in the scene. FPS is sitting at ~30-40, not ideal but perhaps this could be improved further.
 
-At this point, I am confident that the LOD swapping mechanism works within our `BatchedMesh` implementation.  
+At this point, I am confident that the LOD swapping mechanism works within our `BatchedMesh` implementation however, we establish that CPU bottlenecks do still exist.
 
 
 ## Multiple Querying Problem
