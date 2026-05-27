@@ -406,6 +406,7 @@ function requestRender() {
     
     if (
         !renderRequested &&
+        bvh &&
         camera.position != lastCameraPos
     ) {
         renderRequested = true;
