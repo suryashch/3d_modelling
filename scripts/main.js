@@ -195,9 +195,9 @@ async function loadFiles( loader ) {
 
     const hi_res_files = [
         "sixty5-W-installatie_hires.glb",
-        "sixty5-W-installatie_lowres.glb",
-        "sixty5-mep_hires.glb",
-        "sixty5-mep_lowres.glb"
+        "sixty5-W-installatie_lowres.glb"
+        // "sixty5-mep_hires.glb",
+        // "sixty5-mep_lowres.glb"
     ];
 
     for (const fileName of hi_res_files) {
