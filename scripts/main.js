@@ -163,46 +163,164 @@ let lowresGeomIdFor = [];
 
 let batchedMesh;
 let bvh;
+let final_map = new Map();
 
-const loader = new GLTFLoader().setPath( 'models/bim-model/' );
 
-init( loader );
+init();
 
-async function init( loader ) {
+async function init() {
+    renderer.render(scene, camera);
+    const loader = new GLTFLoader().setPath( 'models/bim-model/' );
     
     const status = await loadFiles( loader );
+    
     requestRender();
+    // final_map = null;
 
 };
 
 async function loadFiles( loader ) {
 
-    let final_map = new Map();
-
     // First need to load all models to scene completely
-    const [ gltf_1_hi, gltf_1_low, gltf_2_hi, gltf_2_low ] = await Promise.all([  //
+    // let [ gltf_1_hi, gltf_1_low, gltf_2_hi, gltf_2_low ] = await Promise.all([  //
 
-        loader.loadAsync( "sixty5-W-installatie-hires_test.glb" ),
-        loader.loadAsync( "sixty5-W-installatie-lowres.glb" ),
-        loader.loadAsync( "sixty5-mep-test.glb" ),
-        loader.loadAsync( "sixty5-mep-lowres-test.glb" )
+    //     loader.loadAsync( "sixty5-W-installatie-hires_test.glb" ),
+    //     loader.loadAsync( "sixty5-W-installatie-lowres.glb" ),
+    //     loader.loadAsync( "sixty5-mep-test.glb" ),
+    //     loader.loadAsync( "sixty5-mep-lowres-test.glb" )
 
-    ]);
+    // ]);
     
     // Need to sequentially populate the mesh_map
 
-    final_map = await initMap( gltf_1_hi, final_map );
-    final_map =  await initMap( gltf_2_hi, final_map );
-    final_map = await appendMap( gltf_1_low, final_map );
-    final_map = await appendMap( gltf_2_low, final_map );
+    const hi_res_files = [
+        "sixty5-W-installatie_hires.glb",
+        "sixty5-W-installatie_lowres.glb",
+        "sixty5-mep_hires.glb",
+        "sixty5-mep_lowres.glb"
+    ];
 
+    for (const fileName of hi_res_files) {
+
+        let gltf = await loadGLTFfile( loader, fileName );
+        
+        const [name, res] = fileName.split("_");
+        
+        if (res === 'hires.glb') final_map = await initMap( gltf, final_map );
+        if (res === 'lowres.glb') final_map = await appendMap( gltf, final_map );
+        
+        gltf = null;
+
+    };
+
+    // for (const fileName of low_res_files) {
+
+    //     const gltf = await loadGLTFfile( loader, fileName );
+    //     final_map = await appendMap( gltf, final_map );
+    //     gltf.scene.clear();
+    
+    // };
+
+    // const gltf_1_hi = await loader.loadAsync( "sixty5-W-installatie-hires_test.glb" );
+    // final_map = await initMap( gltf_1_hi, final_map );
+    // gltf_1_hi.scene.clear();
+    // // gltf_1_hi.scene.traverse(child => {
+    // //     if (child.isMesh) {
+    // //         if (child.geometry) child.geometry.dispose();
+    // //         if (child.material) {
+    // //             if (Array.isArray(child.material)) {
+    // //                 child.material.forEach(m => m.dispose());
+    // //             } else {
+    // //                 child.material.dispose();
+    // //             }
+    // //         }
+    // //     }
+    // // });
+    
+    // const gltf_2_hi = await loader.loadAsync( "sixty5-mep-test.glb" );
+    // final_map =  await initMap( gltf_2_hi, final_map );
+    // gltf_2_hi.scene.clear();
+    // // gltf_2_hi.scene.traverse(child => {
+    // //     if (child.isMesh) {
+    // //         if (child.geometry) child.geometry.dispose();
+    // //         if (child.material) {
+    // //             if (Array.isArray(child.material)) {
+    // //                 child.material.forEach(m => m.dispose());
+    // //             } else {
+    // //                 child.material.dispose();
+    // //             }
+    // //         }
+    // //     }
+    // // });
+    
+    // const gltf_1_low = await loader.loadAsync( "sixty5-W-installatie-lowres.glb" );
+    // final_map = await appendMap( gltf_1_low, final_map );
+    // gltf_1_low.scene.clear();
+    // // gltf_1_low.scene.traverse(child => {
+    // //     if (child.isMesh) {
+    // //         if (child.geometry) child.geometry.dispose();
+    // //         if (child.material) {
+    // //             if (Array.isArray(child.material)) {
+    // //                 child.material.forEach(m => m.dispose());
+    // //             } else {
+    // //                 child.material.dispose();
+    // //             }
+    // //         }
+    // //     }
+    // // });
+    
+    // const gltf_2_low = await loader.loadAsync( "sixty5-mep-lowres-test.glb" );
+    // final_map = await appendMap( gltf_2_low, final_map );
+    // gltf_2_low.scene.clear();
+    // // gltf_2_low.scene.traverse(child => {
+    // //     if (child.isMesh) {
+    // //         if (child.geometry) child.geometry.dispose();
+    // //         if (child.material) {
+    // //             if (Array.isArray(child.material)) {
+    // //                 child.material.forEach(m => m.dispose());
+    // //             } else {
+    // //                 child.material.dispose();
+    // //             }
+    // //         }
+    // //     }
+    // });
+    
     
     batchedMesh = await generateBatchedMesh( final_map );
     bvh = new ObjectBVH( batchedMesh );
     scene.add( batchedMesh );
+    
+    // gltf_1_hi = null;
+    // gltf_2_hi = null;
+    // gltf_1_low = null;
+    // gltf_2_low = null;
+
+    // console.log(gltf_1_hi);
+
+    // // 3. Ensure GLTF scene object hierarchies are purged
+    // [gltf_1_hi, gltf_1_low, gltf_2_hi, gltf_2_low].forEach(gltf => {
+    //     gltf.scene.traverse(child => {
+    //         if (child.isMesh) {
+    //             if (child.geometry) child.geometry.dispose();
+    //             if (child.material) {
+    //                 if (Array.isArray(child.material)) {
+    //                     child.material.forEach(m => m.dispose());
+    //                 } else {
+    //                     child.material.dispose();
+    //                 }
+    //             }
+    //         }
+    //     });
+    // });
 
     return true;
 };
+
+function loadGLTFfile( loader, fileName ) {
+    const gltf = loader.loadAsync( fileName );
+
+    return gltf;
+}
 
 function generateBatchedMesh(final_map) {
 
@@ -216,14 +334,19 @@ function generateBatchedMesh(final_map) {
     final_map.forEach(( value, key ) => {
 
         const hires_geometry = value.get( "geometry_hires" );
-        const lowres_geometry = value.has( "geometry_lowres" ) ? value.get( "geometry_lowres" ) : value.get( "geometry_hires" );
-        
         const matrices = value.get( "matrix" );
 
         if (matrices.length > 0) {
-
+            
             const hires_geomId = bm.addGeometry( hires_geometry );
-            const lowres_geomId = bm.addGeometry( lowres_geometry );
+            
+            let lowres_geomId
+
+            if ( value.has( "geometry_lowres" ) ) {
+                lowres_geomId = bm.addGeometry( value.get( "geometry_lowres" ) );
+            } else {
+                lowres_geomId = hires_geomId; 
+            }
 
             for ( let i=0; i < matrices.length; i++ ){
 
@@ -237,6 +360,19 @@ function generateBatchedMesh(final_map) {
 
         };
     });
+
+    // 1. Purge WebGL memory allocations for source geometries
+    final_map.forEach(( value ) => {
+        const hires = value.get( "geometry_hires" );
+        if ( hires ) hires.dispose();
+
+        const lowres = value.get( "geometry_lowres" );
+        if ( lowres && lowres !== hires ) lowres.dispose();
+    });
+
+    // 2. Sever Javascript references
+    final_map.clear();
+    final_map = null;
     
     bm.needsUpdate = true;
     return bm;
@@ -290,9 +426,9 @@ function appendMap( gltf, mesh_map ) {
 
         if ( 
             child.isMesh && 
-            mesh_map.has( child.userData.mesh_id ) 
+            mesh_map.has( child.userData.mesh_id ) &&
+            !visited.has(child.userData.mesh_id)
         ) {
-
             const mesh_id = child.userData.mesh_id;
             const geom = child.geometry;
             
@@ -303,6 +439,7 @@ function appendMap( gltf, mesh_map ) {
             totalInstanceCount += 1;
 
             visited.add( mesh_id );
+            
         };
     });
 
@@ -406,6 +543,7 @@ function requestRender() {
     
     if (
         !renderRequested &&
+        bvh &&
         camera.position != lastCameraPos
     ) {
         renderRequested = true;
