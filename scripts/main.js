@@ -31,11 +31,11 @@ controls.autoRotate=false;
 controls.target = new THREE.Vector3(-15,0,-15);
 controls.rotateSpeed = 0.15;
 controls.zoomSpeed = 0.50;
-controls.panSpeed = 0.25;
+controls.panSpeed = 0.50;
 // controls.update();
 
-const light_2 = new THREE.DirectionalLight(0xffffff, 1);
-light_2.position.set( 10,10,10 )
+const light_2 = new THREE.DirectionalLight(0xffffff, 0.5);
+light_2.position.set( 10,10,0 )
 scene.add(light_2);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Color, Intensity
@@ -54,7 +54,7 @@ raycaster.firstHitOnly = true;
 // // Basic Loader
 // const loader1 = new GLTFLoader().setPath('models/bim-model/');
 
-// let bvh_struct;
+
 // loader1.load('sixty5-interiors-kitchens.glb', (gltf) => {
 
 //     gltf.scene.traverse((child) => {
@@ -86,73 +86,40 @@ raycaster.firstHitOnly = true;
 // });
 
 
-// // Basic BatchedMesh
-// const loader_instance = new GLTFLoader().setPath('models/bim-model/');
-// loader_instance.load('sixty5-interiors-kitchens-hires.glb', (gltf) => {
+// Basic BatchedMesh
+
+let bvh_struct;
+let batchedMesh_struct;
+
+initBase();
+
+async function initBase() {
+    const loader_instance = new GLTFLoader().setPath('models/bim-model/');
+    const gltf = await loader_instance.loadAsync('sixty5-structural.glb')
     
-//     let material_map = new Map();
+    const material = new THREE.MeshStandardMaterial({
+        color: "#a7a7a7",
+        // roughness: 0.2,
+        transparent: true,
+        opacity: 1.0,
+    });
+
+    // const material = gltf.scene.children[10].material;
+    // material.transparent = true;
+    // material.opacity = 1.0;
+    // // material.color = "white";
     
-//     gltf.scene.traverse((child) => {
-//         if (child.isMesh) {
-            
-//             const material = child.material
-//             const geom = child.geometry
-//             const geom_uuid = geom.uuid;
-//             const inst_matrix = child.matrixWorld;
-            
-//             if ( !material_map.has( material )){
-//                 material_map.set( material, {
-//                     unique_geoms: new Map(),
-//                     vCount: 0,
-//                     iCount: 0,
-//                     instCount: 1
-//                 });
-//             };
-            
-//             const data = material_map.get( material )
-//             data.instCount++;
+    let material_map = new Map();
 
-//             if ( !data.unique_geoms.has( geom_uuid ) ) {
-//                 data.unique_geoms.set(geom_uuid, {
-//                     geometry: geom,
-//                     matrix: []
-//                 });
+    material_map = await initMap( gltf, material_map)
+    
+    batchedMesh_struct = await generateBatchedMesh( material_map, material );
 
-//                 data.vCount += geom.attributes.position.count;
-//                 data.iCount += geom.index.count;
-//             };
-            
-//             data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
-//         };
-//     });
+    bvh_struct = new ObjectBVH( batchedMesh_struct );
+    scene.add( batchedMesh_struct );
 
-//     material_map.forEach(( value,key ) => {
-//         const batchedMesh = new THREE.BatchedMesh(
-//             value.instCount,
-//             value.vCount,
-//             value.iCount,
-//             key
-//         );
-
-//         value.unique_geoms.forEach((subvalue) => {
-        
-//             const geometry = subvalue.geometry;
-//             const matrices = subvalue.matrix;
-            
-//             if (matrices.length > 0){
-//                 const geom_id = batchedMesh.addGeometry( geometry );
-
-//                 for ( let i=0; i < matrices.length; i++){
-//                     const instanceId = batchedMesh.addInstance(geom_id)
-//                     batchedMesh.setMatrixAt( instanceId, matrices[i] )
-//                 };
-//             };
-//         });
-        
-//         batchedMesh.needsUpdate = true;
-//         scene.add(batchedMesh);
-//     });
-// });
+    return true;
+}
 
 let totalVertexCount = 0;
 let totalIndexCount = 0;
@@ -166,30 +133,19 @@ let bvh;
 let final_map = new Map();
 
 
-init();
+initDetails();
 
-async function init() {
+async function initDetails() {
     renderer.render(scene, camera);
     const loader = new GLTFLoader().setPath( 'models/bim-model/' );
     
     const status = await loadFiles( loader );
     
     requestRender();
-    // final_map = null;
 
 };
 
 async function loadFiles( loader ) {
-
-    // First need to load all models to scene completely
-    // let [ gltf_1_hi, gltf_1_low, gltf_2_hi, gltf_2_low ] = await Promise.all([  //
-
-    //     loader.loadAsync( "sixty5-W-installatie-hires_test.glb" ),
-    //     loader.loadAsync( "sixty5-W-installatie-lowres.glb" ),
-    //     loader.loadAsync( "sixty5-mep-test.glb" ),
-    //     loader.loadAsync( "sixty5-mep-lowres-test.glb" )
-
-    // ]);
     
     // Need to sequentially populate the mesh_map
 
@@ -197,7 +153,9 @@ async function loadFiles( loader ) {
         "sixty5-W-installatie_hires.glb",
         "sixty5-W-installatie_lowres.glb",
         "sixty5-mep_hires.glb",
-        "sixty5-mep_lowres.glb"
+        "sixty5-mep_lowres.glb",
+        "sixty5-interiors-kitchens_hires.glb",
+        "sixty5-interiors-kitchens_lowres.glb"
     ];
 
     for (const fileName of hi_res_files) {
@@ -212,106 +170,10 @@ async function loadFiles( loader ) {
         gltf = null;
 
     };
-
-    // for (const fileName of low_res_files) {
-
-    //     const gltf = await loadGLTFfile( loader, fileName );
-    //     final_map = await appendMap( gltf, final_map );
-    //     gltf.scene.clear();
-    
-    // };
-
-    // const gltf_1_hi = await loader.loadAsync( "sixty5-W-installatie-hires_test.glb" );
-    // final_map = await initMap( gltf_1_hi, final_map );
-    // gltf_1_hi.scene.clear();
-    // // gltf_1_hi.scene.traverse(child => {
-    // //     if (child.isMesh) {
-    // //         if (child.geometry) child.geometry.dispose();
-    // //         if (child.material) {
-    // //             if (Array.isArray(child.material)) {
-    // //                 child.material.forEach(m => m.dispose());
-    // //             } else {
-    // //                 child.material.dispose();
-    // //             }
-    // //         }
-    // //     }
-    // // });
-    
-    // const gltf_2_hi = await loader.loadAsync( "sixty5-mep-test.glb" );
-    // final_map =  await initMap( gltf_2_hi, final_map );
-    // gltf_2_hi.scene.clear();
-    // // gltf_2_hi.scene.traverse(child => {
-    // //     if (child.isMesh) {
-    // //         if (child.geometry) child.geometry.dispose();
-    // //         if (child.material) {
-    // //             if (Array.isArray(child.material)) {
-    // //                 child.material.forEach(m => m.dispose());
-    // //             } else {
-    // //                 child.material.dispose();
-    // //             }
-    // //         }
-    // //     }
-    // // });
-    
-    // const gltf_1_low = await loader.loadAsync( "sixty5-W-installatie-lowres.glb" );
-    // final_map = await appendMap( gltf_1_low, final_map );
-    // gltf_1_low.scene.clear();
-    // // gltf_1_low.scene.traverse(child => {
-    // //     if (child.isMesh) {
-    // //         if (child.geometry) child.geometry.dispose();
-    // //         if (child.material) {
-    // //             if (Array.isArray(child.material)) {
-    // //                 child.material.forEach(m => m.dispose());
-    // //             } else {
-    // //                 child.material.dispose();
-    // //             }
-    // //         }
-    // //     }
-    // // });
-    
-    // const gltf_2_low = await loader.loadAsync( "sixty5-mep-lowres-test.glb" );
-    // final_map = await appendMap( gltf_2_low, final_map );
-    // gltf_2_low.scene.clear();
-    // // gltf_2_low.scene.traverse(child => {
-    // //     if (child.isMesh) {
-    // //         if (child.geometry) child.geometry.dispose();
-    // //         if (child.material) {
-    // //             if (Array.isArray(child.material)) {
-    // //                 child.material.forEach(m => m.dispose());
-    // //             } else {
-    // //                 child.material.dispose();
-    // //             }
-    // //         }
-    // //     }
-    // });
-    
     
     batchedMesh = await generateBatchedMesh( final_map );
     bvh = new ObjectBVH( batchedMesh );
     scene.add( batchedMesh );
-    
-    // gltf_1_hi = null;
-    // gltf_2_hi = null;
-    // gltf_1_low = null;
-    // gltf_2_low = null;
-
-    // console.log(gltf_1_hi);
-
-    // // 3. Ensure GLTF scene object hierarchies are purged
-    // [gltf_1_hi, gltf_1_low, gltf_2_hi, gltf_2_low].forEach(gltf => {
-    //     gltf.scene.traverse(child => {
-    //         if (child.isMesh) {
-    //             if (child.geometry) child.geometry.dispose();
-    //             if (child.material) {
-    //                 if (Array.isArray(child.material)) {
-    //                     child.material.forEach(m => m.dispose());
-    //                 } else {
-    //                     child.material.dispose();
-    //                 }
-    //             }
-    //         }
-    //     });
-    // });
 
     return true;
 };
@@ -322,13 +184,13 @@ function loadGLTFfile( loader, fileName ) {
     return gltf;
 }
 
-function generateBatchedMesh(final_map) {
+function generateBatchedMesh( final_map, material = new THREE.MeshStandardMaterial()) {
 
     const bm = new THREE.BatchedMesh(
         totalInstanceCount, 
         totalVertexCount, 
         totalIndexCount, 
-        new THREE.MeshStandardMaterial()
+        material
     );
     
     final_map.forEach(( value, key ) => {
@@ -361,7 +223,7 @@ function generateBatchedMesh(final_map) {
         };
     });
 
-    // 1. Purge WebGL memory allocations for source geometries
+    // Memory Management
     final_map.forEach(( value ) => {
         const hires = value.get( "geometry_hires" );
         if ( hires ) hires.dispose();
@@ -370,7 +232,6 @@ function generateBatchedMesh(final_map) {
         if ( lowres && lowres !== hires ) lowres.dispose();
     });
 
-    // 2. Sever Javascript references
     final_map.clear();
     final_map = null;
     
@@ -450,13 +311,21 @@ function appendMap( gltf, mesh_map ) {
 const querySphere = new THREE.Sphere();
 const SEARCH_RADIUS = 15;
 let prevNear = new Set();
+let prevStruct = new Set();
 
 const highlightColor = new THREE.Color( "#F600C1" );
 const nonHighlightColor = new THREE.Color( "#d8d8d8" );
 
+const structOpaque = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
+const structTrans = new THREE.Vector4(0, 0, 0.55, 0.35);
+
+// const structOpaque = new THREE.Color( "#F600C1" );
+// const structTrans = new THREE.Color( "#d8d8d8" );
+
 function queryNearInstances( cameraPos ) {
 
     const nearIds = new Set();
+    const structIds = new Set();
 
     querySphere.center.copy( cameraPos );
     querySphere.radius = SEARCH_RADIUS;
@@ -466,24 +335,37 @@ function queryNearInstances( cameraPos ) {
         intersectsBounds : ( box ) => {
 
             if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
-
             return INTERSECTED;
         },
         intersectsObject : ( object, instanceId ) => {
 
             nearIds.add( instanceId );
-            
             return false;
         }
 
     });
 
-    return nearIds;
+    querySphere.radius = 5;
+
+    bvh_struct.shapecast({
+        intersectsBounds : ( box ) => {
+
+            if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
+            return INTERSECTED;
+        },
+        intersectsObject : ( object, instanceId ) => {
+
+            structIds.add( instanceId );
+            return false;
+        }
+    })
+
+    return [nearIds, structIds];
 };
 
 function updateLODs( cameraPos ) {
 
-    const newNear = queryNearInstances( cameraPos );
+    const [newNear, newStruct] = queryNearInstances( cameraPos );
 
     newNear.forEach(( id ) => {
 
@@ -503,7 +385,24 @@ function updateLODs( cameraPos ) {
         };
     });
 
+    newStruct.forEach((id) => {
+        if (!prevStruct.has( id )) {
+
+            batchedMesh_struct.setColorAt( id, structTrans );
+            
+        };
+    })
+
+    prevStruct.forEach((id) => {
+        if (!newStruct.has( id )) {
+
+            batchedMesh_struct.setColorAt( id, structOpaque );
+
+        };
+    })
+
     prevNear = newNear;
+    prevStruct = newStruct;
 };
 
 
@@ -520,7 +419,7 @@ window.addEventListener('dblclick', (event) => {
         
         const intersectionPoint = intersects[0].point;
 
-        controls.target.copy(intersectionPoint);
+        controls.target.copy( intersectionPoint );
         controls.update();
     };
 
@@ -533,10 +432,9 @@ function render() {
 
     renderRequested = false;
     
-    renderer.render(scene, camera);
-    updateLODs(camera.position);
+    renderer.render( scene, camera );
+    updateLODs( camera.position );
 
-    light_2.position.set( camera.position.clone() )
 }
 
 function requestRender() {
@@ -546,22 +444,22 @@ function requestRender() {
         bvh &&
         camera.position != lastCameraPos
     ) {
+        perfMonitor.update( renderer, scene );
         renderRequested = true;
-        requestAnimationFrame(render);
+        requestAnimationFrame( render );
     };
 }
 
-controls.addEventListener('change', requestRender );
-window.addEventListener('resize', requestRender );
+controls.addEventListener( 'change', requestRender );
+window.addEventListener( 'resize', requestRender );
 
 let frameCount = 0;
 
 function animate() {
-    requestAnimationFrame(animate);
+    requestAnimationFrame( animate );
 
-    perfMonitor.update(renderer, scene);
-    
-    if (frameCount % 10 === 0) {
+    // Throttled Frame Refresh
+    if ( frameCount % 1000 === 0 ) {
         requestRender();
     }
     
