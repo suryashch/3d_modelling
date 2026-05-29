@@ -425,7 +425,7 @@ These results are even better than before. Referencing the table from our origin
 
 These are even more impressive results. Most importantly, we see a sharp increase in the FPS count for `n_instances` = 5,000 (150 -> 220 FPS) and 10,000 (95 -> 140 FPS), both extremely promising for our MEP model which falls into this range.
 
-Although this method yields promising results, we note here that our `simplifyGeometry` algorithm is compiling on load with only one object in our scene. Since our MEP model will have multiple unique geometries, it won't be feasible in the long term to compress our larger models.
+Although this method yields promising results, we note here that our `simplifyGeometry` algorithm is compiling at loadtime with only one object in our scene. Since our MEP model will have multiple unique geometries, it won't be feasible in the long term to compress our larger models.
 
 ## Shared Vertex Arrays
 
@@ -681,9 +681,7 @@ filename = "test.glb"
 gltf.save(filename)
 ```
 
-I wont go through the details of our final script, but they can be found in the [accompanying research document](gltf-preprocessing.md). In essence we combined our decimate script from earlier with a new manual GLTF buffer writing script and placed it within a loop. Here is a diagram of what our preprocessing pipeline looks like.
-
-![Placeholder for Diagram]
+I wont go through the details of our final script, but they can be found in the [accompanying research document](gltf-preprocessing.md). In essence we combined our decimate script from earlier with a new manual GLTF buffer writing script and placed it within a loop. Here is what our preprocessing pipeline looks like.
 
 1) Start by creating a blank GLTF container to save our reindexed meshes.
 2) We loop through every `node` in our GLTF scene.
@@ -805,8 +803,7 @@ Now, when we boot up our scene in a web browser, this is what we're greeted with
 
 This is a promising start. Our LOD system is definitely working- zooming into objects in the scene causes them to render in high resolution. As well, we observe a far lower triangle count at a 50ft view- 5M triangles compared to the original 8M. We established earlier than the decimation amount we applied was low, so theoretically, this figure could be optimized even further. The draw calls are limited to ~3k, which is a lot lower than the 30k unique objects which exist in the scene. FPS is sitting at ~30-40, not ideal but perhaps this could be improved further.
 
-At this point, I am confident that the LOD swapping mechanism works within our `BatchedMesh` implementation however, we establish that CPU bottlenecks do still exist.
-
+At this point, I am confident that the LOD swapping mechanism works within our `BatchedMesh` implementation however, we establish that CPU bottlenecks do still exist. These CPU bottlenecks should be controllable through using a `BVH` to query our near and far objects. This is explained ahead.
 
 ## Multiple Querying Problem
 
@@ -841,8 +838,136 @@ scene.add( instancedMesh )
 
 To solve the CPU bottleneck problem, a tool we can use is an [octree](notebooks/octree-querying.ipynb). This limits the number of distance calculations which need to be conducted by the engine and reduces the time complexity of this problem from O(n) to O(log n). This is elaborated further, [in this report on Octree Basics](https://github.com/suryashch/octree/blob/main/reports/octree.md).
 
-We shall be working with a special flavour of octree here called a Bounding Volume Hierarchy (BVH) tree system. This system is considered a Top Level Acceleration Structure (TLAS) since it creates the tree levels based bounding boxes of the objects in the scene, rather than generic cubes in space. The de facto library in three.js for this tree is maintained by gkjohnson, (the author of our test script above) [and can be found here](https://github.com/gkjohnson/three-mesh-bvh). Let's implement this method using our code for the foot model.
+We shall be working with a special flavour of octree here called a `Bounding Volume Hierarchy` (BVH) tree system. This system is considered a Top Level Acceleration Structure (TLAS) since it creates the tree levels based bounding boxes of the objects in the scene, rather than generic cubes in space. The de facto library in three.js for this tree is maintained by gkjohnson, (the author of our test script above) [and can be found here](https://github.com/gkjohnson/three-mesh-bvh). Let's implement this method using our code for the foot model.
 
+Let's revisit the LOD swapping code from earlier, using the human-foot model.
+
+```js
+const instanceCount = 10000;
+
+let batchedMesh;
+let geometryId;
+const dummy = new THREE.Object3D();
+
+async function init() {
+    const loader_batchLOD = new GLTFLoader().setPath('models/foot/');
+    const mesh = await loader_batchLOD.loadAsync('human-foot-hires.glb');
+    const geom = [ mesh.scene.children[0].geometry ];
+
+    const geometriesLODArray = await simplifyGeometriesByErrorLOD( geom, 3, performanceRangeLOD )
+    
+    const { vertexCount, indexCount, LODIndexCount } = getBatchedMeshLODCount( geometriesLODArray );
+	batchedMesh = new THREE.BatchedMesh( instanceCount, vertexCount, indexCount, new THREE.MeshStandardMaterial() );
+
+    for ( let i=0; i < geometriesLODArray.length; i++ ){
+        const geometryLOD = geometriesLODArray[ i ];
+		geometryId = batchedMesh.addGeometry( geometryLOD[ 0 ], - 1, LODIndexCount[ i ] );
+        batchedMesh.addGeometryLOD( geometryId, geometryLOD[ 1 ], 5 );
+		batchedMesh.addGeometryLOD( geometryId, geometryLOD[ 2 ], 10 );
+		batchedMesh.addGeometryLOD( geometryId, geometryLOD[ 3 ], 15 );
+    };
+
+    for ( let i = 0; i < instanceCount; i++ ){
+        const id = batchedMesh.addInstance( geometryId );
+        
+        dummy.position.set(
+            Math.round( Math.random() * 50 ),
+            Math.round( Math.random() * 50 ),
+            Math.round( Math.random() * 50 )
+        );
+
+        dummy.updateMatrix();
+        batchedMesh.setMatrixAt( id, dummy.matrix );
+        batchedMesh.needsUpdate = true;
+    };
+
+    scene.add(batchedMesh);
+}
+
+init();
+```
+
+This code unfortunately is set up to manually calculate the distance between each instance in our model. To truly eliminate redundant calculations, we will need to manually create this `batchedmesh` object, with a manual trigger to swap the LOD's. To do so, we must load both versions of the model (hi and low res) to a single BatchedMesh object.
+
+```js
+const instanceCount = 10000;
+
+let batchedMesh;
+const dummy = new THREE.Object3D();
+let meshes = [];
+
+let totalVertexCount = 0;
+let totalIndexCount = 0;
+
+let hiresGeomIds = [];
+let lowresGeomIds = [];
+
+async function init() {
+    const loader = new GLTFLoader().setPath('models/foot/');
+    const [gltf_hi, gltf_low] = await Promise.all([
+        loader.loadAsync('human-foot-hires.glb'),
+        loader.loadAsync('human-foot-lowres.glb')
+    ]);
+    
+    const geom_hires = gltf_hi.scene.children[0].geometry;
+    const geom_lowres = gltf_low.scene.children[0].geometry;
+
+    totalVertexCount += geom_hires.attributes.position.count;
+    totalVertexCount += geom_lowres.attributes.position.count;
+
+    totalIndexCount += geom_hires.index.count;
+    totalIndexCount += geom_lowres.index.count;
+
+    batchedMesh = new THREE.BatchedMesh(
+        instanceCount,
+        totalVertexCount,
+        totalIndexCount,
+        new THREE.MeshStandardMaterial()
+    );
+
+    const lowres_geometryId = batchedMesh.addGeometry( geom_lowres );
+    const hires_geometryId = batchedMesh.addGeometry( geom_hires );
+
+    for ( let i = 0; i < instanceCount; i++ ){
+        const id = batchedMesh.addInstance( lowres_geometryId );
+        
+        lowresGeomIds[ id ] = geom_lowres;
+        hiresGeomIds[ id ] = geom_hires;
+
+        dummy.position.set(
+            Math.round( Math.random() * 50 ),
+            Math.round( Math.random() * 50 ),
+            Math.round( Math.random() * 50 )
+        );
+
+        dummy.updateMatrix();
+        batchedMesh.setMatrixAt( id, dummy.matrix );
+    };
+    
+    batchedMesh.needsUpdate = true;
+    scene.add(batchedMesh);
+
+}
+
+init();
+```
+
+We have essentially created a new batchedMesh object here that contains the geometry for both our hi and lowres meshes, but only activates the lowres mesh on load. We then keep track of which instances in the scene are in which location. In the code below specifically, we keep track of the instance id in 2 arrays - `lowresGeomIds` and `hiresGeomIDs`. For each instance saved in the `batchedMesh`, we keep track of this `id` within each array. On load, we see 10,000 instances of the lowres mesh.
+
+![10000 instances of low and hi-res model in a BatchedMesh](img/batchedmesh-10000-instances-manual-lod.png)
+
+This aligns with the results seen in [Table 1](#table-1---performance-results-batchedmesh-with-lod). However, there is no LOD control at this point. To do so, we must create a new BVH object. We add these 2 lines of code after adding our `batchedMesh` object to the scene.
+
+```js
+bvh = new ObjectBVH( batchedMesh );
+console.log(bvh);
+```
+
+Now, when we open the console, this is what we see.
+
+![Three Mesh BVH Console Output](img/mesh-bvh-console.png)
+
+If we open out the primitive buffer, we see a group of mapped objects which look similar to the [GLTF mapping](gltf-preprocessing.md) exercise.
 
 
 
