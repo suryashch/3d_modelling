@@ -1,6 +1,6 @@
 # A Game Dev Approach to BIM
 
-Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data management and 3D modelling. Implementation of this solution has been shown to consistently improve the delivery of large construction projects. However, widespread adoption is lacking in North America. I believe one of the key hurdles is on the technology front- where often, existing tools price out local vendors, or are too slow to be used efficiently.
+> Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data management and 3D modelling. Implementation of BIM has been shown to consistently improve the delivery of large construction projects. However, widespread adoption is lacking in the North American market. One of the key hurdles to integration is on the technology front, where efficient open source tools are limited or lacking.
 
 Construction 3D models face unique challenges in the computer graphics space. They are large (high memory), dense (high GPU usage), and often bloated with unnecessary data (high CPU usage). All three of these problems compound to create a slow, buggy user experience that ultimately kills any motivation behind using it as a tool. In this paper, I highlight best practices, grounded in game development principles, to speed up the performance of these 3D models- all while remaining accessible to *anyone* with an internet connection.
 
@@ -10,7 +10,7 @@ This research builds on [prior work](improving-3d-model-performance-with-LOD.md)
 
 ## Introduction to the Model
 
-In this project I am working with an open source BIM model courtesy of the [buildingsmart-community](https://github.com/buildingsmart-community). The model is of a real residential building in the Netherlands called [Sixty5](https://www.strijp-s.nl/en/building/sixty5). The model consists of 60,479 objects spread across 5 different disiciplinary layers.
+In this project I am working with an open source BIM model courtesy of the [buildingsmart-community](https://github.com/buildingsmart-community). The model is of a real high-rise residential building in the Netherlands called [Sixty5](https://www.strijp-s.nl/en/building/sixty5). The model consists of 60,479 objects spread across 5 layers.
 
 Here are some screenshots showing what the model looks like.
 
@@ -24,7 +24,7 @@ And here is a breakdown of the data.
 | Architectural | 19,980 | 1,639,524 | 48.7 MB |
 | Mechanical (MEP) | 23,246 | 8,461,426 | 74.5 MB |
 | HVAC | 13,553 | 15,099,433 | 43.1 MB |
-| Interiors - Kitchens | 3,095 | 1,607,878 | 11.5 MB |
+| Interiors | 3,095 | 1,607,878 | 11.5 MB |
 | **Total** | **60,479** | **26,863,320** | **182.1 MB** |
 
 The project is a significant scale-up from previous work, and should be reflective of a vast majority of BIM projects.
@@ -51,18 +51,18 @@ Take for example, the MEP (Mechanical, Electrical, Plumbing) layer of our BIM mo
 
 The performance is slow and buggy. I would not want to use this for more than a few minutes at a time. We notice abysmally slow `FPS` (Frames Per Second) as well- <10 FPS. 60 FPS is considered the gold standard for 3D rendering.
 
-To drive this point home, we conduct the following experiment. We load two different layers of our BIM model to our basic scene- the `Interiors / Kitchens` model and the `Architectural` model. Measuring the performance of each, we observe some striking differences.
+To drive this point home, we conduct the following experiment. We load two different layers of our BIM model to our basic scene- the `Interiors/Kitchens` model and the `Architectural` model. Measuring the performance of each, we observe some striking differences.
 
-![Performance results of Architectural model versus Interiors /Kitchens model](../research/optimizing-the-scene/img/performance-results-architectural-vs-interiors.png)
+![Performance results of Architectural model versus Interiors/Kitchens model](../research/optimizing-the-scene/img/performance-results-architectural-vs-interiors.png)
 
 | Model | Draw Calls | Triangles | FPS |
 | ----- | ---------- | --------- | --- |
-| interiors-kitchens | 3,096 | ~1.6M | 107 |
+| interiors | 3,096 | ~1.6M | 107 |
 | architectural | 16,374 | ~1.6M | 13 |
 
-1) The number of `draw calls` in the kitchens model (3,096) is much less than the architectural model (16,374). This implies there are many more individual objects in the `architectural` model than the `interiors-kitchens` one.
+1) The number of `draw calls` in the kitchens model (3,096) is much less than the architectural model (16,374). This implies there are many more individual objects in the `architectural` model than the `interiors` one.
 
-2) The total number of [triangles](../reducing-mesh-density/analysis_decimate.md) in both scenes are roughly the same (~1.6M). This implies that the `interior-kitchen` model is more finely detailed than the `architectural` model, since the `architectural` model has vastly more individual objects.
+2) The total number of [triangles](../reducing-mesh-density/analysis_decimate.md) in both scenes are roughly the same (~1.6M). This implies that the `interior` model is more finely detailed than the `architectural` model, since the `architectural` model has vastly more individual objects.
 
 3) The FPS count for the interior model is ~100 FPS compared to ~13 from the architectural model- significantly lower.
 
@@ -76,7 +76,7 @@ The best analogy I can give for batching relates to public transport. Our CPU - 
 
 ![Draw Calls Explained - Non Optimized](img/draw-calls-nonoptimized.gif)
 
-A more efficient approach is to load multiple commuters on a bus and transport that bus across the highway. Now, instead of sending 50-60 individual cars, we send one bus containing 50-60 people. The bus utilizes the resources of one `draw call`, while moving moving the equivalent of 50-60 data points.
+A more efficient approach is to load multiple commuters on a bus and transport that bus across the highway. Now, instead of sending 50 individual cars, we send one bus containing 50 people. The bus utilizes the resources of one `draw call`, while moving moving the equivalent of 50 data points.
 
 ![Draw Calls Explained - Optimized](img/draw-calls-optimized.gif)
 
@@ -84,7 +84,7 @@ Batching our data allows for its efficient movement between the CPU and GPU.
 
 The main tool at our disposal is included in the standard `three.js` library- [BatchedMesh](https://threejs.org/docs/#BatchedMesh). Utilizing this object requires certain preprocessing (similar to how we need to research which bus route number is the one we need).
 
-> This preprocessing step will be explained many times in later sections. This is intentionally done to drive home it's importance.
+> Note: This preprocessing step will be explained many times in later sections. This is intentionally done to drive home it's importance.
 
 To efficiently store our meshes in this object, we need the following 4 data points-
 
@@ -93,9 +93,9 @@ To efficiently store our meshes in this object, we need the following 4 data poi
 - The total number of expected `indices` in the scene (the collection of vertices used to construct a `triangle`),
 - The unique materials used in the scene.
 
-We acquire this information by looping through every mesh in our scene, and saving the data to a dictionary. We also keep track of the [transformation matrices](../research/hosting-3d-model/bpy_with_lod.md) of each mesh, as these store the location data of individual objects in the scene.
+We acquire this information by looping through every mesh in our scene, and saving the geometry data to a dictionary. We also keep track of the [transformation matrix](../research/hosting-3d-model/bpy_with_lod.md) of each mesh, as these store the location data of individual objects in the scene.
 
-An important note is that we must create one `BatchedMesh` object for every material in the scene. This is due to the architecture of the GPU and [Shader Programs](https://shader-tutorial.dev/basics/introduction/) specifically. Unfortunately I do not have an intuitive explanation for why this is the case- you'll just have to take my word for it.
+> Note: We must create one `BatchedMesh` object for every material in the scene. This is due to the architecture of the GPU and [Shader Programs](https://shader-tutorial.dev/basics/introduction/) specifically. Unfortunately I do not have an intuitive explanation for why this is the case- you'll just have to take my word for it.
 
 Once complete, our dictionary should look like this.
 
@@ -144,7 +144,7 @@ Just by batching our scene, our FPS count has jumped up to ~70 FPS. All other me
 
 ## Instancing
 
-Another powerful technique to improve the `draw calls` in the scene is known as [`Instancing`](../research/optimizing-the-scene/instanced-mesh.md). This process works best when you have multiple objects in a scene that all share the same geometry. Think leaves on a tree, bolts in a steel beam, 90 degree elbows on a pipe- all these objects are essentially the same, just loaded to different positions in the scene.
+Another powerful technique to improve the `draw calls` in the scene is known as [`Instancing`](../research/optimizing-the-scene/instanced-mesh.md). This process works best when you have multiple objects in a scene that all share the same geometry. Think leaves on a tree, bolts in a steel beam, 90 degree elbows on a pipe- all these objects are essentially the same, just loaded to different positions.
 
 ![Instancing Example. Credit: Threejs](../research/optimizing-the-scene/img/instancing-threejs-example.gif)
 
@@ -160,7 +160,7 @@ The main `Three.JS` library once again provides us with tools to address instanc
 - The mesh material,
 - The number of instances.
 
-As described in [`BatchedMesh`](#batching-the-scene), this information can be acquired by looping through the objects in our scene. We slightly tweak our dictionary object from earlier as follows ->
+As described in [`BatchedMesh`](#batching-the-scene), this information can be acquired by looping through the objects in our scene. We slightly tweak our dictionary object from earlier as follows.
 
 - If we encounter an object in the scene whose geometry is exactly the same as another, we do not create a new `mesh_id`. We utilize the existing entry.
 - For these instanced geometries, we add the location data of the mesh to `matrices_data`, which is now a list instead of a single entry. As a result, we will have multiple `tranformation_matrices` for a unique piece of geometry.
