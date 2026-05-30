@@ -2,3 +2,4 @@ models/.test
 models/.archive
 .vscode/
 */__pycache__
+*.ifc
