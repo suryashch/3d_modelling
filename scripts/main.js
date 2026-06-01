@@ -51,9 +51,6 @@ const gridHelper = new THREE.GridHelper( 100, 50 ); // ( size, divisions )
 gridHelper.position.set(21, -1, -30);
 scene.add( gridHelper );
 
-// const perfMonitor = new PerformanceMonitor();
-const profiler = new FrameProfiler(60);
-
 const raycaster = new THREE.Raycaster();
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 raycaster.firstHitOnly = true;
@@ -81,11 +78,6 @@ async function initBase() {
         opacity: 1.0,
         depthWrite: true
     });
-
-    // const material = gltf.scene.children[10].material;
-    // material.transparent = true;
-    // material.opacity = 1.0;
-    // // material.color = "white";
     
     let material_map = new Map();
 
@@ -130,12 +122,8 @@ async function loadFiles( loader ) {
     // Need to sequentially populate the mesh_map
 
     const _files = [
-        // "sixty5-W-installatie_hires.glb",
-        // "sixty5-W-installatie_lowres.glb",
         "sixty5-mep_hires.glb",
         "sixty5-mep_lowres.glb"
-        // "sixty5-interiors-kitchens_hires.glb",
-        // "sixty5-interiors-kitchens_lowres.glb"
     ];
 
     for (const fileName of _files) {
@@ -321,8 +309,6 @@ function queryNearInstances( cameraPos ) {
 
     });
 
-    // CONSTANTS.SEARCH_RADIUS = 5;
-
     bvh_struct.shapecast({
         intersectsBounds : ( box ) => {
 
@@ -447,7 +433,6 @@ function requestRender() {
         bvh &&
         camera.position != lastCameraPos
     ) {
-        // perfMonitor.update( renderer, scene );
         renderRequested = true;
         requestAnimationFrame( render );
     };
