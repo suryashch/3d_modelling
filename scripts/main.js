@@ -464,7 +464,7 @@ function animate() {
     requestAnimationFrame( animate );
 
     // Throttled Frame Refresh
-    if ( frameCount % 1000 === 0 ) {
+    if ( bvh && frameCount % 100 === 0 ) {
         requestRender();
     }
     
