@@ -4,6 +4,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PerformanceMonitor } from './utils/performanceMonitor.js'
 import { FrameProfiler } from './utils/frameProfiler.js';
 
+import Stats from 'three/addons/libs/stats.module.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
 import { ObjectBVH, acceleratedRaycast, INTERSECTED, NOT_INTERSECTED, computeBatchedBoundsTree } from 'three-mesh-bvh';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -19,71 +22,46 @@ const scene = new THREE.Scene();
 const mouse = new THREE.Vector2();
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-camera.position.set(-10,50,50);
+camera.position.set(-70,70,50);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enablePan = true;
 controls.minDistance=0.1;
-controls.maxDistance=100;
+controls.maxDistance=150;
 controls.minPolarAngle=0;
 controls.maxPolarAngle=3;
 controls.autoRotate=false;
-controls.target = new THREE.Vector3(-15,0,-15);
+controls.target = new THREE.Vector3(21, 30, -30);
 controls.rotateSpeed = 0.15;
 controls.zoomSpeed = 0.50;
 controls.panSpeed = 0.50;
-// controls.update();
+controls.update();
 
-const light_2 = new THREE.DirectionalLight(0xffffff, 0.5);
-light_2.position.set( 10,10,0 )
-scene.add(light_2);
+const stats = new Stats();
+document.body.appendChild( stats.dom );
+
+const light = new THREE.DirectionalLight(0xffffff, 0.5);
+light.position.set( 10,10,0 )
+scene.add(light);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Color, Intensity
 scene.add(ambientLight);
 
 const gridHelper = new THREE.GridHelper( 100, 50 ); // ( size, divisions )
+gridHelper.position.set(21, -1, -30);
 scene.add( gridHelper );
 
-const perfMonitor = new PerformanceMonitor();
+// const perfMonitor = new PerformanceMonitor();
 const profiler = new FrameProfiler(60);
 
 const raycaster = new THREE.Raycaster();
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 raycaster.firstHitOnly = true;
 
-// // Basic Loader
-// const loader1 = new GLTFLoader().setPath('models/bim-model/');
-
-
-// loader1.load('sixty5-interiors-kitchens.glb', (gltf) => {
-
-//     gltf.scene.traverse((child) => {
-//         if (child.isMesh){
-//             const mesh = child;
-//             mesh.material =  new THREE.MeshStandardMaterial({
-//                 color:"#b6b6b6",
-//                 transparent: true,
-//                 opacity: 1
-//             });
-//             scene.add(mesh);
-//         }
-//     })
-
-
-    // const mesh = gltf.scene;
-    // mesh.position.set(0,0,0);
-    // const material = new THREE.MeshStandardMaterial({
-    //     color:"#c23434",
-    //     wireframe: true
-    // });
-    // // material.wireframe = true;
-    // // material.format=THREE.RGBAFormat
-    // // material.opacity = 0.5;
-
-    // mesh.material = material;
-
-    // scene.add(mesh);
-// });
+const CONSTANTS = {
+    SEARCH_RADIUS: 15,
+    changeLODcolor: true
+}
 
 
 // Basic BatchedMesh
@@ -99,9 +77,9 @@ async function initBase() {
     
     const material = new THREE.MeshStandardMaterial({
         color: "#a7a7a7",
-        // roughness: 0.2,
         transparent: true,
         opacity: 1.0,
+        depthWrite: true
     });
 
     // const material = gltf.scene.children[10].material;
@@ -114,7 +92,7 @@ async function initBase() {
     material_map = await initMap( gltf, material_map)
     
     batchedMesh_struct = await generateBatchedMesh( material_map, material );
-
+    
     bvh_struct = new ObjectBVH( batchedMesh_struct );
     scene.add( batchedMesh_struct );
 
@@ -143,22 +121,24 @@ async function initDetails() {
     
     requestRender();
 
+    configGUI();
+
 };
 
 async function loadFiles( loader ) {
     
     // Need to sequentially populate the mesh_map
 
-    const hi_res_files = [
-        "sixty5-W-installatie_hires.glb",
-        "sixty5-W-installatie_lowres.glb",
+    const _files = [
+        // "sixty5-W-installatie_hires.glb",
+        // "sixty5-W-installatie_lowres.glb",
         "sixty5-mep_hires.glb",
-        "sixty5-mep_lowres.glb",
-        "sixty5-interiors-kitchens_hires.glb",
-        "sixty5-interiors-kitchens_lowres.glb"
+        "sixty5-mep_lowres.glb"
+        // "sixty5-interiors-kitchens_hires.glb",
+        // "sixty5-interiors-kitchens_lowres.glb"
     ];
 
-    for (const fileName of hi_res_files) {
+    for (const fileName of _files) {
 
         let gltf = await loadGLTFfile( loader, fileName );
         
@@ -309,7 +289,6 @@ function appendMap( gltf, mesh_map ) {
 
 
 const querySphere = new THREE.Sphere();
-const SEARCH_RADIUS = 15;
 let prevNear = new Set();
 let prevStruct = new Set();
 
@@ -319,16 +298,13 @@ const nonHighlightColor = new THREE.Color( "#d8d8d8" );
 const structOpaque = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
 const structTrans = new THREE.Vector4(0, 0, 0.55, 0.35);
 
-// const structOpaque = new THREE.Color( "#F600C1" );
-// const structTrans = new THREE.Color( "#d8d8d8" );
-
 function queryNearInstances( cameraPos ) {
 
     const nearIds = new Set();
     const structIds = new Set();
 
     querySphere.center.copy( cameraPos );
-    querySphere.radius = SEARCH_RADIUS;
+    querySphere.radius = CONSTANTS.SEARCH_RADIUS;
 
     bvh.shapecast({
 
@@ -345,7 +321,7 @@ function queryNearInstances( cameraPos ) {
 
     });
 
-    querySphere.radius = 5;
+    // CONSTANTS.SEARCH_RADIUS = 5;
 
     bvh_struct.shapecast({
         intersectsBounds : ( box ) => {
@@ -372,7 +348,9 @@ function updateLODs( cameraPos ) {
         if (!prevNear.has( id )) {
 
             batchedMesh.setGeometryIdAt( id, hiresGeomIdFor[ id ] );
-            batchedMesh.setColorAt( id, highlightColor );
+            if ( CONSTANTS.changeLODcolor ) {
+                batchedMesh.setColorAt( id, highlightColor );
+            }
         };
     });
 
@@ -405,6 +383,31 @@ function updateLODs( cameraPos ) {
     prevStruct = newStruct;
 };
 
+function onWindowResize() {
+
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+}
+
+function configGUI() {
+
+    const gui = new GUI();
+
+    gui.add(CONSTANTS, "SEARCH_RADIUS", 5, 20, 1).name("Search Radius").onChange( v => {
+        CONSTANTS.SEARCH_RADIUS = v;
+        requestRender();
+    });
+
+    gui.add(CONSTANTS, "changeLODcolor").name("Change LOD Color").onChange( v => {
+        CONSTANTS.changeLODcolor = v;
+        batchedMesh.setColorAt( id, nonHighlightColor );
+    })
+}
+
+window.addEventListener( 'resize', onWindowResize );
 
 window.addEventListener('dblclick', (event) => {
     
@@ -444,7 +447,7 @@ function requestRender() {
         bvh &&
         camera.position != lastCameraPos
     ) {
-        perfMonitor.update( renderer, scene );
+        // perfMonitor.update( renderer, scene );
         renderRequested = true;
         requestAnimationFrame( render );
     };
@@ -456,6 +459,8 @@ window.addEventListener( 'resize', requestRender );
 let frameCount = 0;
 
 function animate() {
+    stats.begin();
+    
     requestAnimationFrame( animate );
 
     // Throttled Frame Refresh
@@ -464,6 +469,8 @@ function animate() {
     }
     
     frameCount++;
+
+    stats.end();
 }
 
 animate()
