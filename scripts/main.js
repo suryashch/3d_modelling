@@ -129,9 +129,9 @@ async function loadFiles( loader ) {
     
     // Need to sequentially populate the mesh_map
 
-    const _files = [
+    const hi_res_files = [
         // "sixty5-W-installatie_hires.glb",
-        // "sixty5-W-installatie_lowres.glb",
+        // "sixty5-W-installatie_lowres.glb"
         "sixty5-mep_hires.glb",
         "sixty5-mep_lowres.glb"
         // "sixty5-interiors-kitchens_hires.glb",
@@ -465,6 +465,7 @@ function animate() {
 
     // Throttled Frame Refresh
     if ( frameCount % 1000 === 0 ) {
+    if (bvh && frameCount % 10 === 0) {
         requestRender();
     }
     
