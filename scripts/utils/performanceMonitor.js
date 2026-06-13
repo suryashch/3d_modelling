@@ -19,10 +19,11 @@ export class PerformanceMonitor {
         container.style.cssText = `
             position: fixed;
             top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.8);
-            color: #0f0;
-            font-family: monospace;
+            left: 10px;
+            background: rgba(19, 20, 28, 0.85);
+            backdrop-filter: blur(10px);
+            color: rgb(214, 214, 214);
+            font-family: "Roboto Mono", monospace;
             font-size: 12px;
             padding: 10px;
             border-radius: 4px;

@@ -37,14 +37,14 @@ controls.zoomSpeed = 0.50;
 controls.panSpeed = 0.50;
 controls.update();
 
-const stats = new Stats();
-document.body.appendChild( stats.dom );
+// const stats = new Stats();
+// document.body.appendChild( stats.dom );
 
 const light = new THREE.DirectionalLight(0xffffff, 0.5);
 light.position.set( 10,10,0 )
 scene.add(light);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Color, Intensity
+const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // Color, Intensity
 scene.add(ambientLight);
 
 const gridHelper = new THREE.GridHelper( 100, 50 ); // ( size, divisions )
@@ -72,41 +72,53 @@ const loader = new GLTFLoader().setPath('models/bim-model/')
 
 const facade_group = await initFacade( loader, [
         "sixty5-structural.glb",
-        "sixty5-architectural-noglass_facade.glb",
-        "sixty5-architectural-noglass_structural_interior.glb"
+        // "sixty5-architectural-noglass_facade_external.glb",
+        // "sixty5-architectural-noglass_structural_interior.glb",
     ]
 );
 bvh_group.add(facade_group);
 
-const interior_group = await initInterior( loader, [
-        "sixty5-interiors-kitchens_hires.glb",
-        "sixty5-interiors-kitchens_lowres.glb",
-        "sixty5-architectural-noglass_interiors.glb"
-    ]
-);
-bvh_group.add(interior_group);
+// const interior_group = await initInterior( loader, [
+//         "sixty5-interiors-kitchens_hires.glb",
+//         "sixty5-interiors-kitchens_lowres.glb",
+        // "sixty5-architectural-noglass_interiors.glb"
+//     ]
+// );
+// bvh_group.add(interior_group);
 
 const focus_group = await initFocus( loader, [
-        "sixty5-W-installatie_hires.glb",
-        "sixty5-W-installatie_lowres.glb",
-        "sixty5-mep_hires.glb",
-        "sixty5-mep_lowres.glb"
+        // "sixty5-W-installatie_hires.glb",
+        // "sixty5-W-installatie_lowres.glb",
+        // "sixty5-mep_hires.glb",
+        // "sixty5-mep_lowres.glb",
+
+        // "sixty5-interiors-kitchens_hires.glb",
+        // "sixty5-interiors-kitchens_lowres.glb",
+        "sixty5-architectural-noglass_interiors.glb",
+
     ]
 );
 bvh_group.add(focus_group);
 
+// scene.add(focus_group);
 scene.add(bvh_group);
+// console.log(bvh_group);
 
 const bvh = new ObjectBVH( bvh_group );
 
 async function initFacade( loader, _files ) {
     let material_map = new Map();
     const facade_group = new THREE.Group();
+
+    const defaultMaterial = new THREE.MeshStandardMaterial({
+        color: "#a7a7a7",
+        transparent: true
+    });
     
     for (const file of _files) {
         let gltf = await loader.loadAsync( file );
         
-        material_map = await createMaterialMap( gltf, material_map );
+        material_map = await createMaterialMap( gltf, material_map, defaultMaterial );
     };
 
     for (let material of material_map.keys()) {
@@ -116,7 +128,7 @@ async function initFacade( loader, _files ) {
         facade_group.add( bm );
     };
     facade_group.parentName = "facade";
-    // scene.add( facade_group );
+
     return facade_group;
 };
 
@@ -139,7 +151,7 @@ async function initInterior( loader, _files ) {
         } else if (res === "lowres.glb") {
             material_map = await appendMaterialMap( gltf, material_map, defaultMaterial );
         } else {
-            material_map = await createMaterialMap( gltf, material_map )
+            material_map = await createMaterialMap( gltf, material_map, defaultMaterial )
         };
     };
 
@@ -150,8 +162,7 @@ async function initInterior( loader, _files ) {
         interior_group.add( bm );
     };
     interior_group.parentName = "interior";
-    // scene.add( interior_group );
-    // console.log(interior_group);
+
     return interior_group;
 };
 
@@ -167,6 +178,8 @@ async function initFocus( loader, _files ) {
     for (const file of _files) {
         let gltf = await loader.loadAsync( file );
         const [name, res] = file.split("_");
+
+        console.log(gltf);
 
         if (res === "hires.glb") {
             material_map = await createMaterialMap( gltf, material_map, defaultMaterial );
@@ -196,6 +209,9 @@ function createBatchedMesh( meshes, material ){
         material
     );
 
+    batchedMesh.hiresGeomIdFor = [];
+    batchedMesh.lowresGeomIdFor = []
+
     meshes.unique_geoms.forEach((mesh) => {
         const geom = mesh.geometry;
         const lowres_geom = mesh.lowres_geometry;
@@ -215,12 +231,17 @@ function createBatchedMesh( meshes, material ){
                 const instanceId = batchedMesh.addInstance(lowres_geom_id)
                 batchedMesh.setMatrixAt( instanceId, matrices[i] )
 
+                batchedMesh.hiresGeomIdFor[ instanceId ] = geom_id;
+                batchedMesh.lowresGeomIdFor[ instanceId ] = lowres_geom_id;
+
             };
         };
 
     });
 
     batchedMesh.needsUpdate = true;
+    batchedMesh.isDirty = [];
+
     return batchedMesh;
 
 }
@@ -293,7 +314,7 @@ function createMaterialMap( gltf, material_map, defMaterial=null ){
             let inst_matrix;
             
             if (child.children.length > 0){
-                child = child.children[0]     // If the obejct has more than one child (due to mutliple materials) only select the first
+                child = child.children[0]     // If the object has more than one child (due to mutliple materials) only select the first
             };
 
             geometry = child.geometry;
@@ -304,6 +325,8 @@ function createMaterialMap( gltf, material_map, defMaterial=null ){
             } else {
                 material = child.material;
             }
+
+            material.transparent = true;
 
             if ( !material_map.has( material ) ) {
                 material_map.set( material, {
@@ -335,6 +358,7 @@ function createMaterialMap( gltf, material_map, defMaterial=null ){
         };
     });
 
+    // console.log(material_map);
     return material_map
 }
 
@@ -718,102 +742,153 @@ function createMaterialMap( gltf, material_map, defMaterial=null ){
 // };
 
 
-// const querySphere = new THREE.Sphere();
+const querySphere = new THREE.Sphere();
 // let prevNear = new Set();
-// let prevStruct = new Map();
+let prevNear = [];
 
-// const highlightColor = new THREE.Color( "#F600C1" );
-// const nonHighlightColor = new THREE.Color( "#d8d8d8" );
+const highlightColor = new THREE.Color( "#F600C1" );
+const nonHighlightColor = new THREE.Color( "#d8d8d8" );
 
-// const structOpaque = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
-// const structTrans = new THREE.Vector4(0, 0, 0.55, 0.35);
+const structOpaque = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
+const structTrans = new THREE.Vector4(0, 0, 0.55, 0.35);
 
-// function queryNearInstances( cameraPos ) {
+function queryNearInstances( cameraPos ) {
 
-//     const nearIds = new Set();
-//     const structIds = new Map();
+    const nearObjs = new Set();
+    // const nearObjs = []
 
-//     querySphere.center.copy( cameraPos );
-//     querySphere.radius = CONSTANTS.SEARCH_RADIUS;
+    querySphere.center.copy( cameraPos );
+    querySphere.radius = CONSTANTS.SEARCH_RADIUS;
 
-//     bvh.shapecast({
+    bvh.shapecast({
 
-//         intersectsBounds : ( box ) => {
+        intersectsBounds : ( box ) => {
 
-//             if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
-//             return INTERSECTED;
-//         },
-//         intersectsObject : ( object, instanceId ) => {
+            if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
+            return INTERSECTED;
+        },
+        intersectsObject : (object, instanceId) => {
 
-//             nearIds.add( instanceId );
-//             return false;
-//         }
+            const parent = object.parent.parentName;
 
-//     });
+            if (parent === "focus") {
 
-//     querySphere.radius = CONSTANTS.FOCUS_RADIUS;
+                object.setGeometryIdAt( id, object.hiresGeomIdFor[ id ] );
 
-//     bvh_struct.shapecast({
-//         intersectsBounds : ( box ) => {
+                if ( CONSTANTS.changeLODcolor ) {
+                    object.setColorAt( id, highlightColor );
+                }
+            } else if (parent === "facade") {
 
-//             if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
-//             return INTERSECTED;
-//         },
-//         intersectsObject : ( object, instanceId ) => {
+                object.setColorAt( id, structTrans );
+            } else {
 
-//             structIds.set( instanceId, object );
-//             return false;
-//         }
-//     })
+                object.setGeometryIdAt( id, object.hiresGeomIdFor[ id ] );
+            }
+            
+            object.isDirty = true;
+            object.dirtyInstances.add( instanceId )
+            nearObjs.add( object );
 
-//     return [nearIds, structIds];
-// };
+            return false;
+        }
 
-// function updateLODs( cameraPos ) {
+        
+    });
+    
+    return nearObjs;
+    // querySphere.radius = CONSTANTS.FOCUS_RADIUS;
 
-//     const test = new Set();
-//     const [newNear, newStruct] = queryNearInstances( cameraPos );
+    // bvh_struct.shapecast({
+    //     intersectsBounds : ( box ) => {
 
-//     newNear.forEach(( id ) => {
+    //         if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
+    //         return INTERSECTED;
+    //     },
+    //     intersectsObject : ( object, instanceId ) => {
 
-//         if (!prevNear.has( id )) {
+    //         structIds.set( instanceId, object );
+    //         return false;
+    //     }
+    // })
 
-//             batchedMesh.setGeometryIdAt( id, hiresGeomIdFor[ id ] );
-//             if ( CONSTANTS.changeLODcolor ) {
-//                 batchedMesh.setColorAt( id, highlightColor );
-//             }
-//         };
-//     });
+    // return [nearObjs, structIds];
+};
 
-//     prevNear.forEach(( id ) =>{
+function updateLODs( cameraPos ) {
 
-//         if (!newNear.has( id )) {
+    const newNear = queryNearInstances( cameraPos );
+    // console.log(newNear);
 
-//             batchedMesh.setGeometryIdAt( id, lowresGeomIdFor[ id ] );
-//             batchedMesh.setColorAt( id, nonHighlightColor );
-//         };
-//     });
+    newNear.forEach(( object ) => {
+        
+        const newObjects = object.isDirty
 
-//     newStruct.forEach((object, id) => {
-//         if ( !prevStruct.has( id )) {
+        if (!prevNear.includes( object )) {
 
-//             // batchedMesh_struct.setColorAt( id, structTrans );
-//             object.setColorAt( id, structTrans );
-//         };
-//     })
+            if (parent === "focus") {
 
-//     prevStruct.forEach((object, id) => {
-//         if ( !newStruct.has( id )) {
+                object.setGeometryIdAt( id, object.hiresGeomIdFor[ id ] );
+                if ( CONSTANTS.changeLODcolor ) {
+                    object.setColorAt( id, highlightColor );
+                }
+            } else if (parent === "facade") {
 
-//             // batchedMesh_struct.setColorAt( id, structOpaque );
-//             object.setColorAt( id, structOpaque );
+                object.setColorAt( id, structTrans );
+            } else {
 
-//         };
-//     })
+                object.setGeometryIdAt( id, object.hiresGeomIdFor[ id ] );
+            }
+        };
+    });
 
-//     prevNear = newNear;
-//     prevStruct = newStruct;
-// };
+    // prevNear.forEach(( object ) => {
+
+    //     if (object.isDirty
+
+    //     const object = intersect[0];
+    //     const id = intersect[1];
+    //     const parent = object.parent.parentName;
+
+    //     if (!newNear.includes( intersect )) {
+
+    //         if (parent === "focus") {
+
+    //             object.setGeometryIdAt( id, object.lowresGeomIdFor[ id ] );
+    //             object.setColorAt( id, nonHighlightColor );
+                
+    //         } else if (parent === "facade") {
+                
+    //             object.setColorAt( id, structOpaque );
+    //         } else {
+
+    //             object.setGeometryIdAt( id, object.lowresGeomIdFor[ id ] );
+    //         }
+    //     };
+    // });
+
+    prevNear = newNear;
+
+    // newStruct.forEach((object, id) => {
+    //     if ( !prevStruct.has( id )) {
+
+    //         // batchedMesh_struct.setColorAt( id, structTrans );
+    //         object.setColorAt( id, structTrans );
+    //     };
+    // })
+
+    // prevStruct.forEach((object, id) => {
+    //     if ( !newStruct.has( id )) {
+
+    //         // batchedMesh_struct.setColorAt( id, structOpaque );
+    //         object.setColorAt( id, structOpaque );
+
+    //     };
+    // })
+
+    // 
+    // prevStruct = newStruct;
+};
 
 // function onWindowResize() {
 
@@ -850,6 +925,7 @@ window.addEventListener('dblclick', (event) => {
     raycaster.setFromCamera(mouse, camera);
 
     const intersects = raycaster.intersectObjects( bvh.objects );
+    // console.log(intersects);
 
     if (intersects.length > 0) {
         
@@ -869,7 +945,7 @@ function render() {
     renderRequested = false;
     
     renderer.render( scene, camera );
-    // updateLODs( camera.position );
+    updateLODs( camera.position );
 
 }
 
@@ -890,7 +966,7 @@ let frameCount = 0;
 requestRender();
 
 function animate() {
-    stats.begin();
+    // stats.begin();
     perfMonitor.update(renderer, scene);
     
     requestAnimationFrame( animate );
@@ -898,12 +974,12 @@ function animate() {
 
     // Throttled Frame Refresh
     if ( frameCount % 60 === 0 ) {
-        requestRender();
+        // requestRender();
     }
     
     frameCount++;
 
-    stats.end();
+    // stats.end();
 }
 
 animate()
