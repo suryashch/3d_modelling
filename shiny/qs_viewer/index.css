@@ -1,0 +1,99 @@
+/* Basic Reset to remove default browser margins */
+body, h1, p {
+    margin: 0;
+    padding: 0;
+}
+
+.roboto-mono-font {
+  font-family: "Roboto Mono", monospace;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+}
+
+/* General Body Styling */
+body {
+    font-family: "DM Mono", monospace; /* Use a common, readable font */
+    font-weight: 100;
+    font-style: normal;
+    background-color: #262837; /* Light gray background */
+    color: #c0bfbf; /* Dark gray text color */
+    line-height: 1.6; /* Improve readability with line spacing */
+    padding: 0px;
+}
+
+/* Header Styling */
+header {
+    background-color: #007BFF; /* Blue header background */
+    color: white; /* White text for contrast */
+    padding: 1rem 0; /* Some padding top and bottom */
+    text-align: center; /* Center the text */
+    margin-bottom: 20px;
+}
+
+/* Main Content Styling */
+main {
+    background: white; /* White background for the content area */
+    padding: 20px;
+    border-radius: 5px; /* Optional: adds rounded corners */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Optional: adds a subtle shadow */
+}
+
+/* Footer Styling */
+footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #777;
+}
+
+/* Example of a basic CSS rule syntax: */
+p {
+    font-size: 0.25rem; /* property: value; */
+}
+
+.ui-panel {
+    position: fixed;
+    background: rgba(38, 40, 55, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    z-index: 100;
+    padding: 20px;
+}
+
+.top-left { top: 20px; left: 20px; }
+
+.top { top: 20px; left: 5rem; }
+
+.bot-left { bottom: 20px; left: 20px; }
+
+.bot-right { bottom: 20px; right: 20px; }
+
+h1.ui-panel {
+    margin: 0;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 25px;
+    border-left: 4px solid #3FDCFB;
+}
+
+.text-pane {
+    position: fixed;
+    color: #ffffff;
+    z-index: 100;
+    padding: 20px;
+}
+
+h2.text-pane {
+    margin: 0;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 10px;
+}
+
+.lil-gui {
+    --font-size: 16px;
+    --widget-height: 30px;
+}
