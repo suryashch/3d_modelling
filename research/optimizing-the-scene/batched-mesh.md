@@ -1,6 +1,6 @@
 # Batched Mesh
 
-The [batched mesh](https://threejs.org/docs/#BatchedMesh) class of objects in three.js allow for draw call strerammlining when you have multiple individual objects in the scene with common materials. For large scenes with lots of individual objects, this means we can condense all our meshes sharing material properties down into one draw call for the GPU to handle, significantly improving the [CPU bottleneck that we tend to observe in large scenes](draw-calls-in-scenes.md). We shall work with our `architectural` BIM model and see if we can optimize the total number of draw calls that the scene is currently making.
+The [batched mesh](https://threejs.org/docs/#BatchedMesh) class of objects in three.js allow for draw call streamlining when you have multiple individual objects in the scene with common materials. For large scenes with lots of individual objects, this means we can condense all our meshes sharing material properties down into one draw call for the GPU to handle, significantly improving the [CPU bottleneck that we tend to observe in large scenes](draw-calls-in-scenes.md). We shall work with our `architectural` BIM model and see if we can optimize the total number of draw calls that the scene is currently making.
 
 ## Implementation
 
@@ -226,7 +226,7 @@ With these tweaks in place, we load our model to scene and observe the following
 
 The results are better than the baseline, but not great. Our `draw calls` figure has gone up from 2 to 42. Since each draw call corresponds to a material, we can infer that our scene has 41 unique materials in it. However, we observe a drop in FPS count- down to approximately 40. While this is better than our baseline, it is not comparable to the original 100FPS performance we saw with the single draw call model from earlier.
 
-I suspect this might have to do with our material choice themselves. [Certain materials cause larger strain on the GPU than others](../auxiliary-scene-elements/optimizing-material-selection.md), especially transparent materials like glass. For testing purposes, we remove this material from teh scene to test the results. This was done through Blender.
+I suspect this might have to do with our material choice itself. [Certain materials cause larger strain on the GPU than others](../auxiliary-scene-elements/optimizing-material-selection.md), especially transparent materials like glass. For testing purposes, we remove this material from the scene to test the results. This was done through Blender.
 
 Here are the updated results.
 

@@ -68,7 +68,7 @@ for ( let i = 0; i < 5; i++ ) {
 
 In the code above, we first define the basic geometry and material of our cube object. We then create our `InstancedMesh` object with a max count of 5.
 
-The next step involves assigning the transformation matrices of each individual instance, and this required a bit of a non standard route. We first create a `dummy` object that will be used to store the random position, rotatation and scale transformations which we apply. We loop over our max_instance_count, which is 5 in this case, and start randomly assigning position, rotation and scale values. Once done, we copy the dummy objects transformation matrix over to our new instance using the `setMatrixAt()` method.
+The next step involves assigning the transformation matrices of each individual instance, and this required a bit of a non standard route. We first create a `dummy` object that will be used to store the random position, rotatation and scale transformations which we apply. We loop over our `max_instance_count`, which is 5 in this case, and start randomly assigning position, rotation and scale values. Once done, we copy the dummy objects transformation matrix over to our new instance using the `setMatrixAt()` method.
 
 An important note that is mentioned both in the docs, and online is that the `needsUpdate()` flag needs to be manually set to `true`. This flag signals to the GPU that a recalculation of the object's matrix is needed. More information about this flag can be sought in the [ThreeJS manual](https://threejs.org/manual/#en/how-to-update-things).
 
@@ -367,7 +367,7 @@ The code is mostly same, with a few differences. BatchedMesh requires that we [t
 
 We create our `batchedMesh` object based on these variables. Note, we are defining a default material here for ease. In later iterations, this will need to be split be the default material within the model.
 
-The last for loop is almost the same as before, the only difference is, we add our instances based on the geometry id. First we create a `geometry` ID for each unique geometry, them assign the transformation matrix of the instance using the same method as before. This code may seem confusing, but reference my [earlier research](batched-mesh.md) or the [docs](https://threejs.org/docs/#BatchedMesh) for a bit more understanding.
+The last `for loop` is almost the same as before, the only difference is, we add our instances based on the geometry id. First we create a `geometry` ID for each unique geometry, them assign the transformation matrix of the instance using the same method as before. This code may seem confusing, but reference my [earlier research](batched-mesh.md) or the [docs](https://threejs.org/docs/#BatchedMesh) for a bit more understanding.
 
 Once loaded, these are the results we observe.
 
@@ -448,7 +448,7 @@ loader_instance.load('sixty5-mep.glb', (gltf) => {
 
 This code looks slightly different, and it was generated in part using Gemini since I ended up running into performance issues within my browser. However, functionally it should work the same. Essentially, all we're doing is nesting our original `uuid_map` within another `material` map. This way, each material in the scene will get its own BatchedMesh generation. We keep track of the vertex counts and index counts same as before.
 
-Here are the results
+Here are the results.
 
 ![Instancing Within BatchedMesh- split by Material](img/instancing-within-batchedmesh-with-materials.png)
 
