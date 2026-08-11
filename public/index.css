@@ -92,3 +92,8 @@ h2.text-pane {
     padding-bottom: 5px;
     font-size: 10px;
 }
+
+.lil-gui {
+    --font-size: 16px;
+    --widget-height: 30px;
+}

@@ -403,7 +403,7 @@ async function init() {
 init();
 ```
 
-A lot of the code has been adopted from the original example from gkjohnson above. At a high level, we load our foot model to our loader object and then call the function `simplifyGeometriesByErrorLOD()` to generate our LOD's- 3 to be exact. There is very little info on the documentation behind how it works, but my best guess is that it is using the [edge collapse](https://graphics.stanford.edu/courses/cs468-10-fall/LectureSlides/08_Simplification.pdf) method of mesh decimation.
+A lot of the code has been adopted from the original example from gkjohnson above. At a high level, we load our foot model to our loader object and then call the function `simplifyGeometriesByErrorLOD()` to generate our LOD's- 3 to be exact. There is very little info in the documentation behind how it works, but my best guess is that it is using the [edge collapse](https://graphics.stanford.edu/courses/cs468-10-fall/LectureSlides/08_Simplification.pdf) method of mesh decimation.
 
 On running this function, we get these results.
 
@@ -431,7 +431,7 @@ Although this method yields promising results, we note here that our `simplifyGe
 
 This section is a condensed version of a larger body of research on [mesh simplification](../reducing-mesh-density/mesh-simplification.md) and [GLTF file reindexing](gltf-preprocessing.md).
 
-The docs for [BatchedMesh-extensions](https://github.com/agargaro/batched-mesh-extensions/) mention that LOD control requires all objetcs to share the same vertex array. This means, our LODs all need to use the same vertex data structure saved in memory. This proves to be a tougher problem to solve that at first glance.
+The docs for [BatchedMesh-extensions](https://github.com/agargaro/batched-mesh-extensions/) mention that LOD control requires all objects to share the same vertex array. This means, our LODs all need to use the same vertex data structure saved in memory. This proves to be a tougher problem to solve that at first glance.
 
 To inspect our mesh's vertex and face arrays, we use a program called [MeshLab](https://www.meshlab.net/). This application includes a Python native API- [PyMeshLab](https://pymeshlab.readthedocs.io/en/latest/). This program is similar to [Blender](../hosting-3d-model/bpy_with_lod.md), but provides additional tools for mesh editing.
 
@@ -887,7 +887,7 @@ async function init() {
 init();
 ```
 
-This code unfortunately is set up to manually calculate the distance between each instance in our model. To truly eliminate redundant calculations, we will need to manually create this `batchedmesh` object, with a manual trigger to swap the LOD's. To do so, we must load both versions of the model (hi and low res) to a single BatchedMesh object.
+This code unfortunately is set up to individually calculate the distance between each instance in our model. To truly eliminate redundant calculations, we will need to manually create this `batchedmesh` object, with a manual trigger to swap the LOD's. To do so, we must load both versions of the model (hi and low res) to a single BatchedMesh object.
 
 ```js
 const instanceCount = 10000;
