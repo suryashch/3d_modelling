@@ -7,6 +7,15 @@ A repo where I explore how 3D modelling works.
 
 ### Latest Research
 
+[Hyper Instanced Meshes to Reduce Memory Usage in Large MEP Models](https://github.com/suryashch/3d_modelling/blob/main/research/reducing-mesh-density/hyper-instance.md)
+Replacing the unique geometries of straight pipes in the model with one geometry that is scaled, rotated, and translated to match the position of the original. This method significantly reduces the file size footprint and also memory usage of the scene, by instancing the geometry.
+
+[Preprocessing GLTF Files for Efficient LOD Control in Scenes](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/gltf-preprocessing.md)
+Understanding the format of the gltf file. Recreating our own mesh from data in the model. Applying mesh decimation. Exploring data science behind mesh indexing, and reindexing for memory improvements. LOD additions and metadata assignment.
+
+[BatchedMesh with LOD](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batchedmesh-with-LOD.md)
+This document explores techniques used to add LOD control to the `BatchedMesh` object. The project draws heavy inspiration from gkjohnson et al, and dives deep into mesh compression techniques, instancing, buffer memory analysis and more. Ultimately, the project's results are inconclusive, but insightful.
+
 [Mesh Simplification Algorithms](https://github.com/suryashch/3d_modelling/blob/main/research/reducing-mesh-density/mesh-simplification.md)
 The document explores the basics of mesh simplification and specifically addresses the issue whereby decimation scripts create new vertices, essentially duplicating the amount of memory required for LOD control. The article explains in depth how to maintain vertex indices before and after decimation, allowing for vastly improved memory savings and enabling LOD control within the `BatchedMesh` object in ThreeJS.
 
@@ -18,9 +27,6 @@ This document explains how draw calls are the true limiting factor in scenes wit
 
 [Per Object LOD Control with ThreeJS](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/per-object-lod-control-with-threejs.md)
 This document explains how to set up "Level of Detail" (LOD) for individual objects in a 3D scene using Three.js. It shows how to make the computer switch to a simpler, faster version of an object when it is far away and a detailed version when it is close. This method helps the scene run smoothly by focusing the computer's power only on the things the viewer can see clearly.
-
-[Understanding LOD Compression with Blender API (bpy)](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/bpy_with_lod.md)
-This document demonstrates how to use the Blender Python API (bpy) to automate the creation of multiple Level of Detail (LOD) versions of a 3D model. By scripting the decimation process, it allows for the consistent generation of high, medium, and low-resolution meshes that can be exported for use in web or game engines. This automated approach ensures that all LOD levels are correctly named and organized, significantly reducing the manual effort required to prepare assets for optimized real-time rendering.
 
 --------------------------------------------------------------------------
 
