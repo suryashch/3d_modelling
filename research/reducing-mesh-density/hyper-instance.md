@@ -42,7 +42,7 @@ To start, I'd like to tackle what I believe to be an extremely low hanging fruit
 
 In this project we're working with an IFC file of a real development in the Netherlands called [Sixty5](https://www.strijp-s.nl/en/building/sixty5), courtesy of the [buildingSMART community](https://github.com/buildingsmart-community). We shall isolate our data to just the MEP layer of the building for this project. This model contains ~23k objects.
 
-![Google Earth image of the development](../)
+![Google Street View image of the development](../img/sixty5-google-maps)
 
 Since we're working with an IFC file, we can view the metadata of each object clearly. Here are the straight pipes, filtered by their IFC definiton `IfcFlowSegment`. There are ~11k straight pipe geometries in the model (~49% of the total objects).
 
