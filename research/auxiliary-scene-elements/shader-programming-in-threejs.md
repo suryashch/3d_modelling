@@ -24,7 +24,7 @@ Here is a very simple example of a Vertex Shader in action.
 
 ```cpp
 void main() {
-    gl_Position = vec4(pos, 1.0);
+    gl_Position = vec4( pos, 1.0 );
 }
 ```
 
@@ -49,7 +49,6 @@ int testFunction() {
 
 Hence, we build our `vec4` object by passing `pos`, a 3 dimensional vector (or table) of vertex data and appending another column of 1's at the end of it.
 
-
 ### The Fragment Shader
 
 A lot of GPU optimization techniques focus on streamlining data going into the Vertex Shader (reducing geometry LOD, draw calls etc.). However, the Fragment Shader is equally influential in the final scene. The Fragment Shader is responsible for adding color to the scene, and is run once for every pixel on the screen. A traditional 1080p display is 1080 pixels high and 1920 pixels wide. This means is we run our Fragment Shader on every pixel, we're coducting 1920 * 1080 = 2,073,600 calculations every frame. This is where the parallelization capabilities of GPU's *really* shine through.
@@ -60,7 +59,7 @@ At a high level, the Fragment Shader is responsible for identifying which pixels
 
 ```cpp
 void main() {
-    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
 }
 ```
 
@@ -92,7 +91,7 @@ Traditionally, to add a cube in three.js we need to create a new `Mesh` object t
 
 ```js
 const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
 const mesh = new THREE.Mesh( geometry, material );
 scene.add( mesh );
 ```
@@ -143,6 +142,8 @@ As we move forth, we will be working with functions in both the Vertex and Fragm
 
 ## Basic Functions with Shaders
 
+The code in this section is heavily influenced by 2 sources - The Book of Shaders, written by Patricio Gonzales, and various YouTube videos (listed in the links).
+
 ### View and Projection Matrix
 
 The first thing you might have noticed (or maybe not, that's ok too) in our current scene is that our cube looks like its a different size. This boils down to projection matrices. As mentioned in the Vertex Shader section above, we note that this program is responsible for positioning our vertices on the screen, and needs to account for a host of different factors- camera position, screen size, projection type etc. In our current `vertexShader` implementation, we're only passing in the raw coordinates. Hence, when we move the camera or resize the window, nothing happens.
@@ -174,9 +175,9 @@ This is what we expected. Now our cube changes dynamically with camera movement,
 
 Cool. But still, not that impressive. Let's step it up.
 
-### Colour Gradients with Uniforms
+### Color Gradients with Uniforms
 
-So far we have been working with solid colours in three.js. Using the Fragment Shader, we can apply a colour gradient to our object- but first we need to introduce a new concept- Uniforms. Uniforms are used to save data on the GPU and can be quickly accessed by both our Shaders. Uniforms are called so because the data saved within them is the same every time the shader is run- i.e. it does not change between frames. This will become apparent when we contrast with 'varyings' a little later.
+So far we have been working with solid colors in three.js. Using the Fragment Shader, we can apply a color gradient to our object- but first we need to introduce a new concept- Uniforms. Uniforms are used to save data on the GPU and can be quickly accessed by both our Shaders. Uniforms are called so because the data saved within them is the same every time the shader is run- i.e. it does not change between frames. This will become apparent when we contrast with 'varyings' a little later.
 
 
 
@@ -211,18 +212,17 @@ void main() {
     vec2 st = gl_FragCoord.xy / u_Resolution; 
     gl_FragColor = vec4(st.x, st.y, 0.0, 1.0);
 }
-
 ```
 
-Now, we acn set the colour of our Shader to be the first 2 values returned from our newly created variable `st`. We access these values by calling `st.x` and `st.y`- even though these values do not have anything to do with X or Y. This is just the shorthand notation for accessing values in a vector. As seen in the line above it, we can access the first 2 values of `gl_FragCoord` by calling `gl_FragCoord.xy`. This will now return a `vec2` instead of just a single value.
+Now, we acn set the color of our Shader to be the first 2 values returned from our newly created variable `st`. We access these values by calling `st.x` and `st.y`- even though these values do not have anything to do with X or Y. This is just the shorthand notation for accessing values in a vector. As seen in the line above it, we can access the first 2 values of `gl_FragCoord` by calling `gl_FragCoord.xy`. This will now return a `vec2` instead of just a single value.
 
 > Side note, you can access any of the 4 values in a `vec4`, by calling `myTestVec4.x`, `.y`, `.z`, or `.w`, or any combination thereof- regardless of what data is actually being stored.
 
-Back to the code above, now that we have normalized X and Y coordinates for screen space, we can just set these values to be the first 2 values in our `gl_FragColor` variable. Now, since these values vary with position on the screen, we should see different colours show up on our object.
+Back to the code above, now that we have normalized X and Y coordinates for screen space, we can just set these values to be the first 2 values in our `gl_FragColor` variable. Now, since these values vary with position on the screen, we should see different colors show up on our object.
 
 ![ShaderCube with Color Gradient](img/ShaderCube-with-color-gradient.png)
 
-Perfect. We do see the colour gradient as expected. Let's work through what we just did. Since we set the first 2 channels of our `gl_FragColor` variable to be the normalized screen width and height, these 2 channels will change with x and y. Essentially, we have mapped our screen's X axis to the Red Channel, and y axis to the Green Channel.
+Perfect. We do see the color gradient as expected. Let's work through what we just did. Since we set the first 2 channels of our `gl_FragColor` variable to be the normalized screen width and height, these 2 channels will change with x and y. Essentially, we have mapped our screen's X axis to the Red Channel, and y axis to the Green Channel.
 
 
 
@@ -230,9 +230,7 @@ An increase in X results in an increase in Red. An increase in Y results in an i
 
 
 
-An increase in both results in an increase in both Red and Green, which combined, makes yellow.
-
-
+An increase in both results in an increase in both Red and Green, which combined, makes Yellow.
 
 
 
@@ -242,7 +240,7 @@ An interesting observation we note here is that the color of the cube changes ba
 
 ![ShaderCube with Color Gradient positioned on the right](img/ShaderCube-with-color-gradient-right.png)
 
-We observe that as the cube gets positioned further to the left, it tends to contain more green, and on the right it tends to contain more red/yellow. This makes perfect sense since our FragmentShader is normalized to screen coordinates. If we take a look at the code above, we see that we're normalizing the data based on the input screen size. Since our object only occupies a certain portion of this screen size, it will pick up the applied colour that is set for that portion of the screen. This graphic should be explain this concept further.
+We observe that as the cube gets positioned further to the left, it tends to contain more green, and on the right it tends to contain more red/yellow. This makes perfect sense since our FragmentShader is normalized to screen coordinates. If we take a look at the code above, we see that we're normalizing the data based on the input screen size. Since our object only occupies a certain portion of this screen size, it will pick up the applied color that is set for that portion of the screen. This graphic should be explain this concept further.
 
 
 
@@ -250,7 +248,39 @@ To absolutely drive this point home, we zoom out to make our object smaller on t
 
 ![ShadeCube with Color Gradient zoomed out](img/ShaderCube-with-color-gradient-zoomedpng.png)
 
-### 
+Lastly, let's change our Shader to map to different colors. Here we swap the Green and Blue channels.
+
+```cpp
+uniform vec2 u_Resolution;
+
+void main() {
+    vec2 st = gl_FragCoord.xy / u_Resolution; 
+    gl_FragColor = vec4(st.x, 0.0, st.y, 1.0);
+}
+```
+
+Now, instead of green we will have blue color on the screen. Hence, the top right corner of our screen will correspond to max Red and max Blue channels- making purple.
+
+![ShaderCube with Color gradient- Blue channel](img/ShaderCube-with-color-gradient-blue.png)
+
+### Time Based Functions
+
+Another Uniform we can pass to our Shader is that of time. This will allow us to change the values outputted by our Shaders over time. Let's start with the Fragment Shader.
+
+First, we need to create a new Uniform to store the value of time elapsed.
+
+
+
+## Advanced Function with Shaders
+
+### UVs
+
+
+
+### Textures
+
+
+
 
 
 
@@ -259,3 +289,7 @@ To absolutely drive this point home, we zoom out to make our object smaller on t
 [OpenGL programming language](https://www.khronos.org/opengl/)
 
 [GLSL](https://wikis.khronos.org/opengl/OpenGL_Shading_Language)
+
+
+## Helpful YouTube Videos
+
