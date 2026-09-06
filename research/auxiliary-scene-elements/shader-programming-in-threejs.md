@@ -138,7 +138,7 @@ Hence, when we pass these 2 variables to our `ShaderMaterial`, this is what we s
 
 Looks the same! This is good news, but it begs the question- why? Why not just use `MeshBasicMaterial` and call it a day? Well, we are just scratching the surface here. The true value of shaders comes from the calculations which we run within them.
 
-As we move forth, we will be working with functions in both the Vertex and Fragment Shaders to create stunning visuals, and slight animations. What we have just set up here is a template which will allow us to experiment.
+As we move forth, we will be working with functions in both the Vertex and Fragment Shaders to create cool visuals, and slight animations. What we have just set up here is a template which will allow us to experiment.
 
 ## Basic Functions with Shaders
 
@@ -269,16 +269,246 @@ Another Uniform we can pass to our Shader is that of time. This will allow us to
 
 First, we need to create a new Uniform to store the value of time elapsed.
 
+```cpp
+// Fragment Shader
+uniform float u_Time;
+uniform vec2 u_Resolution;
 
+void main() {
+    // ...
+}
+```
 
-## Advanced Function with Shaders
+Note that since time will only contain one value (the amount of time elapsed), it will be initialized as a `float` instead of a `vec`.
+
+To view the effect of time on our shader, we wrap our red channel (which is currently mapped to our x coordinate in screen space) to a `sin` function. This will oscillate the value between 1.0 and -1.0 over time.
+
+```cpp
+// Fragment Shader
+uniform float u_Time;
+uniform vec2 u_Resolution;
+
+void main() {
+    vec2 st = glFragCoord.xy / u_Resolution;
+    gl_FragColor = vec4((sin(st.x + u_Time)), 1.0, 0.0  1.0);
+}
+```
+
+Note that for the sake of this example, we do not have any oscillations on the Green, Blue and Alpha channels. Now, loading this up this is what we see.
+
+![Basic Shader Material with Time Uniform](img/basicshadermaterial-withtime.gif)
+
+The color changes over time, as the red channel becomes more prevalent.
+
+We can make the oscillation more apparent by also wrapping the sin function within an `abs()` function. This will ensure that all negative numbers (which currently default to 0), will be converted to positive- ensuring the red always cycles through.
+
+```cpp
+// Fragment Shader
+uniform float u_Time;
+uniform vec2 u_Resolution;
+
+void main() {
+    vec2 st = glFragCoord.xy / u_Resolution;
+    gl_FragColor = vec4((abs(sin( st.x + u_Time ))), 1.0, 0.0  1.0);
+}
+```
+
+The `sin()` function accepts radians as the measurement for angles, hence no matter how large our `elapsedTime` value gets, the function's output will always be constrained.
+
+## Advanced Functions with Shaders
 
 ### UVs
 
 
 
+### Noise Functions
+
+
+
 ### Textures
 
+
+
+### Data Textures
+
+
+
+
+## InstancedMesh with ShaderMaterial
+
+Our next goal will be to implement our new `ShaderMaterial` within an `InstancedMesh` object. As a reminder, the `InstancedMesh` class of three.js objects allows us to define a geometry once and pass it to multiple objects in the scene. This method allows us to place a large number of objects in the scene without overwhelming memory or draw call size.
+
+
+
+We will use our same geometry from earlier- the `IcosahedronGeometry`. Let's see what the `InstancedMesh` object looks like with standard materials. Here, we create 100 instances of the geometry and place them randomly in the scene.
+
+```js
+const geometry = new THREE.IcosahedronGeometry( 5, 1 );
+const material = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true });
+const nInstances = 100;
+const instancedMesh = new THREE.InstancedMesh( geometry, material, nInstances );
+
+scene.add( instancedMesh );
+
+let dummy = new THREE.Object3D();
+
+for (let i = 0; i<nInstances; i++){
+    dummy.position.set(
+        Math.round((Math.random() - 0.5) * 100),
+        Math.round((Math.random() - 0.5) * 100),
+        Math.round((Math.random() - 0.5) * 100)
+    );
+    
+    dummy.updateMatrixWorld();
+    
+    instancedMesh.setMatrixAt( i, dummy.matrix);
+};
+```
+
+Loading this basic `instancedMesh` to our scene, this is what we see.
+
+![Basic Instanced Mesh](img/instancedMesh-basic.png)
+
+Looks basic enough. Now, if we want to recreate the same option with our `ShaderMaterial`, we need to tweak some code. Firstly, all the `positions` being passed to our Vertex Shader will now be the same (just one set of positions for our object). Instead, three.js sends an attribute to the vertex shader `instanceMatrix`, which contains all the positions of our instances. This is a named variable and can be accessed like so in the vertex Shader. We just need to tweak the code as follows.
+
+```cpp
+// Vertex Shader
+
+void main() {
+    vec4 instancedPos = instanceMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * modeViewMatrix * instancedPos;
+}
+```
+
+All that's changed is that we have multiplied our initial position vector by the `instanceMatrix` variable. We keep our Fragment Shader to be a simple yellow color (R=1, G=1, B=0) for now.
+
+```cpp
+// Fragment Shader
+
+void main() {
+    gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+}
+```
+
+Here is what the results look like.
+
+![InstancedMesh with ShaderMaterial](img/instancedMesh-shadermaterial.png)
+
+Once again, looks pretty ordinary, but here we can once again add our time based color oscillations in the fragment shader to truly unlock the power.
+
+```cpp
+uniform float u_Time;
+
+varying vec2 vertexUv;
+
+void main() {
+    gl_FragColor = vec4(abs(sin(vertexUv.x + u_Time)), 1.0, 0.0, 1.0);
+}
+```
+
+Here, we oscillate the red channel of our final output color to be between 0 and 1. As a result, the spheres on the screen change color periodically between Yellow (R=1, G=1) and Green (R=0, G=1).
+
+![InstancedMesh with Time base oscillation of Shader Material](img/instanced-mesh-with-shader-material-time.gif)
+
+Looks good, but there's another functionality I'd like to test- setting per-instance attributes. Say we want to adjust the color of each individual instance. This is possible in the default `InstancedMesh` class through the method `instancedMesh.setColorAt()`. This method sets the color of a specific index, but only works for one instance at a time. If we need to bulk set the color of specific instances in the scene, our function will need to loop over every single one.
+
+Instead, we use something called an `InstancedBufferAttribute`. This array-like object is uploaded to the GPU memory and can be used to bulk set the color of objects in the scene. To demonstrate how it works, let's work with a sensible number of instances - 10.
+
+We first need an array to define the exact colors which we want our instances to be. For the purpose of this example, let's create the following order -->
+
+```js
+const redColor = new THREE.Color(0xff0000); // Red
+const greenColor = new THREE.Color(0x00ff00); // Green
+const blueColor = new THREE.Color(0x0000ff); // Blue
+const magentaColor = new THREE.Color(0xff00ff); // Magenta
+
+const colors = [
+    redColor, greenColor, blueColor, magentaColor,
+    blueColor, greenColor, redColor, magentaColor,
+    redColor, greenColor
+]
+```
+
+10 instances, 10 colors. Now, we construct our array. We need to deconstruct the red, green and blue channels of each color separately.
+
+```js
+const i_ColorArray = new Float32Array(nInstances * 3)  // Multiply by 3 to account for color channels
+
+for (let i=0; i < nInstances, i++) {
+    i_ColorArray[ i * 3 + 0 ] = colors[i].r
+    i_ColorArray[ i * 3 + 1 ] = colors[i].g
+    i_ColorArray[ i * 3 + 2 ] = colors[i].b
+}
+```
+
+Now, we create a `InstancedBufferAttribute` which we can pass to our Shaders by tacking on directly to our `geometry` object.
+
+```js
+const i_Colors = new THREE.InstancedBufferAttribute(i_ColorArray, 3)  // 3 represents the stride length, i.e need to skip 3 entries to get to the next attribute
+
+geometry.setAttribute('a_InstanceColor', i_Colors);
+```
+
+The name of the attribute is important and must represent the value set in the Shaders. Which, let's address now. Here is our updated vertex shader.
+
+```cpp
+// Vertex Shader
+attribute vec3 a_InstanceColor;
+
+varying vec3 v_InstanceColor;
+
+void main() {
+    v_InstanceColor = a_InstanceColor;
+
+    vec4 instancedPos = instanceMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * modelViewMatrix * instancedPos;
+}
+```
+
+First we must define a new concept -  attributes. These variables are passed down from three.js and can be used to assign additional information to the geometry / vertices. We have seen examples of attributes earlier- `position`, and `uv`. Both these varaibles are internal to three.js and passed automatically to the Vertex Shader. Since the attribute is applied directly on the geometry, we do not need to pass it as a uniform via our `ShaderMaterial`. 
+
+However, since this information is required for the fragment shader, we do need to create a varying `v_InstanceColor` and assign it to the value of `a_InstanceColor` such that it can be accessed within the fragment shader. Attributes can only be accessed within the vertex shader. The rest of the code is the same.
+
+And, here is what the Fragment Shader code looks like.
+
+```cpp
+// Fragment Shader
+varying vec3 v_InstanceColor;
+
+void main() {
+    gl_FragColor = vec4(v_InstanceColor, 1.0);
+}
+```
+
+All we need to do here is pass the `instancedBufferAttribute` as the first 3 arguments of our color argument. Now for each vertex and object in the scene, the fragment shader will look through the array and derive the color.
+
+Loading this to our scene, this is what we observe.
+
+![InstancedMesh with ShaderMaterial and Per Object Color Control](img/instancedMesh-shadermaterial-colorcontrol.png)
+
+No matter how many times we refresh the screen, we should see exactly 3 red, 3 green, 2 blue and 2 magenta spheres, indicating that we have fine control over the color of each individual instance.
+
+As seen before, we can implement time-based oscillations in the color of the spheres directly in the fragment shader.
+
+```cpp
+// Fragment Shader
+uniform float u_Time;
+
+varying vec3 v_InstanceColor;
+
+void main() {
+    gl_FragColor = vec4(abs(sin(v_InstanceColor)), 1.0);
+}
+```
+
+![InstancedMesh with ShaderMaterial and Per Object Color Control over Time](img/instanced-mesh-with-shader-material-time-color.gif)
+
+
+
+
+
+
+## Camera Matrix Control
 
 
 
