@@ -23,6 +23,7 @@ As mentioned earlier, Shaders are programmed to conduct multiple parallelized op
 Here is a very simple example of a Vertex Shader in action.
 
 ```cpp
+// Vertex Shader
 void main() {
     gl_Position = vec4( pos, 1.0 );
 }
@@ -58,6 +59,7 @@ A lot of GPU optimization techniques focus on streamlining data going into the V
 At a high level, the Fragment Shader is responsible for identifying which pixels on the screen need to be colored, and how. Here is an example of a basic Fragment Shader.
 
 ```cpp
+// Fragment Shader
 void main() {
     gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
 }
@@ -85,6 +87,7 @@ The best part about working with Shader in three.js is the readily available acc
 3) A `ShaderMaterial`.
 
 We start by creating a basic boilerplate scene with some lights and a camera. To this scene, we add a cube.
+
 
 
 Traditionally, to add a cube in three.js we need to create a new `Mesh` object that has geometry and a material. Here is the boilerplate code to add a simple cube to the scene- straight from the [three.js docs](https://threejs.org/docs/?q=mesh#Mesh). 
@@ -206,6 +209,7 @@ The uniforms need to be passed to our `ShaderMaterial` as a dictionary object, w
 Let's work with this uniform data in our Fragment Shader. To start with, we need to normalize our screen space such that the values run from 0 to 1. This corresponds nicely with the color scale we're currently using (RGB = 1.0, 0.0, 1.0). To normalize, we need to divide our screen-space coordinates by the input window size. This will give us a `vec2` of values ranging from 0 to 1 where 0 is the absolute left edge of the screen and 1 is the absolute right. We save these values to a variable called `st`.
 
 ```cpp
+// Fragment Shader
 uniform vec2 u_Resolution;
 
 void main() {
@@ -251,6 +255,7 @@ To absolutely drive this point home, we zoom out to make our object smaller on t
 Lastly, let's change our Shader to map to different colors. Here we swap the Green and Blue channels.
 
 ```cpp
+// Fragment Shader
 uniform vec2 u_Resolution;
 
 void main() {
@@ -318,6 +323,9 @@ The `sin()` function accepts radians as the measurement for angles, hence no mat
 ## Advanced Functions with Shaders
 
 ### UVs
+
+We can pass another variable to our shader to convert from screen space to object space - `uv`. This configures our Fragment Shader to run only across the surface of our object. In this example, let's map our color gradient over the cube, instead of over the screen space.
+
 
 
 
@@ -502,11 +510,6 @@ void main() {
 ```
 
 ![InstancedMesh with ShaderMaterial and Per Object Color Control over Time](img/instanced-mesh-with-shader-material-time-color.gif)
-
-
-
-
-
 
 ## Camera Matrix Control
 
