@@ -206,8 +206,8 @@ Virtually no difference over our naive implementation. The final results compare
 Overall,
 
 - Our hyperinstanced model utilizes only 2.5MB of space on the disk- **a 94% reduction in file size.**
-- When loading to the scene, our RAM peaks at ~100MB- **a 66% reduction**.
-- Once garbage collection is run, the stable RAM usage of the scene is ~10.5MB- **a ~82% improvement**
+- When loading to the scene, our RAM peaks at ~100MB- **a 66% reduction.**
+- Once garbage collection is run, the stable RAM usage of the scene is ~10.5MB- **a ~82% improvement.**
 
 More information on the results can be found in the accompanying notebook: [Hyper Instancing Meshes in a BIM Model](notebooks/hyper-instance-3.ipynb).
 
