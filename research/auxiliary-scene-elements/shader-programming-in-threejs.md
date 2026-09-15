@@ -1,6 +1,6 @@
 # Shader Programming in Three.js
 
-Three.js provides a bunch of powerful open-source tools for 3D modelling. Most work exceptionally well out of the box and acn be used for most general tasks. However, to truly unlock the power of the GPU, we must move down a level into the heart of the GPU- Shaders.
+Three.js provides a bunch of powerful open-source tools for 3D modelling. Most work exceptionally well out of the box and can be used for most general tasks. However, to truly unlock the power of the GPU, we must move down a level into the heart of the GPU- Shaders.
 
 Shaders are commands that run native on GPU hardware. They are optimized to work especially well with parallelized operations, capable of running multiple million operations at once, and every frame. Typically, Shaders are written in C++ and require advanced compilers to view and create. This is the heart of heavy-duty game development, and is still how hardware-centric games are programmed today.
 
@@ -25,13 +25,13 @@ Here is a very simple example of a Vertex Shader in action.
 ```cpp
 // Vertex Shader
 void main() {
-    gl_Position = vec4( pos, 1.0 );
+    gl_Position = vec4( position, 1.0 );
 }
 ```
 
 The code above looks daunting. Let's break it down.
 
-All the code is doing above is creating a vector from our supplied vertices (`pos`) and assigning it to the variable `gl_Position`. GLSL provides a standard list of predefined variables that enable parallelized operations- `gl_Position` is one of them.
+All the code is doing above is creating a vector from our supplied vertices (`position`) and assigning it to the variable `gl_Position`. GLSL provides a standard list of predefined variables that enable parallelized operations- `gl_Position` is one of them.
 
 In standard C++ terminology, a function is defined by stating what type of value it returns, and the name of the function. In the example above, we return `void`, implying that our function named `main` is not returning anything- only setting an internal variable.
 
@@ -40,19 +40,20 @@ If we had a test function that did some operation and returned an integer, this 
 ```cpp
 int testFunction() {
     
-    // Function code 
+    // Function code
+    int result = 1 + 1;
     
-    return ;
+    return result;
 }
 ```
 
 `vec4` in the code above is a standard C++ object, a vector that contains 4 values. I like to think of a vector as a table, where each row corresponds to a unique object, and columns reference its data. In the case of our supplied vertices, each vertex will have an X coordinate, a Y coordinate and a Z coordinate. Hence, we will need a `vec3`, or vector with 3 dimentions to store this data. So why are we defining this data with a `vec4`? This boils down to the matrix math required to move an object on the screen, and is quite in depth. For now, just note that we need our vertex data to contain 3 columns (X, Y, Z) and a fourth column that will always be equal to 1.
 
-Hence, we build our `vec4` object by passing `pos`, a 3 dimensional vector (or table) of vertex data and appending another column of 1's at the end of it.
+Hence, we build our `vec4` object by passing `position`, a 3 dimensional vector (or table) of vertex data and appending another column of 1's at the end of it.
 
 ### The Fragment Shader
 
-A lot of GPU optimization techniques focus on streamlining data going into the Vertex Shader (reducing geometry LOD, draw calls etc.). However, the Fragment Shader is equally influential in the final scene. The Fragment Shader is responsible for adding color to the scene, and is run once for every pixel on the screen. A traditional 1080p display is 1080 pixels high and 1920 pixels wide. This means is we run our Fragment Shader on every pixel, we're coducting 1920 * 1080 = 2,073,600 calculations every frame. This is where the parallelization capabilities of GPU's *really* shine through.
+A lot of GPU optimization techniques focus on streamlining data going into the Vertex Shader (reducing geometry LOD, draw calls etc.). However, the Fragment Shader is equally influential in the final scene. The Fragment Shader is responsible for adding color to the scene, and is run once for every pixel on the screen. A traditional 1080p display is 1080 pixels high and 1920 pixels wide. This means as we run our Fragment Shader on every pixel, we're coducting 1920 * 1080 = 2,073,600 calculations every frame. This is where the parallelization capabilities of GPU's *really* shine through.
 
 
 
@@ -86,7 +87,7 @@ The best part about working with Shader in three.js is the readily available acc
 2) Some geometry.
 3) A `ShaderMaterial`.
 
-We start by creating a basic boilerplate scene with some lights and a camera. To this scene, we add a cube.
+We start by creating a [basic boilerplate scene](../hosting-3d-model/analysis_threejs.md) with some lights and a camera. To this scene, we add a cube.
 
 
 
@@ -322,18 +323,51 @@ The `sin()` function accepts radians as the measurement for angles, hence no mat
 
 ## Advanced Functions with Shaders
 
-### UVs
+### UVs and Varyings
 
 We can pass another variable to our shader to convert from screen space to object space - `uv`. This configures our Fragment Shader to run only across the surface of our object. In this example, let's map our color gradient over the cube, instead of over the screen space.
 
+To do so, we need to access the inbuilt `uv` variable in the shaders. This is passed normally down from three.js and is accessible only in the vertex shader. Since we want to access this variable in the fragment shader, we need to pass it along. Here we introduce the concept of a `varying`. Uniforms are called so because they are static variables constant across the scene. A varying is called so because is varies between pixel to pixel.
 
+First, let's access this variable in our vertex shader.
 
+```cpp
+// Vertex Shader
+varying vec2 v_UV;
+
+void main() {
+    v_UV = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+```
+
+As mentioned, `uv` is an attribute that's passed down from three.js- similar to `position`. Since its only accessible to the vertex shader, we create a varying and assign the data from our `uv` variable to it. In this case, our varying will be of type `vec2` since we're dealing with 2D surface based coordinates.
+
+Now, we can access this data in our Fragment Shader. All we need to do is declare the same varying variable at the top.
+
+```cpp
+// Fragment Shader
+varying vec2 v_UV;
+
+void main() {
+    gl_FragColor = vec4(v_UV.x, v_UV.y, 0.0, 1.0)
+}
+```
+
+![Passing UV values to shader program](img/uv-mapping-example.png)
+
+Here we see that the color gradient from above has been constrained along the shape's surface area. This mapping technique is called `uv` mapping, and the coordinates provided from this variable are 2D coordinates. Since X and Y are reserved, these are given the names `u` and `v` (corresponding to x and y on a 2d surface). Since we're mapping the coordinate `u` t our `R` channel in our fragment shader, we see that the color shifts from 0 (fully black) to 1 (fully red) along our X axis. The same holds true for the `G` channel and the `v` coordinate- these increase linearly from 0 (black) to 1 (green). Lastly, at the intersection of u=1, v=1, we have the color yellow- the combination of green and red.
+
+While the concept of UV'a are intersting too, the real benefit to highlight through this example is that we can send data from our vertex shader down to our fragment shader via a `varying`. This object is called so because it allows for varied data across our pixels- i.e. each fragment shader instance can access different data.
+
+Other data can be sent down to the fragment shader via a `varying` too, although we will explore these concepts a little later.
+
+### Textures
+
+Load
 
 ### Noise Functions
 
-
-
-### Textures
 
 
 
@@ -342,9 +376,13 @@ We can pass another variable to our shader to convert from screen space to objec
 
 
 
-## InstancedMesh with ShaderMaterial
+## Workflow Implementations
 
-Our next goal will be to implement our new `ShaderMaterial` within an `InstancedMesh` object. As a reminder, the `InstancedMesh` class of three.js objects allows us to define a geometry once and pass it to multiple objects in the scene. This method allows us to place a large number of objects in the scene without overwhelming memory or draw call size.
+Here we try to understand the practical aspects beind using `ShaderMaterial`.
+
+### InstancedMesh with ShaderMaterial
+
+Our next goal will be to implement our new `ShaderMaterial` within an `InstancedMesh` object. As a reminder, the `InstancedMesh` class of three.js objects allows us to define a geometry once and pass it to multiple objects in the scene. This method allows us to place a large number of objects in the scene without overwhelming memory or draw call size. We've explored the benefits of instancing [large BIM scenes](../optimizing-the-scene/instanced-mesh.md) prior to this.
 
 
 
@@ -416,7 +454,7 @@ void main() {
 
 Here, we oscillate the red channel of our final output color to be between 0 and 1. As a result, the spheres on the screen change color periodically between Yellow (R=1, G=1) and Green (R=0, G=1).
 
-![InstancedMesh with Time base oscillation of Shader Material](img/instanced-mesh-with-shader-material-time.gif)
+![InstancedMesh with Time based oscillation of Shader Material](img/instanced-mesh-with-shader-material-time.gif)
 
 Looks good, but there's another functionality I'd like to test- setting per-instance attributes. Say we want to adjust the color of each individual instance. This is possible in the default `InstancedMesh` class through the method `instancedMesh.setColorAt()`. This method sets the color of a specific index, but only works for one instance at a time. If we need to bulk set the color of specific instances in the scene, our function will need to loop over every single one.
 
@@ -432,7 +470,7 @@ const magentaColor = new THREE.Color(0xff00ff); // Magenta
 
 const colors = [
     redColor, greenColor, blueColor, magentaColor,
-    blueColor, greenColor, redColor, magentaColor,
+    redColor, greenColor, blueColor, magentaColor,
     redColor, greenColor
 ]
 ```
@@ -511,7 +549,82 @@ void main() {
 
 ![InstancedMesh with ShaderMaterial and Per Object Color Control over Time](img/instanced-mesh-with-shader-material-time-color.gif)
 
-## Camera Matrix Control
+### InstancedBufferGeometry
+
+
+
+
+
+### Fresnel Effect
+
+The Fresnel Effect allows for GPU accelerated reflections calcuations. Here, we shall be using it to simulate a "headlamp" effect, where surfaces facing us head on are well lit, while those perpendicular to us or angled away will have lesser light reflecting off.
+
+![Fresnel Effect with Shaders](img/shader-fresnel.gif)
+
+We start with our vertex shader, in which all we need to do is pass on our normals and positions as varyings to the fragment shader.
+
+```cpp
+// Vertex Shader
+varying vec3 v_Normal;
+varying vec3 v_Position;
+
+void main() {
+    v_Normal = normal;
+    v_Position = position;
+    
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+```
+
+Now that this data is available within our fragment shader, lets get to work. Here, we also use the default attribute passed down from three.js- `cameraPosition`.
+
+```cpp
+// Fragment Shader
+varying vec3 v_Normal;
+varying vec3 v_Position;
+
+void main() {
+    vec3 viewDirection = normalize(cameraPosition - v_Position);
+    float fresnel = dot(viewDirection, v_Normal);
+
+    gl_FragColor = vec4( vec3(fresnel), 1.0 );
+}
+```
+
+Let's break down what's happening here. First, we must calculate the standard vector corresponding to our view direction. This will be the vector relating to the camera position subtracted from every position vector in the shape. This will give us a single vector that corresponds to the direction that the camera is facing. We also must normalize this vector, as this will prevent the distance of the object from affecting our calculations.
+
+Next, we must caluclate the dot product of our view direction and the normal vector of each face in our object. Simplified, the dot product returns the degree to which 2 vectors are alilgned. If they point in exactly the same direction, their dot product will be 1. If the 2 vectors are perpendicular, their dot product will be 0. If a vector lies at an angle between 0 and 90 degrees, its dot product will be some fraction of 1.
+
+Lastly, we set our dot product calculation (the variable called fresnel), as the output of our color space. We coerce our single float into a `vec3`, by assigning each value to be the exact same. This means our output color will vary between black and white.
+
+And, this is what our output looks like.
+
+![Fresnel Effect first pass](img/fresnel-effect.png)
+
+It is important to note that we have no lights in the scene- the shadow and lighting effects we're seeing are strictly from the fragment shader. We can even control the perceived reflectivity of the surface. Currently, it looks to shiny. We apply a dampling factor on to our fresnel variable in the fragment shader -->
+
+```cpp
+// Fragment Shader
+varying vec3 v_Normal;
+varying vec3 v_Position;
+
+void main() {
+    vec3 viewDirection = normalize(cameraPosition - v_Position);
+    float fresnel = dot(viewDirection, v_Normal);
+
+    gl_FragColor = vec4( vec3(fresnel * 0.8), 1.0 ); // Apply dampling factor
+}
+```
+
+Now, this same cube has a somewhat matte effect, when viewed head on. Essentially, this damping factor is setting the max value of our color to be `RBG(0.8, 0.8, 0.8)`, which is a shade of grey.
+
+![Matte effect using Fresnel Shaders](img/shader-fresnel-matte.gif)
+
+We can take this one step further. Let's create a few instancedMeshes to truly highlight the capabilities of the scene.
+
+
+
+### Camera Matrix Control
 
 
 
@@ -522,6 +635,8 @@ void main() {
 [OpenGL programming language](https://www.khronos.org/opengl/)
 
 [GLSL](https://wikis.khronos.org/opengl/OpenGL_Shading_Language)
+
+[basic boilerplate scene](../hosting-3d-model/analysis_threejs.md)
 
 
 ## Helpful YouTube Videos
