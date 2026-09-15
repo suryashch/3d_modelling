@@ -557,7 +557,7 @@ void main() {
 
 ### Fresnel Effect
 
-The Fresnel Effect allows for GPU accelerated reflections calcuations. Here, we shall be using it to simulate a "headlamp" effect, where surfaces facing us head on are well lit, while those perpendicular to us or angled away will have lesser light reflecting off.
+Fragment Shaders allow for GPU accelerated reflections calcuations, like the Fresnel Effect. Here, we shall be using it to simulate a "headlamp" effect, where surfaces facing us head on are well lit, while those perpendicular to us or angled away will have lesser light reflecting off.
 
 ![Fresnel Effect with Shaders](img/shader-fresnel.gif)
 
@@ -616,13 +616,123 @@ void main() {
 }
 ```
 
-Now, this same cube has a somewhat matte effect, when viewed head on. Essentially, this damping factor is setting the max value of our color to be `RBG(0.8, 0.8, 0.8)`, which is a shade of grey.
+Now, this same cube has a somewhat matte effect, when viewed head on. Essentially, this damping factor is setting the max value of our color to be `RBG(0.8, 0.8, 0.8)`, which is a shade of grey, instead of the pure white.
 
 ![Matte effect using Fresnel Shaders](img/shader-fresnel-matte.gif)
 
-We can take this one step further. Let's create a few instancedMeshes to truly highlight the capabilities of the scene.
+We can take this one step further. Let's create a few instancedMeshes to truly highlight the capabilities of this technique. As we have seen in the section above, we can create instancedMeshes by passing our transformation matrices as an attribute to our shader. We create our instancedMesh as normal.
 
+```js
+const nInstances = 1000;
 
+let dummy = new THREE.Object3D();
+const instancedMesh = new THREE.InstancedMesh( geometry, material, nInstances );
+
+scene.add( instancedMesh );
+
+for (let i = 0; i<nInstances; i++){
+    dummy.position.set(
+        Math.round((Math.random() - 0.5) * 1000 + 50 ),
+        Math.round((Math.random() - 0.5) * 1000 + 50 ),
+        Math.round((Math.random() - 0.5) * 1000 + 50 )
+    );
+    
+    dummy.updateMatrixWorld();
+    
+    instancedMesh.setMatrixAt( i, dummy.matrix);
+};
+```
+
+Here, we create 1000 instances of our object and load them to random positions on the screen. We subtract 0.5 from the `Math.random()` operation to ensure that our objects are evenly spread across all our axes, not just the positive one.
+
+Now, all we need to change is our vertexShader as seen earlier.
+
+```cpp
+// Vertex Shader
+varying vec3 v_Normal;
+varying vec3 v_Position;
+
+void main() {
+    vec4 instancedPos = instanceMatrix * vec4(position * 1.0);
+    gl_Position = projectionMatrix * modelViewMatrix * instancedPos;
+}
+```
+
+Our fragment shader will remain the same as above, applying the dot product to our camera direction vector and the normals. Now, when we load up our scene, this is what we see.
+
+![InstancedCubes with applied Fresnel effect](img/instanced-cubes-fresnel.gif)
+
+Let's merge all we've learned in the above sections into one project. Here, we will apply per-instance coloring, with the fresnel effect and also oscillate the colors strictly using the shader.
+
+In three.js, we define our colors array.
+
+```js
+const instancedColors = [
+    new THREE.Color(0xff0000), // Red
+    new THREE.Color(0x00ff00), // Green
+    new THREE.Color(0x0000ff), // Blue
+    new THREE.Color(0xffff00), // Yellow
+    new THREE.Color(0xff00ff)  // Magenta
+];
+```
+
+Now, we create an `InstancedBufferAttribute` that will store all the colors of each instance. This needs to be done manually, and parsed to our shader as a `Float32Array`.
+
+```js
+const instancedColorsArray = new Float32Array(nInstances * 3);
+
+for (let i = 0; i < nInstances; i++) {
+    instColor = instancedColors[ Math.floor(Math.random() * 10 / 2) ];
+
+    instancedColorsArray[i * 3 + 0] = instColor.r
+    instancedColorsArray[i * 3 + 1] = instColor.g
+    instancedColorsArray[i * 3 + 2] = instColor.b
+};
+
+geometry.setAttribute('a_InstanceColor', new THREE.InstancedBufferAttribute(instancedColorsArray, 3)); // The 3 is the stride size
+```
+
+Perfect. Now, in our Vertex Shader, we need to pass on the `a_InstanceColor` attribute down to our fragment shader as a varying.
+
+```cpp
+// Vertex Shader
+attribute vec3 a_InstanceColor;
+
+varying vec3 v_Normal;
+varying vec3 v_Position;
+varying vec3 v_InstanceColor;
+
+void main() {
+    v_Normal = normal;
+    v_Position = position;
+    v_InstanceColor = a_InstanceColor;
+
+    vec4 instancedPos = instanceMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * modelViewMatrix * instancedPos;
+}
+```
+
+And in our fragment shader, we just need to multiply our instanceColor attribute with the applied fresnel variable. This will keep our colors intact, and only apply the fresnel multiplier on the base color.
+
+```cpp
+// Fragment Shader
+varying vec3 v_Normal;
+varying vec3 v_Position;
+varying vec3 v_InstanceColor;
+
+void main() {
+    vec3 viewDirection = normalize(cameraPosition - v_Postion);
+    float fresnel = dot(viewDirection, v_Normal);
+
+    gl_FragColor = vec4(v_InstanceColor * fresnel, 1.0);
+}
+```
+
+And now, onload this is what we're greeted with.
+
+![InstancedCubes with Fresnel Effect and Color](img/instanced-cubes-fresnel-color.gif)
+
+Perfect results. We see that the color indeed appears darker on the faces that are not directly pointed at the camera, giving it the effect like there's a light pointed right in the direction we're looking in.
 
 ### Camera Matrix Control
 
