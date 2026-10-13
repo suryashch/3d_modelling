@@ -1,1126 +1,695 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { PerformanceMonitor } from './utils/performanceMonitor.js'
-import { FrameProfiler } from './utils/frameProfiler.js';
-import { PerformanceGraphMonitor } from './utils/graphMonitor.js';
-
-import Stats from 'three/addons/libs/stats.module.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import { ObjectBVH, acceleratedRaycast } from 'three-mesh-bvh';
+import nipplejs from 'nipplejs';
 
-import { ObjectBVH, acceleratedRaycast, INTERSECTED, NOT_INTERSECTED, computeBatchedBoundsTree } from 'three-mesh-bvh';
+import { PerformanceMonitor } from './utils/performanceMonitor.js';
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.outputColorSpace = THREE.SRGBColorSpace;
+const guiControls = {
+    perspective : true,
+    fov: 45,
+    test: false,
+};
 
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor("#8f8f8f");
-renderer.setPixelRatio(window.devicePixelRatio);
-
-document.body.appendChild(renderer.domElement);
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.setPixelRatio( window.devicePixelRatio );
+renderer.setClearColor( "#949393" )
+// renderer.setClearColor( "#363535" )
+document.body.appendChild( renderer.domElement );
 
 const scene = new THREE.Scene();
-const mouse = new THREE.Vector2();
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-camera.position.set(-70,70,50);
+const perspCamera = new THREE.PerspectiveCamera( guiControls.fov, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
-const controls = new OrbitControls(camera, renderer.domElement);
+const orthoCamera = new THREE.OrthographicCamera(- window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, - window.innerHeight / 2, 0.1, 1000);
+const initZoom = 15;
+orthoCamera.zoom = initZoom;
+orthoCamera.updateProjectionMatrix();
+
+let camera = perspCamera;
+const camStartingPosition = new THREE.Vector3( 55, 55, 55 );
+camera.position.copy( camStartingPosition );
+
+// const light = new THREE.AmbientLight();
+// scene.add(light);
+
+const controls = new OrbitControls( camera, renderer.domElement );
 controls.enablePan = true;
-controls.minDistance=0.1;
-controls.maxDistance=150;
-controls.minPolarAngle=0;
-controls.maxPolarAngle=3;
-controls.autoRotate=false;
-controls.target = new THREE.Vector3(21, 30, -30);
+controls.minDistance = 0.1;
+controls.maxDistance = 150;
+controls.minPolarAngle = 0;
+controls.maxPolarAngle = 3;
+controls.zoomSpeed = 0.5;
+controls.panSpeec = 0.5;
 controls.rotateSpeed = 0.15;
-controls.zoomSpeed = 0.50;
-controls.panSpeed = 0.50;
+controls.mouseButtons = {
+    LEFT: THREE.MOUSE.ROTATE,
+	MIDDLE: THREE.MOUSE.DOLLY,
+	RIGHT: THREE.MOUSE.PAN
+}
+
+let controlsTargetPoint = new THREE.Vector3( 0, 20, 0 )
+let newTargetPoint = controlsTargetPoint;
+controls.target.copy( controlsTargetPoint );
 controls.update();
 
-// const stats = new Stats();
-// document.body.appendChild( stats.dom );
+const initTargetDistance = controls.target.distanceTo( camStartingPosition );
 
-const light = new THREE.DirectionalLight(0xffffff, 0.5);
-light.position.set( 10,10,0 )
-scene.add(light);
-
-const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // Color, Intensity
-scene.add(ambientLight);
-
-const gridHelper = new THREE.GridHelper( 100, 50, 0x444444, 0x444444 ); // ( size, divisions )
-gridHelper.position.set(21, -1, -30);
+const gridHelper = new THREE.GridHelper(100, 50, "#9e9e9e", "#5e5e5e");
 scene.add( gridHelper );
-
-const perfMonitor = new PerformanceMonitor();
-const profiler = new FrameProfiler(60);
-const graphMonitor = new PerformanceGraphMonitor();
 
 const raycaster = new THREE.Raycaster();
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 raycaster.firstHitOnly = true;
 
-const CONSTANTS = {
-    SEARCH_RADIUS: 15,
-    FOCUS_RADIUS: 15,
-    changeLODcolor: true
-}
+const mouse = new THREE.Vector2();
 
-const bvh_group = new THREE.Group();
+const performanceMonitor = new PerformanceMonitor();
 
-// Basic BatchedMesh
+const n_Instances = 11617;  // 11617    10957
+let needsUpdate = false;
 
-// const loader = new GLTFLoader().setPath('models/bim-model/')
+const manager = nipplejs.create({
+    zone: document.getElementById('zone'),
+    mode: 'static',
+    shape: 'circle',
+    color: {
+        front: "#141313",
+        back: "rgba(200, 200, 200, 0.1)"
+    },
+    position: { right: '10%', bottom: '10%' },
+    restJoystick: true,
+    threshold: 0.9,
+});
 
-const loader_instance = new GLTFLoader().setPath('models/bim-model/');
-loader_instance.load('sixty5-architectural.glb', (gltf) => {
+let currentTarget = controlsTargetPoint;
+let currentCameraAngle = camera.rotation;
+
+let eulerAngle = new THREE.Euler();
+
+manager.on( 'move', (e) => {
     
-    let material_map = new Map();
+    controls.target.set(
+        currentTarget.x - ( e.data.vector.x * 0.50 ),
+        currentTarget.y - ( e.data.vector.y * 0.50 ),
+        currentTarget.z
+    );
+    controls.update();
+});
+
+manager.on('end', () => {
+    controls.target.copy( currentTarget );
+    controls.update();
+});
+
+const vertexShader = `
+    #include <batching_pars_vertex>
+    #include <color_pars_vertex>
+
+    varying vec3 v_BatchedNormal;
+    varying vec4 v_BatchedColor;
+    varying vec3 v_ViewDirection;
+
+    void main() {
+        #include <begin_vertex>
+        #include <beginnormal_vertex>
+        #include <batching_vertex>
+
+        mat4 batchingModelViewMatrix = modelViewMatrix * batchingMatrix;
+
+        vec4 batchedPosition = batchingModelViewMatrix * vec4( position, 1.0 );
+        v_ViewDirection = normalize( -batchedPosition.xyz );
+
+        v_BatchedNormal = vec3( normalize( batchingModelViewMatrix * vec4( normal, 0.0 )));
+
+        #include <color_vertex>
+        v_BatchedColor = vec4( vColor );
+        
+        // #include <project_vertex>
+        gl_Position = projectionMatrix * batchedPosition;
+    }
+`
+
+const fragmentShader = `
+    varying vec3 v_BatchedNormal;
+    varying vec4 v_BatchedColor;
+    varying vec3 v_ViewDirection;
+
+    void main() {
+        float fresnel = dot( v_ViewDirection, v_BatchedNormal );
+
+        gl_FragColor = vec4( vec3( fresnel * v_BatchedColor.rgb), v_BatchedColor.a );  // v_InstanceColor
+        // gl_FragColor = vec4( fresnel * vec3( 0.8, 0.8, 0.8 ), 1.0 );
+    }
+`
+
+
+// // Functions
+
+function disposeMaterial(material) {
+    // Dispose the material itself
+    material.dispose();
     
+    // Iterate through material properties to dispose attached textures
+    for (const key in material) {
+        const value = material[key];
+        if (value && typeof value === 'object' && 'minFilter' in value) {
+            value.dispose();
+        }
+    }
+};
+
+// gltf.scene.traverse((child) => {
+//     if (!child.isMesh) return;
+
+//     // Dispose geometry
+//     if (child.geometry) {
+//         child.geometry.dispose();
+//     }
+
+//     // Dispose material(s)
+//     if (child.material) {
+//         if (Array.isArray(child.material)) {
+//             child.material.forEach(disposeMaterial);
+//         } else {
+//             disposeMaterial(child.material);
+//         }
+//     };
+// });
+
+
+
+
+
+
+
+
+
+// // Geometry
+
+
+let instancedMesh;
+let batchedMesh;
+let fittingsBatchedMesh;
+let structureBatchedMesh;
+let archBatchedMesh;
+let interiorBatchedMesh;
+
+async function init() {
+    
+    let group = new THREE.Group();
+    const loader = new GLTFLoader().setPath('models/bim-model/');
+    
+    let gltf = await loader.loadAsync('mep-hyperinstance-ifc-guid-color.glb');
+    let fittingsGltf = await loader.loadAsync('mep-fittings_hi-lo-res_ifc-guid-2.glb');
+    // let fittingsGltf = await loader.loadAsync('mep-fittings_ifc-guid.glb');
+    // let structureGltf = await loader.loadAsync('sixty5-structural.glb');
+    // let archGltf = await loader.loadAsync('sixty5-architectural-facade-final.glb')
+    // let interiorGltf = await loader.loadAsync('sixty5-architectural-interiors-final.glb')
+    
+    const geometry = gltf.scene.children[0].geometry;
+
+    // const material = new THREE.MeshLambertMaterial({
+    //     flatShading: true,
+    // });
+
+    const material = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+        wireframe: false,
+        side: THREE.DoubleSide,
+    });
+
+    const nonFocusMaterial = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+        transparent: true,
+        opacity: 1,
+        side: THREE.FrontSide,
+    })
+    
+    // // InstancedMesh
+
+    // const instancedColorsArray = new Float32Array(n_Instances * 3);
+    // geometry.setAttribute('a_InstanceColor', new THREE.InstancedBufferAttribute(instancedColorsArray, 3))
+    
+    // instancedMesh = new THREE.InstancedMesh( geometry, material, n_Instances );
+    // group.add( instancedMesh );
+
+    // let matrix;
+    // let i = 0;
+
+    // gltf.scene.traverse((child) => {
+    //     if ( child.isMesh ) {
+            
+    //         if ( i > n_Instances ) {
+    //             console.log("Exceeded number of instances");
+    //             return;
+    //         };
+
+    //         instancedColorsArray[i * 3 + 0] = child.userData.R;
+    //         instancedColorsArray[i * 3 + 1] = child.userData.G;
+    //         instancedColorsArray[i * 3 + 2] = child.userData.B;
+
+    //         matrix = child.matrixWorld.clone();
+            
+    //         instancedMesh.setMatrixAt( i, matrix );
+    //         i++;
+    //     };
+    // });
+
+    // instancedMesh.needsUpdate = true;
+
+    // group.add(instancedMesh);
+
+    // instancedMesh = null;
+
+    let visited = new Set();
+    let totalInstanceCount = 0;
+    let totalVertexCount = 0;
+    let totalIndexCount = 0;
+
+    fittingsGltf.scene.traverse((child) => {
+        if (child.isMesh ) {
+            totalInstanceCount += 1;
+            
+            if ( !visited.has( child.geometry.uuid ))
+                visited.add( child.geometry.uuid );
+                totalVertexCount += child.geometry.attributes.position.count;
+                totalIndexCount += child.geometry.index.count;
+        }
+
+        console.log({
+            "nCount": totalInstanceCount,
+            'vCount': totalVertexCount,
+            'iCount': totalIndexCount
+        })
+    })
+
+
+
+
+    // // // BatchedMesh
+    
+    batchedMesh = new THREE.BatchedMesh( 10957, 64, 192, material );  // material
+    const geometryId = batchedMesh.addGeometry( geometry );
+    
+    let matrix = new THREE.Matrix4();
+    let i = 0;
+    let instanceId;
+
+    let instColor = new THREE.Vector4( );
+    let defaultColor = new THREE.Vector4( 0.8, 0.8, 0.8, 1.0 );
+
     gltf.scene.traverse((child) => {
-        if (child.isMesh) {
+        if ( child.isMesh ) {
             
-            const material = child.material
-            const geom = child.geometry
-            const geom_uuid = geom.uuid;
-            const inst_matrix = child.matrixWorld;
-            
-            if ( !material_map.has( material )){
-                material_map.set( material, {
-                    unique_geoms: new Map(),
-                    vCount: 0,
-                    iCount: 0,
-                    instCount: 1
-                });
+            if ( i > n_Instances ) {
+                console.log("Exceeded number of instances");
+                return;
+            };
+
+            matrix = child.matrixWorld.clone();
+
+            if ( !child.userData.R ) {
+                instColor.copy( defaultColor );
+            } else {
+                instColor.set( child.userData.R, child.userData.G, child.userData.B, child.userData.A );
             };
             
-            const data = material_map.get( material )
-            data.instCount++;
+            instanceId = batchedMesh.addInstance( geometryId );
+            batchedMesh.setMatrixAt( instanceId, matrix );
+            batchedMesh.setColorAt( instanceId, instColor );
+            i++;
 
-            if ( !data.unique_geoms.has( geom_uuid ) ) {
-                data.unique_geoms.set(geom_uuid, {
-                    geometry: geom,
-                    matrix: []
-                });
+            child.geometry = null;
+            child.matrixWorld = null;
 
-                data.vCount += geom.attributes.position.count;
-                data.iCount += geom.index.count;
+            child.traverse((element) => {
+                element = null;
+            })
+
+
+            if (child.material) {
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(disposeMaterial);
+                } else {
+                    disposeMaterial(child.material);
+                }
             };
-            
-            data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
         };
     });
 
-    material_map.forEach(( value,key ) => {
-        const batchedMesh = new THREE.BatchedMesh(
-            value.instCount,
-            value.vCount,
-            value.iCount,
-            key
-        );
+    group.add( batchedMesh );
 
-        value.unique_geoms.forEach((subvalue) => {
-        
-            const geometry = subvalue.geometry;
-            const matrices = subvalue.matrix;
+
+    fittingsBatchedMesh = new THREE.BatchedMesh( 23234, 5494367, 35104182, nonFocusMaterial );  // nonFocusMaterial
+    
+    let fittingsId;
+    let fittingsVisited = [];
+    i = 0;
+
+    const greyColor = new THREE.Vector4(0.28, 0.28, 0.28, 1.0);
+
+    
+    // console.log(fittingsGltf);
+
+    fittingsGltf.scene.traverse(( child ) => {
+        if ( child.isMesh && child.children.length === 0 ) {    // && child.children.length === 0
             
-            if (matrices.length > 0){
-                const geom_id = batchedMesh.addGeometry( geometry );
-
-                for ( let i=0; i < matrices.length; i++){
-                    const instanceId = batchedMesh.addInstance(geom_id)
-                    batchedMesh.setMatrixAt( instanceId, matrices[i] )
-                };
+            if ( i > n_Instances ) {
+                console.log("Exceeded number of instances");
+                return;
             };
-        });
-        
-        batchedMesh.needsUpdate = true;
-        scene.add(batchedMesh);
+
+            if ( child.matrix ) {
+                matrix = child.matrixWorld.clone();
+            } else {
+                rotation = child.rotation.clone();
+                translation = child.translation.clone();
+                scale = child.scale.clone();
+
+                matrix.compose(translation, rotation, scale);
+            }
+            
+            
+            if (!fittingsVisited.includes( child.geometry.uuid )) {
+                fittingsId = fittingsBatchedMesh.addGeometry( child.geometry );
+                fittingsVisited.push( child.geometry.uuid );
+            };
+            
+            instanceId = fittingsBatchedMesh.addInstance( fittingsVisited.indexOf( child.geometry.uuid ));
+            fittingsBatchedMesh.setMatrixAt( instanceId, matrix );
+            fittingsBatchedMesh.setColorAt( instanceId, greyColor );
+            i++;
+
+            child.geometry = null;
+            child.matrixWorld = null;
+
+            child.traverse((element) => {
+                element = null;
+            })
+
+
+            if (child.material) {
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(disposeMaterial);
+                } else {
+                    disposeMaterial(child.material);
+                }
+            };
+        }
+    })
+
+    group.add( fittingsBatchedMesh );
+    
+
+    // structureBatchedMesh = new THREE.BatchedMesh(1208, 197729, 332838, material);
+
+    // let structureVisited = [];
+    // i=0;
+
+    // structureGltf.scene.traverse(( child ) => {
+    //     if ( child.isMesh ) {
+            
+    //         if ( i > n_Instances ) {
+    //             console.log("Exceeded number of instances");
+    //             return;
+    //         };
+
+    //         matrix = child.matrixWorld.clone();
+            
+    //         if (!structureVisited.includes( child.geometry.uuid )) {
+    //             fittingsId = structureBatchedMesh.addGeometry( child.geometry );
+    //             structureVisited.push( child.geometry.uuid );
+    //         };
+            
+    //         instanceId = structureBatchedMesh.addInstance( structureVisited.indexOf( child.geometry.uuid ));
+    //         structureBatchedMesh.setMatrixAt( instanceId, matrix );
+    //         structureBatchedMesh.setColorAt( instanceId, greyColor );
+    //         i++;
+
+    //         child.geometry = null;
+    //         child.matrixWorld = null;
+
+    //         child.traverse((element) => {
+    //             element = null;
+    //         })
+
+
+    //         if (child.material) {
+    //             if (Array.isArray(child.material)) {
+    //                 child.material.forEach(disposeMaterial);
+    //             } else {
+    //                 disposeMaterial(child.material);
+    //             }
+    //         };
+    //     }
+    // })
+
+    // // group.add( structureBatchedMesh );
+
+
+
+
+
+
+    // archBatchedMesh = new THREE.BatchedMesh(4655, 646450, 1184310, material);
+
+    // let archVisited = [];
+    // i=0;
+
+    // archGltf.scene.traverse(( child ) => {
+    //     if ( child.isMesh ) {
+            
+    //         if ( i > n_Instances ) {
+    //             console.log("Exceeded number of instances");
+    //             return;
+    //         };
+
+    //         matrix = child.matrixWorld.clone();
+            
+    //         if (!archVisited.includes( child.geometry.uuid )) {
+    //             fittingsId = archBatchedMesh.addGeometry( child.geometry );
+    //             archVisited.push( child.geometry.uuid );
+    //         };
+            
+    //         instanceId = archBatchedMesh.addInstance( archVisited.indexOf( child.geometry.uuid ));
+    //         archBatchedMesh.setMatrixAt( instanceId, matrix );
+    //         archBatchedMesh.setColorAt( instanceId, greyColor );
+    //         i++;
+
+    //         child.geometry = null;
+    //         child.matrixWorld = null;
+
+    //         child.traverse((element) => {
+    //             element = null;
+    //         })
+
+
+    //         if (child.material) {
+    //             if (Array.isArray(child.material)) {
+    //                 child.material.forEach(disposeMaterial);
+    //             } else {
+    //                 disposeMaterial(child.material);
+    //             }
+    //         };
+    //     }
+    // })
+
+    // group.add( archBatchedMesh );
+
+
+
+
+
+
+    // interiorBatchedMesh = new THREE.BatchedMesh(6631, 1888637, 3239355, nonFocusMaterial );
+
+    // let interiorVisited = [];
+    // i=0;
+
+    // interiorGltf.scene.traverse(( child ) => {
+    //     if ( child.isMesh ) {
+            
+    //         if ( i > n_Instances ) {
+    //             console.log("Exceeded number of instances");
+    //             return;
+    //         };
+
+    //         matrix = child.matrixWorld.clone();
+            
+    //         if (!interiorVisited.includes( child.geometry.uuid )) {
+    //             fittingsId = interiorBatchedMesh.addGeometry( child.geometry );
+    //             interiorVisited.push( child.geometry.uuid );
+    //         };
+            
+    //         instanceId = interiorBatchedMesh.addInstance( interiorVisited.indexOf( child.geometry.uuid ));
+    //         interiorBatchedMesh.setMatrixAt( instanceId, matrix );
+    //         interiorBatchedMesh.setColorAt( instanceId, greyColor );
+    //         i++;
+
+    //         child.geometry = null;
+    //         child.matrixWorld = null;
+
+    //         child.traverse((element) => {
+    //             element = null;
+    //         })
+
+
+    //         if (child.material) {
+    //             if (Array.isArray(child.material)) {
+    //                 child.material.forEach(disposeMaterial);
+    //             } else {
+    //                 disposeMaterial(child.material);
+    //             }
+    //         };
+    //     }
+    // })
+
+    // group.add( interiorBatchedMesh );
+
+
+
+
+
+
+
+    // batchedMesh = null;
+    // gltf = null;
+
+    // fittingsGltf = null;
+    // fittingsBatchedMesh = null;
+    
+    // const mesh = new THREE.Mesh( geometry, material );
+    // scene.add( mesh );
+    group.position.set( -21, 0, 32 );
+
+    scene.add( group );
+    const bvh = new ObjectBVH( group );
+    
+    // group = null;
+
+    
+    
+    window.addEventListener( 'dblclick', (e) => {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects( bvh.objects );
+    
+        if (intersects.length > 0) {
+            newTargetPoint = intersects[0].point;
+            currentTarget = newTargetPoint;
+            needsUpdate = true;
+            requestAnimationFrame(animate);
+        };
     });
-});
 
-// const loader_instance_2 = new GLTFLoader().setPath('models/bim-model/');
-// loader_instance_2.load('sixty5-W-installatie_hires.glb', (gltf) => {
+    window.addEventListener( 'resize', () => {
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        requestAnimationFrame(animate);
+    });
+
+    controls.addEventListener( 'change', () => {
+        requestAnimationFrame(animate);
+    });
     
-//     let material_map = new Map();
-    
-//     gltf.scene.traverse((child) => {
-//         if (child.isMesh) {
-            
-//             const material = child.material
-//             const geom = child.geometry
-//             const geom_uuid = geom.uuid;
-//             const inst_matrix = child.matrixWorld;
-            
-//             if ( !material_map.has( material )){
-//                 material_map.set( material, {
-//                     unique_geoms: new Map(),
-//                     vCount: 0,
-//                     iCount: 0,
-//                     instCount: 1
-//                 });
-//             };
-            
-//             const data = material_map.get( material )
-//             data.instCount++;
+    configGUI();
+    animate();
 
-//             if ( !data.unique_geoms.has( geom_uuid ) ) {
-//                 data.unique_geoms.set(geom_uuid, {
-//                     geometry: geom,
-//                     matrix: []
-//                 });
+};
 
-//                 data.vCount += geom.attributes.position.count;
-//                 data.iCount += geom.index.count;
-//             };
-            
-//             data.unique_geoms.get(geom_uuid).matrix.push( inst_matrix )
-//         };
-//     });
+function configGUI() {
+    const gui = new GUI();
 
-//     material_map.forEach(( value,key ) => {
-//         const batchedMesh = new THREE.BatchedMesh(
-//             value.instCount,
-//             value.vCount,
-//             value.iCount,
-//             key
-//         );
+    gui.add(guiControls, "perspective").name("perspective").onChange( (v) => {
+        guiControls.perspective = v;
 
-//         value.unique_geoms.forEach((subvalue) => {
-        
-//             const geometry = subvalue.geometry;
-//             const matrices = subvalue.matrix;
-            
-//             if (matrices.length > 0){
-//                 const geom_id = batchedMesh.addGeometry( geometry );
+        changeCamera( v );
+    });
 
-//                 for ( let i=0; i < matrices.length; i++){
-//                     const instanceId = batchedMesh.addInstance(geom_id)
-//                     batchedMesh.setMatrixAt( instanceId, matrices[i] )
-//                 };
-//             };
-//         });
-        
-//         batchedMesh.needsUpdate = true;
-//         scene.add(batchedMesh);
-//     });
-// });
+    gui.add(guiControls, "fov", 10, 90, 5).name("fov").onChange( (v) => {
+        camera.fov = v;
+        camera.updateProjectionMatrix();
+        requestAnimationFrame(animate);
+    });
 
+    gui.add(guiControls, "test").name("test").onChange( (v) => {
+        guiControls.test = v;
 
-
-// const facade_group = await initFacade( loader, [
-//         "sixty5-structural.glb",
-//         // "sixty5-architectural-noglass_facade_external.glb",
-//         // "sixty5-architectural-noglass_structural_interior.glb",
-//     ]
-// );
-// bvh_group.add(facade_group);
-
-// // const interior_group = await initInterior( loader, [
-// //         "sixty5-interiors-kitchens_hires.glb",
-// //         "sixty5-interiors-kitchens_lowres.glb",
-//         // "sixty5-architectural-noglass_interiors.glb"
-// //     ]
-// // );
-// // bvh_group.add(interior_group);
-
-// const focus_group = await initFocus( loader, [
-//         "sixty5-W-installatie_hires.glb",
-//         "sixty5-W-installatie_lowres.glb",
-//         "sixty5-mep_hires.glb",
-//         "sixty5-mep_lowres.glb",
-
-//         "sixty5-interiors-kitchens_hires.glb",
-//         "sixty5-interiors-kitchens_lowres.glb",
-//         "sixty5-architectural-noglass_interiors.glb",
-
-//     ]
-// );
-// bvh_group.add(focus_group);
-
-// // scene.add(focus_group);
-// scene.add(bvh_group);
-// // console.log(bvh_group);
-
-// const bvh = new ObjectBVH( [facade_group, focus_group] );
-// scene.add( bvh );
-
-// async function initFacade( loader, _files ) {
-//     let material_map = new Map();
-//     const facade_group = new THREE.Group();
-
-//     const defaultMaterial = new THREE.MeshLambertMaterial({
-//         color: "#a7a7a7",
-//         transparent: true
-//     });
-    
-//     for (const file of _files) {
-//         let gltf = await loader.loadAsync( file );
-        
-//         material_map = await createMaterialMap( gltf, material_map, defaultMaterial );
-//     };
-
-//     for (let material of material_map.keys()) {
-//         let meshes = material_map.get( material );
-//         let bm = await createBatchedMesh( meshes, material );
-        
-//         facade_group.add( bm );
-//     };
-//     facade_group.parentName = "facade";
-
-//     return facade_group;
-// };
-
-
-// async function initInterior( loader, _files ) {
-//     let material_map = new Map();
-//     const interior_group = new THREE.Group();
-
-//     const defaultMaterial = new THREE.MeshStandardMaterial({
-//         color: "#7f7f7f",
-//         transparent: true
-//     })
-
-//     for (const file of _files) {
-//         let gltf = await loader.loadAsync( file );
-//         const [name, res] = file.split("_");
-        
-//         if (res === "hires.glb") {
-//             material_map = await createMaterialMap( gltf, material_map, defaultMaterial );
-//         } else if (res === "lowres.glb") {
-//             material_map = await appendMaterialMap( gltf, material_map, defaultMaterial );
-//         } else {
-//             material_map = await createMaterialMap( gltf, material_map, defaultMaterial )
-//         };
-//     };
-
-//     for (let material of material_map.keys()) {
-//         let meshes = material_map.get( material );
-//         let bm = await createBatchedMesh( meshes, material );
-
-//         interior_group.add( bm );
-//     };
-//     interior_group.parentName = "interior";
-
-//     return bm;
-// };
-
-// async function initFocus( loader, _files ) {
-//     let material_map = new Map();
-//     const focus_group = new THREE.Group();
-
-//     const defaultMaterial = new THREE.MeshStandardMaterial({
-//         color: "#7f7f7f",
-//         transparent: true
-//     });
-
-//     for (const file of _files) {
-//         let gltf = await loader.loadAsync( file );
-//         const [name, res] = file.split("_");
-
-//         console.log(gltf);
-
-//         if (res === "hires.glb") {
-//             material_map = await createMaterialMap( gltf, material_map, defaultMaterial );
-//         } else {
-//             material_map = await appendMaterialMap( gltf, material_map, defaultMaterial );
-//         }
-//     };
-
-//     for (let material of material_map.keys()) {
-//         let meshes = material_map.get( material );
-//         let bm = await createBatchedMesh( meshes, material );
-
-//         focus_group.add( bm );
-//     };
-//     focus_group.parentName = "focus";
-    
-//     return bm;
-// };
-
-
-// function createBatchedMesh( meshes, material ){
-
-//     const batchedMesh = new THREE.BatchedMesh(
-//         meshes.instCount,
-//         meshes.vCount,
-//         meshes.iCount,
-//         material
-//     );
-
-//     batchedMesh.hiresGeomIdFor = [];
-//     batchedMesh.lowresGeomIdFor = []
-
-//     meshes.unique_geoms.forEach((mesh) => {
-//         const geom = mesh.geometry;
-//         const lowres_geom = mesh.lowres_geometry;
-//         const matrices = mesh.matrices;
-
-//         if (matrices.length > 0){
-//             const geom_id = batchedMesh.addGeometry( geom );
-//             let lowres_geom_id;
-
-//             if ( lowres_geom ) {
-//                 lowres_geom_id = batchedMesh.addGeometry( lowres_geom );
-//             } else {
-//                 lowres_geom_id = geom_id;
-//             }
-
-//             for ( let i=0; i < matrices.length; i++){
-//                 const instanceId = batchedMesh.addInstance(lowres_geom_id)
-//                 batchedMesh.setMatrixAt( instanceId, matrices[i] )
-
-//                 batchedMesh.hiresGeomIdFor[ instanceId ] = geom_id;
-//                 batchedMesh.lowresGeomIdFor[ instanceId ] = lowres_geom_id;
-
-//             };
-//         };
-
-//     });
-
-//     batchedMesh.needsUpdate = true;
-//     batchedMesh.isDirty = [];
-
-//     return batchedMesh;
-
-// }
-
-// function appendMaterialMap(gltf, material_map, defMaterial=null ) {
-//     let visited = new Set();
-
-//     gltf.scene.traverse(( child ) => {
-
-//         if ( 
-//             child.userData.mesh_id &&
-//             !visited.has(child.userData.mesh_id)
-//         ) {
-//             const meshId = child.userData.mesh_id;
-
-//             let material;
-//             let geometry;
-
-//             if (child.children.length > 0){
-//                 child = child.children[0]     // If the obejct has more than one child (due to mutliple materials) only select the first
-//             };
-
-//             geometry = child.geometry;
-
-//             if ( defMaterial ) {
-//                 material = defMaterial;
-//             } else {
-//                 material = child.material;
-//             }
-            
-//             let material_key;
-
-//             if ( !material_map.has(material) ) {
-//                 for (let material in material_map.keys()) {   // If material map does not have material, loop through all mesh ids until we find it
-//                     if (material.has( meshId )) {
-//                         material_key = material_map.get( material );
-//                         break;
-//                     }
-//                 };
-                
-//                 return;
-
-//             } else {
-//                 material_key = material_map.get( material );
-//             }
-
-//             if (material_key.unique_geoms.has( meshId )) {
-//                 material_key.unique_geoms.get( meshId ).lowres_geometry = geometry;
-
-//                 material_key.instCount++;
-//                 material_key.vCount += geometry.attributes.position.count;
-//                 material_key.iCount += geometry.index.count;
-//             }
-            
-//         }
-//     });
-
-//     return material_map;
-// }
-
-// function createMaterialMap( gltf, material_map, defMaterial=null ){
-
-//     gltf.scene.traverse((child) => {
-//         if ( child.userData.mesh_id ) {
-            
-//             const meshId = child.userData.mesh_id;
-
-//             let material;
-//             let geometry;
-//             let inst_matrix;
-            
-//             if (child.children.length > 0){
-//                 child = child.children[0]     // If the object has more than one child (due to mutliple materials) only select the first
-//             };
-
-//             geometry = child.geometry;
-//             inst_matrix = child.matrixWorld;
-
-//             if ( defMaterial ) {
-//                 material = defMaterial;
-//             } else {
-//                 material = child.material;
-//             }
-
-//             material.transparent = true;
-
-//             if ( !material_map.has( material ) ) {
-//                 material_map.set( material, {
-//                     unique_geoms: new Map(),
-//                     vCount: 0,
-//                     iCount: 0,
-//                     instCount: 0
-//                 });
-//             };
-
-//             const material_key = material_map.get( material );
-//             material_key.instCount++;
-
-//             if ( !material_key.unique_geoms.has( meshId )) {
-//                 material_key.unique_geoms.set( meshId, {
-//                     geometry: null,
-//                     lowres_geometry: null,
-//                     matrices: []
-//                 });
-
-//                 material_key.vCount += geometry.attributes.position.count;
-//                 material_key.iCount += geometry.index.count;
-            
-//             } 
-            
-//             material_key.unique_geoms.get( meshId ).geometry = geometry;
-//             material_key.unique_geoms.get( meshId ).matrices.push( inst_matrix );            
-
-//         };
-//     });
-
-//     // console.log(material_map);
-//     return material_map
-// }
-
-// // let bvh_struct;
-// // let batchedMesh_struct;
-
-// // initBase();
-
-// // async function initBase() {
-// //     const loader_instance = new GLTFLoader().setPath('models/bim-model/');
-
-// //     const meshes_1 = [];
-// //     const meshes_2 = [];
-
-// //     let totalVertexCount_1 = 0;
-// //     let totalIndexCount_1 = 0;
-// //     let totalInstanceCount_1 = 0
-
-// //     let totalVertexCount_2 = 0;
-// //     let totalIndexCount_2 = 0;
-// //     let totalInstanceCount_2 = 0;
-
-// //     let material_map_1 = new Map();
-// //     let material_map_2 = new Map();
-    
-// //     const [gltf_1, gltf_2] = await Promise.all([
-// //         loader_instance.loadAsync('sixty5-architectural-noglass_rev2.glb'), //'sixty5-architectural-noglass_rev1.glb'
-// //         loader_instance.loadAsync('sixty5-structural.glb')
-// //     ])
-
-// //     gltf_1.scene.traverse((child) => {
-// //         if (child.userData.mesh_id) {
-// //             meshes_1.push(child);
-// //         }
-// //     });
-
-// //     gltf_2.scene.traverse((child) => {
-// //         if (child.userData.mesh_id) {
-// //             meshes_2.push(child);
-// //         }
-// //     });
-
-// //     meshes_1.forEach((value) => {
-// //         let child;
-// //         const meshID = value.userData.mesh_id;
-        
-// //         if (value.children.length > 0) {
-// //             child = value.children[0];
-// //         } else { child = value };
-
-
-// //         const material = child.material;
-// //         material.transparent = true;
-// //         const geom = child.geometry;
-        
-// //         child.updateMatrixWorld(true);
-// //         const inst_matrix = child.matrixWorld;
-
-// //         if ( !material_map_1.has( material ) ) {
-// //             material_map_1.set( material, {
-// //                 unique_geoms: new Map(),
-// //                 vCount: 0,
-// //                 iCount: 0,
-// //                 instCount: 0
-// //             });
-// //         };
-
-// //         const material_key = material_map_1.get( material );
-// //         material_key.instCount++;
-            
-// //         if ( !material_key.unique_geoms.has( meshID )) {
-// //             material_key.unique_geoms.set( meshID, {
-// //                 geometry: geom,
-// //                 matrices: []
-// //             });
-
-// //             material_key.vCount += geom.attributes.position.count;
-// //             material_key.iCount += geom.index.count;
-        
-// //         } 
-
-// //         material_key.unique_geoms.get( meshID ).matrices.push( inst_matrix );
-// //     });
-
-// //     meshes_2.forEach((value) => {
-// //         let child;
-// //         const meshID = value.userData.mesh_id;
-        
-// //         if (value.children.length > 0) {
-// //             child = value.children[0];
-// //         } else { child = value };
-        
-// //         const material = child.material;
-// //         material.transparent = true;
-// //         const geom = child.geometry;
-        
-// //         child.updateMatrixWorld(true);
-// //         const inst_matrix = child.matrixWorld.clone();
-
-// //         if ( !material_map_2.has( material ) ) {
-// //             material_map_2.set( material, {
-// //                 unique_geoms: new Map(),
-// //                 vCount: 0,
-// //                 iCount: 0,
-// //                 instCount: 0
-// //             });
-// //         };
-
-// //         const material_key = material_map_2.get( material );
-// //         material_key.instCount++;
-            
-// //         if ( !material_key.unique_geoms.has( meshID )) {
-// //             material_key.unique_geoms.set( meshID, {
-// //                 geometry: geom,
-// //                 matrices: []
-// //             });
-
-// //             material_key.vCount += geom.attributes.position.count;
-// //             material_key.iCount += geom.index.count;
-        
-// //         } 
-
-// //         material_key.unique_geoms.get( meshID ).matrices.push( inst_matrix );
-// //     });
-
-// //     material_map_1.forEach((value, key) => {
-// //         const material = key;
-
-// //         const bm_1 = new THREE.BatchedMesh(
-// //             value.instCount,
-// //             value.vCount,
-// //             value.iCount,
-// //             key
-// //         );
-
-// //         value.unique_geoms.forEach((mesh) => {
-// //             const geom = mesh.geometry;
-// //             const matrices = mesh.matrices;
-
-// //             if (matrices.length > 0){
-// //                 const geom_id = bm_1.addGeometry( geom );
-
-// //                 for ( let i=0; i < matrices.length; i++){
-// //                     const instanceId = bm_1.addInstance(geom_id)
-// //                     bm_1.setMatrixAt( instanceId, matrices[i] )
-
-// //                 };
-// //             };
-
-// //         });
-        
-// //         bm_1.needsUpdate = true;
-
-// //         bvh_group.add( bm_1 );
-
-// //     });
-
-// //     material_map_2.forEach((value, key) => {
-// //         const material = key;
-
-// //         const bm_2 = new THREE.BatchedMesh(
-// //             value.instCount,
-// //             value.vCount,
-// //             value.iCount,
-// //             key
-// //         );
-
-// //         value.unique_geoms.forEach((mesh) => {
-// //             const geom = mesh.geometry;
-// //             const matrices = mesh.matrices;
-
-// //             if (matrices.length > 0){
-// //                 const geom_id = bm_2.addGeometry( geom );
-
-// //                 for ( let i=0; i < matrices.length; i++){
-// //                     const instanceId = bm_2.addInstance(geom_id)
-// //                     bm_2.setMatrixAt( instanceId, matrices[i] )
-
-// //                 };
-// //             };
-
-// //         });
-        
-// //         bm_2.needsUpdate = true;
-
-// //         bvh_group.add( bm_2 );
-
-// //     });
-    
-// //     scene.add( bvh_group );
-// //     bvh_struct = new ObjectBVH( bvh_group );
-
-// //     return true;
-// // }
-
-// // let totalVertexCount = 0;
-// // let totalIndexCount = 0;
-// // let totalInstanceCount = 0;
-
-// // let hiresGeomIdFor = [];
-// // let lowresGeomIdFor = [];
-
-// // let batchedMesh;
-// // let bvh;
-// // let final_map = new Map();
-
-
-// // initDetails();
-
-// // async function initDetails() {
-// //     renderer.render(scene, camera);
-// //     const loader = new GLTFLoader().setPath( 'models/bim-model/' );
-    
-// //     const status = await loadFiles( loader );
-    
-// //     requestRender();
-
-// //     configGUI();
-
-// // };
-
-// // async function loadFiles( loader ) {
-    
-// //     // Need to sequentially populate the mesh_map
-
-// //     const _files = [
-// //         "sixty5-W-installatie_hires.glb",
-// //         "sixty5-W-installatie_lowres.glb",
-// //         "sixty5-mep_hires.glb",
-// //         "sixty5-mep_lowres.glb"
-// //         // "sixty5-interiors-kitchens_hires.glb"
-// //         // "sixty5-interiors-kitchens_lowres.glb"
-// //     ];
-
-// //     for (const fileName of _files) {
-
-// //         let gltf = await loadGLTFfile( loader, fileName );
-        
-// //         const [name, res] = fileName.split("_");
-        
-// //         if (res === 'hires.glb') final_map = await initMap( gltf, final_map );
-// //         if (res === 'lowres.glb') final_map = await appendMap( gltf, final_map );
-        
-// //         gltf = null;
-
-// //     };
-    
-// //     batchedMesh = await generateBatchedMesh( final_map );
-// //     bvh = new ObjectBVH( batchedMesh );
-// //     scene.add( batchedMesh );
-
-// //     return true;
-// // };
-
-// // function loadGLTFfile( loader, fileName ) {
-// //     const gltf = loader.loadAsync( fileName );
-
-// //     return gltf;
-// // }
-
-// // function generateBatchedMesh( final_map, material = new THREE.MeshStandardMaterial()) {
-
-// //     const bm = new THREE.BatchedMesh(
-// //         totalInstanceCount, 
-// //         totalVertexCount, 
-// //         totalIndexCount, 
-// //         material
-// //     );
-    
-// //     final_map.forEach(( value, key ) => {
-
-// //         const hires_geometry = value.get( "geometry_hires" );
-// //         const matrices = value.get( "matrix" );
-
-// //         if (matrices.length > 0) {
-            
-// //             const hires_geomId = bm.addGeometry( hires_geometry );
-            
-// //             let lowres_geomId
-
-// //             if ( value.has( "geometry_lowres" ) ) {
-// //                 lowres_geomId = bm.addGeometry( value.get( "geometry_lowres" ) );
-// //             } else {
-// //                 lowres_geomId = hires_geomId; 
-// //             }
-
-// //             for ( let i=0; i < matrices.length; i++ ){
-
-// //                 const instanceId = bm.addInstance( lowres_geomId );
-
-// //                 bm.setMatrixAt( instanceId, matrices[i] );
-
-// //                 hiresGeomIdFor[ instanceId ] = hires_geomId;
-// //                 lowresGeomIdFor[ instanceId ] = lowres_geomId;
-// //             };
-
-// //         };
-// //     });
-
-// //     // Memory Management
-// //     final_map.forEach(( value ) => {
-// //         const hires = value.get( "geometry_hires" );
-// //         if ( hires ) hires.dispose();
-
-// //         const lowres = value.get( "geometry_lowres" );
-// //         if ( lowres && lowres !== hires ) lowres.dispose();
-// //     });
-
-// //     final_map.clear();
-// //     final_map = null;
-    
-// //     bm.needsUpdate = true;
-// //     return bm;
-// // };
-
-// // function initMap( gltf, mesh_map ) {
-
-// //     gltf.scene.traverse(( child ) => {
-
-// //         if ( child.isMesh ){ 
-
-// //             const geom = child.geometry;
-// //             const mesh_id = child.userData.mesh_id;
-            
-// //             const inst_matrix = child.matrixWorld.clone();
-
-// //             if ( !mesh_map.has( mesh_id )) {
-                
-// //                 // If map does not have the uuid already, first create it
-// //                 mesh_map.set( mesh_id, new Map() );
-
-// //                 mesh_map.get( mesh_id ).set( "geometry_hires", geom );
-// //                 mesh_map.get( mesh_id ).set( "matrix", [] );
-
-// //                 mesh_map.get( mesh_id ).get( "matrix" ).push( inst_matrix );
-
-// //                 totalVertexCount += geom.attributes.position.count;
-// //                 totalIndexCount += geom.index.count;
-// //                 totalInstanceCount += 1;
-            
-// //             } else {
-                
-// //                 // Map contains the uuid hence only need to push transformation matrix
-
-// //                 mesh_map.get( mesh_id ).get( "matrix" ).push( inst_matrix );
-// //                 totalInstanceCount += 1;
-
-// //             };
-// //         };
-// //     });
-
-// //     return mesh_map;
-// // };
-
-// // function appendMap( gltf, mesh_map ) {
-
-// //     let visited = new Set();
-
-// //     gltf.scene.traverse(( child ) => {
-
-// //         if ( 
-// //             child.isMesh && 
-// //             mesh_map.has( child.userData.mesh_id ) &&
-// //             !visited.has(child.userData.mesh_id)
-// //         ) {
-// //             const mesh_id = child.userData.mesh_id;
-// //             const geom = child.geometry;
-            
-// //             mesh_map.get( mesh_id ).set( "geometry_lowres", geom );
-
-// //             totalVertexCount += geom.attributes.position.count;
-// //             totalIndexCount += geom.index.count;
-// //             totalInstanceCount += 1;
-
-// //             visited.add( mesh_id );
-            
-// //         };
-// //     });
-
-// //     return mesh_map;
-// // };
-
-
-// const querySphere = new THREE.Sphere();
-// // let prevNear = new Set();
-// let prevNear = [];
-
-// const highlightColor = new THREE.Color( "#F600C1" );
-// const nonHighlightColor = new THREE.Color( "#d8d8d8" );
-
-// const structOpaque = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
-// const structTrans = new THREE.Vector4(0, 0, 0.55, 0.35);
-
-// function queryNearInstances( cameraPos ) {
-
-//     const nearObjs = new Set();
-//     // const nearObjs = []
-
-//     querySphere.center.copy( cameraPos );
-//     querySphere.radius = CONSTANTS.SEARCH_RADIUS;
-
-//     bvh.shapecast({
-
-//         intersectsBounds : ( box ) => {
-
-//             if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
-//             return INTERSECTED;
-//         },
-//         intersectsObject : (object, instanceId) => {
-
-//             const parent = object.parent.parentName;
-
-//             if (parent === "focus") {
-
-//                 object.setGeometryIdAt( id, object.hiresGeomIdFor[ id ] );
-
-//                 if ( CONSTANTS.changeLODcolor ) {
-//                     object.setColorAt( id, highlightColor );
-//                 }
-//             } else if (parent === "facade") {
-
-//                 object.setColorAt( id, structTrans );
-//             } else {
-
-//                 object.setGeometryIdAt( id, object.hiresGeomIdFor[ id ] );
-//             }
-            
-//             object.isDirty = true;
-//             object.dirtyInstances.add( instanceId )
-//             nearObjs.add( object );
-
-//             return false;
-//         }
-
-        
-//     });
-    
-//     return nearObjs;
-//     // querySphere.radius = CONSTANTS.FOCUS_RADIUS;
-
-//     // bvh_struct.shapecast({
-//     //     intersectsBounds : ( box ) => {
-
-//     //         if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
-//     //         return INTERSECTED;
-//     //     },
-//     //     intersectsObject : ( object, instanceId ) => {
-
-//     //         structIds.set( instanceId, object );
-//     //         return false;
-//     //     }
-//     // })
-
-//     // return [nearObjs, structIds];
-// };
-
-// function updateLODs( cameraPos ) {
-
-//     const newNear = queryNearInstances( cameraPos );
-//     // console.log(newNear);
-
-//     newNear.forEach(( object ) => {
-        
-//         const newObjects = object.isDirty
-
-//         if (!prevNear.includes( object )) {
-
-//             if (parent === "focus") {
-
-//                 object.setGeometryIdAt( id, object.hiresGeomIdFor[ id ] );
-//                 if ( CONSTANTS.changeLODcolor ) {
-//                     object.setColorAt( id, highlightColor );
-//                 }
-//             } else if (parent === "facade") {
-
-//                 object.setColorAt( id, structTrans );
-//             } else {
-
-//                 object.setGeometryIdAt( id, object.hiresGeomIdFor[ id ] );
-//             }
-//         };
-//     });
-
-//     // prevNear.forEach(( object ) => {
-
-//     //     if (object.isDirty
-
-//     //     const object = intersect[0];
-//     //     const id = intersect[1];
-//     //     const parent = object.parent.parentName;
-
-//     //     if (!newNear.includes( intersect )) {
-
-//     //         if (parent === "focus") {
-
-//     //             object.setGeometryIdAt( id, object.lowresGeomIdFor[ id ] );
-//     //             object.setColorAt( id, nonHighlightColor );
-                
-//     //         } else if (parent === "facade") {
-                
-//     //             object.setColorAt( id, structOpaque );
-//     //         } else {
-
-//     //             object.setGeometryIdAt( id, object.lowresGeomIdFor[ id ] );
-//     //         }
-//     //     };
-//     // });
-
-//     prevNear = newNear;
-
-//     // newStruct.forEach((object, id) => {
-//     //     if ( !prevStruct.has( id )) {
-
-//     //         // batchedMesh_struct.setColorAt( id, structTrans );
-//     //         object.setColorAt( id, structTrans );
-//     //     };
-//     // })
-
-//     // prevStruct.forEach((object, id) => {
-//     //     if ( !newStruct.has( id )) {
-
-//     //         // batchedMesh_struct.setColorAt( id, structOpaque );
-//     //         object.setColorAt( id, structOpaque );
-
-//     //     };
-//     // })
-
-//     // 
-//     // prevStruct = newStruct;
-// };
-
-// // function onWindowResize() {
-
-// //     camera.aspect = window.innerWidth / window.innerHeight;
-// //     camera.updateProjectionMatrix();
-
-// //     renderer.setSize( window.innerWidth, window.innerHeight );
-
-// // }
-
-// // function configGUI() {
-
-// //     const gui = new GUI();
-
-// //     gui.add(CONSTANTS, "FOCUS_RADIUS", 0, 20, 1).name("Search Radius").onChange( v => {
-// //         CONSTANTS.FOCUS_RADIUS = v;
-// //         requestRender();
-// //     });
-
-// //     gui.add(CONSTANTS, "changeLODcolor").name("Change LOD Color").onChange( v => {
-// //         CONSTANTS.changeLODcolor = v;
-// //         batchedMesh.setColorAt( id, nonHighlightColor );
-// //         updateLODs();
-// //     })
-// // }
-
-// // window.addEventListener( 'resize', onWindowResize );
-
-// window.addEventListener('dblclick', (event) => {
-    
-//     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-//     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-//     raycaster.setFromCamera(mouse, camera);
-
-//     const intersects = raycaster.intersectObjects( bvh.objects );
-//     // console.log(intersects);
-
-//     if (intersects.length > 0) {
-        
-//         const intersectionPoint = intersects[0].point;
-
-//         controls.target.copy( intersectionPoint );
-//         controls.update();
-//     };
-
-// });
-
-// // let lastCameraPos = camera.position.clone();
-// let renderRequested = false;
-
-// function render() {
-
-//     renderRequested = false;
-    
-//     renderer.render( scene, camera );
-//     updateLODs( camera.position );
-
-// }
-
-// function requestRender() {
-    
-//     if (
-//         !renderRequested
-//     ) {
-//         // perfMonitor.update( renderer, scene );
-//         renderRequested = true;
-//         requestAnimationFrame( render );
-//     };
-// }
-
-// controls.addEventListener( 'change', requestRender );
-
-// let frameCount = 0;
-// requestRender();
-
-function animate() {
-    // stats.begin();
-    perfMonitor.update(renderer, scene);
-    graphMonitor.update(renderer);
-    renderer.render(scene, camera);
-    
-    requestAnimationFrame( animate );
-    // renderer.render( scene, camera );
-
-    // Throttled Frame Refresh
-    // if ( frameCount % 60 === 0 ) {
-    //     // requestRender();
-    // }
-    
-    // frameCount++;
-
-    // stats.end();
+        instancedMesh.material.uniforms.u_PerspToOrtho = v ? 0.0 : 1.0;
+    })
 }
 
-animate()
+function changeCamera( perspective ) {
+    let zoomScale;
+    let prevPos = camera.position;
+    let targetDistance;
+    
+    if ( !perspective ) {
+        targetDistance = controls.target.distanceTo( prevPos );
+
+        zoomScale = initZoom * initTargetDistance / targetDistance;
+        
+        camera = orthoCamera;
+        camera.zoom = zoomScale;
+        
+        controls.mouseButtons = {
+            LEFT: THREE.MOUSE.PAN,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.ROTATE
+        }
+    
+    } else {
+        // zoomScale = camera.zoom;
+
+        // targetDistance = initZoom * initTargetDistance / zoomScale;
+        // directionVector = camera.position.sub( controls.target ).normalize();
+
+        camera = perspCamera;
+        // camera.position.set( directionVector.multiplyScalar(targetDistance) );
+
+        controls.mouseButtons = {
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+        }
+    }
+
+    camera.position.copy( prevPos );
+    camera.updateProjectionMatrix();
+    
+    controls.object = camera;
+    controls.update();
+
+    requestAnimationFrame(animate);
+
+    console.log(camera);
+}
+
+function animate() {
+    renderer.render( scene, camera );
+    
+    if ( needsUpdate ) {
+        if ( controls.target.distanceToSquared( newTargetPoint ) < 0.05 ) { 
+            needsUpdate = false;
+            return;
+        };
+        
+        controls.target.lerp( newTargetPoint, 0.15 );
+        controls.update();
+    };
+
+    performanceMonitor.update( renderer, scene );
+};
+
+
+init();
