@@ -209,7 +209,7 @@ merged_df_vertex.head()
 
 Here we see the power of this approach. The vertex in row 1 has coordinates (-0.224832, 0.030038, 0.526462). In the original vertex array it had an index of 645. In the decimated vertex array it has an index of 325. We have essentially created a map that tracks the index of a vertex before decimation and after.
 
-Since the vertices of the decimated mesh with be an exact subset of the original mesh, we can reorder the original mesh's vertices to follow the same structure as the decimated one. In this case, our decimated mesh has 403 vertices- so the first 403 vertices in our original mesh will follow the same index structure. The remaining 397 (800 - 403) will follow the updated indexing.
+Since the vertices of the decimated mesh will be an exact subset of the original mesh, we can reorder the original mesh's vertices to follow the same structure as the decimated one. In this case, our decimated mesh has 403 vertices- so the first 403 vertices in our original mesh will follow the same index structure. The remaining 397 (800 - 403) will follow the updated indexing.
 
 Now this means our 2 meshes share the same vertex structure, and we can use the vertex array strictly from our original mesh to construct the decimated one.
 

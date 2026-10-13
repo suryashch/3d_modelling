@@ -203,9 +203,13 @@ Virtually no difference over our naive implementation. The final results compare
 - This model peaks at 300MB when loading the data to the scene.
 - Once the garbage collector is run, the scene uses approximately 60MB of stable RAM, at ~90FPS.
 
+Overall,
+
 - Our hyperinstanced model utilizes only 2.5MB of space on the disk- **a 94% reduction in file size.**
-- When loading to the scene, our RAM peaks at ~100MB- **a 66% reduction**.
-- Once garbage collection is run, the stable RAM usage of the scene is ~10.5MB- **a ~82% improvement**
+- When loading to the scene, our RAM peaks at ~100MB- **a 66% reduction.**
+- Once garbage collection is run, the stable RAM usage of the scene is ~10.5MB- **a ~82% improvement.**
+
+More information on the results can be found in the accompanying notebook: [Hyper Instancing Meshes in a BIM Model](notebooks/hyper-instance-3.ipynb).
 
 While performance figures are comparable between models, we note drastic improvements to the memory consumption of the scene. Initializing a scene utilizes higher memory due to raw files being loaded. Peak RAM usage improved by 66%. Once the garbage collection is run, the scene settles into a stable amount of memory usage. Stable RAM usage improved ~82%. And total file size on disk improved by 94%.
 
@@ -240,3 +244,5 @@ In further research, we expand this technique out to other mesh types- oval duct
 [buildingSMART community](https://github.com/buildingsmart-community)
 
 [This video](https://www.youtube.com/watch?v=Do_vEjd6gF0)
+
+[Hyper Instancing Meshes in a BIM Model](notebooks/hyper-instance-3.ipynb)

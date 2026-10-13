@@ -3,3 +3,4 @@ models/.archive
 .vscode/
 */__pycache__
 *.ifc
+/research/reducing-mesh-density/*.html
