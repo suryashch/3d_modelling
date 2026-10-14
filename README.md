@@ -7,6 +7,9 @@ A repo where I explore how 3D modelling works.
 
 ### Latest Research
 
+[Shader Programming in Three.js](https://github.com/suryashch/3d_modelling/blob/main/research/auxiliary-scene-elements/shader-programming-in-threejs.md)
+Understanding the basics of GLSL programming in Three.js. Writing GPU native functions to control the look and feel of the scene in a deterministic manner. Vertex Shader basics, Fragment Shader basics, fresnel effect, instancedBufferAttributes, and more.
+
 [Hyper Instanced Meshes to Reduce Memory Usage in Large MEP Models](https://github.com/suryashch/3d_modelling/blob/main/research/reducing-mesh-density/hyper-instance.md)
 Replacing the unique geometries of straight pipes in the model with one geometry that is scaled, rotated, and translated to match the position of the original. This method significantly reduces the file size footprint and also memory usage of the scene, by instancing the geometry.
 
