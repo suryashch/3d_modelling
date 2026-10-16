@@ -4,3 +4,4 @@ models/.archive
 */__pycache__
 *.ifc
 /research/reducing-mesh-density/*.html
+/research/reducing-mesh-density/notebooks/data/*.glb
