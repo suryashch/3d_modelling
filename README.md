@@ -16,20 +16,6 @@ Replacing the unique geometries of straight pipes in the model with one geometry
 [Preprocessing GLTF Files for Efficient LOD Control in Scenes](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/gltf-preprocessing.md)
 Understanding the format of the gltf file. Recreating our own mesh from data in the model. Applying mesh decimation. Exploring data science behind mesh indexing, and reindexing for memory improvements. LOD additions and metadata assignment.
 
-[BatchedMesh with LOD](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batchedmesh-with-LOD.md)
-This document explores techniques used to add LOD control to the `BatchedMesh` object. The project draws heavy inspiration from gkjohnson et al, and dives deep into mesh compression techniques, instancing, buffer memory analysis and more. Ultimately, the project's results are inconclusive, but insightful.
-
-[Mesh Simplification Algorithms](https://github.com/suryashch/3d_modelling/blob/main/research/reducing-mesh-density/mesh-simplification.md)
-The document explores the basics of mesh simplification and specifically addresses the issue whereby decimation scripts create new vertices, essentially duplicating the amount of memory required for LOD control. The article explains in depth how to maintain vertex indices before and after decimation, allowing for vastly improved memory savings and enabling LOD control within the `BatchedMesh` object in ThreeJS.
-
-[Instancing Basics](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md)
-This document explores the concept of instancing, whereby objects that share the same geometry are saved to one InstancedMesh and referenced using their transformation matrices. This allows for memory reduction in large scenes with lots of objects and works natively with BatchedMesh, to reduce the overall draw calls in the scene.
-
-[Reducing Draw Calls in Scenes](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/draw-calls-in-scenes.md)
-This document explains how draw calls are the true limiting factor in scenes with lots of individual objects. It shows how to reduce the total draw call count, reducing the bottleneck between CPU and GPU, and improving the overall FPS performance count of the scene.
-
-[Per Object LOD Control with ThreeJS](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/per-object-lod-control-with-threejs.md)
-This document explains how to set up "Level of Detail" (LOD) for individual objects in a 3D scene using Three.js. It shows how to make the computer switch to a simpler, faster version of an object when it is far away and a detailed version when it is close. This method helps the scene run smoothly by focusing the computer's power only on the things the viewer can see clearly.
 
 --------------------------------------------------------------------------
 
@@ -65,5 +51,19 @@ Instancing in Three.js reduces memory overhead by storing unique vertex data onc
 10) [Mesh Simplification Techniques](https://github.com/suryashch/3d_modelling/blob/main/research/reducing-mesh-density/mesh-simplification.md)
 LOD Modelling has been proven to improve the performance of a 3D scene, by limiting the quality of distant meshes. However, most algorithms for mesh decimation treat each LOD as a unique object. This article explores various compression algorithms, most specifically- the "Quadric Edge Collapse algorithm", and highlights the key constraints which need to be considered when implementing. Creating LODs using existing vertex arrays improves performance of the scene by combining with the `BatchedMesh` class of objects in ThreeJS. As well, by sharing a vertex array, the final scene uses significantly less memory and opens the door for more elaborate LOD control in the scene.
 
+11) [BatchedMesh with LOD](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batchedmesh-with-LOD.md)
+This document explores techniques used to add LOD control to the `BatchedMesh` object. The project draws heavy inspiration from gkjohnson et al, and dives deep into mesh compression techniques, instancing, buffer memory analysis and more. Ultimately, the project's results are inconclusive, but insightful.
+
+12) [Mesh Simplification Algorithms](https://github.com/suryashch/3d_modelling/blob/main/research/reducing-mesh-density/mesh-simplification.md)
+The document explores the basics of mesh simplification and specifically addresses the issue whereby decimation scripts create new vertices, essentially duplicating the amount of memory required for LOD control. The article explains in depth how to maintain vertex indices before and after decimation, allowing for vastly improved memory savings and enabling LOD control within the `BatchedMesh` object in ThreeJS.
+
+13) [Instancing Basics](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md)
+This document explores the concept of instancing, whereby objects that share the same geometry are saved to one InstancedMesh and referenced using their transformation matrices. This allows for memory reduction in large scenes with lots of objects and works natively with BatchedMesh, to reduce the overall draw calls in the scene.
+
+14) [Reducing Draw Calls in Scenes](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/draw-calls-in-scenes.md)
+This document explains how draw calls are the true limiting factor in scenes with lots of individual objects. It shows how to reduce the total draw call count, reducing the bottleneck between CPU and GPU, and improving the overall FPS performance count of the scene.
+
+15) [Per Object LOD Control with ThreeJS](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/per-object-lod-control-with-threejs.md)
+This document explains how to set up "Level of Detail" (LOD) for individual objects in a 3D scene using Three.js. It shows how to make the computer switch to a simpler, faster version of an object when it is far away and a detailed version when it is close. This method helps the scene run smoothly by focusing the computer's power only on the things the viewer can see clearly.
 
 * Summaries provided by Gemini Flash
